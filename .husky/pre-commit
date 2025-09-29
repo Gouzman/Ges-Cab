@@ -1,0 +1,12 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Vérifier les secrets
+npx secretlint "**/*"
+
+# Vérifier les fichiers .env
+if git diff --cached --name-only | grep -q "\.env$"; then
+  echo "⚠️  ATTENTION : Vous essayez de commiter un fichier .env"
+  echo "Ces fichiers ne doivent jamais être commités."
+  exit 1
+fi

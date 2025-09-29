@@ -1,0 +1,27 @@
+name: Rotate Supabase Keys
+
+on:
+  schedule:
+    # Tous les premiers du mois à 00:00 UTC
+    - cron: '0 0 1 * *'
+  workflow_dispatch: # Permet de lancer manuellement
+
+jobs:
+  rotate-keys:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Rotate Supabase keys
+        run: npm run rotate-keys
+        env:
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
