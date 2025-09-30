@@ -17,7 +17,7 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 // Fonction utilitaire pour vérifier la connexion (utilisée au démarrage)
 export const checkSupabaseConnection = async () => {
   try {
-    const { data, error } = await supabase.from('profiles').select('count', { count: 'exact', head: true });
+    const { data: _data, error } = await supabase.from('profiles').select('count', { count: 'exact', head: true });
     if (error) throw error;
     console.info('✅ Connexion Supabase établie');
     return true;

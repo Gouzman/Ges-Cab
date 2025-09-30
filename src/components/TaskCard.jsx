@@ -1,10 +1,10 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import { motion } from 'framer-motion';
 import { 
   Calendar, 
   User, 
   FileText, 
-  Edit, 
   Trash2, 
   CheckCircle, 
   Clock, 
@@ -23,6 +23,16 @@ import { supabase } from '@/lib/customSupabaseClient';
 import { toast } from '@/components/ui/use-toast';
 
 const TaskCard = ({ task, index, onEdit, onDelete, onStatusChange, currentUser }) => {
+  const getPriorityLabel = (priority) => {
+    switch (priority) {
+      case 'urgent': return 'Urgente';
+      case 'high': return 'Élevée';
+      case 'medium': return 'Moyenne';
+      case 'low': return 'Faible';
+      default: return 'Faible';
+    }
+  };
+
   const getPriorityColor = (priority) => {
     switch (priority) {
       case 'urgent': return 'border-red-500 bg-red-500/10';
@@ -57,6 +67,16 @@ const TaskCard = ({ task, index, onEdit, onDelete, onStatusChange, currentUser }
       case 'in-progress': return 'En cours';
       case 'seen': return 'Vue';
       default: return 'En attente';
+    }
+  };
+
+  const getPriorityDotColor = (priority) => {
+    switch (priority) {
+      case 'urgent': return 'bg-red-400';
+      case 'high': return 'bg-orange-400';
+      case 'medium': return 'bg-yellow-400';
+      case 'low': return 'bg-green-400';
+      default: return 'bg-green-400';
     }
   };
 
@@ -138,8 +158,8 @@ const TaskCard = ({ task, index, onEdit, onDelete, onStatusChange, currentUser }
           <div>
             <div className="flex items-center gap-2 text-sm mb-2"><Paperclip className="w-4 h-4 text-slate-400" /><span className="text-slate-300">Pièces jointes</span></div>
             <div className="flex flex-col gap-1">
-              {task.attachments.map((path, i) => (
-                <div key={i} className="flex items-center justify-between text-xs text-slate-400 bg-slate-700/30 p-1.5 rounded-md">
+              {task.attachments.map((path) => (
+                <div key={path} className="flex items-center justify-between text-xs text-slate-400 bg-slate-700/30 p-1.5 rounded-md">
                   <span className="truncate w-36">{path.split('/').pop()}</span>
                   <div className="flex">
                     <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleDownload(path)} title="Télécharger"><Download className="h-3 w-3" /></Button>
@@ -153,12 +173,39 @@ const TaskCard = ({ task, index, onEdit, onDelete, onStatusChange, currentUser }
       </div>
       <div className="flex items-center justify-between mt-auto pt-4 border-t border-slate-700/50">
         <div className="flex items-center gap-2">
-          <div className={`w-2 h-2 rounded-full ${task.priority === 'urgent' ? 'bg-red-400' : task.priority === 'high' ? 'bg-orange-400' : task.priority === 'medium' ? 'bg-yellow-400' : 'bg-green-400'}`}></div>
-          <span className="text-xs text-slate-400 capitalize">{task.priority === 'urgent' ? 'Urgente' : task.priority === 'high' ? 'Élevée' : task.priority === 'medium' ? 'Moyenne' : 'Faible'}</span>
+          <div className={`w-2 h-2 rounded-full ${getPriorityDotColor(task.priority)}`}></div>
+          <span className="text-xs text-slate-400 capitalize">{getPriorityLabel(task.priority)}</span>
         </div>
       </div>
     </motion.div>
   );
+};
+TaskCard.propTypes = {
+  task: PropTypes.shape({
+    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+    title: PropTypes.string.isRequired,
+    description: PropTypes.string,
+    priority: PropTypes.oneOf(['urgent', 'high', 'medium', 'low']),
+    status: PropTypes.oneOf(['pending', 'seen', 'in-progress', 'completed']),
+    deadline: PropTypes.string,
+    assigned_to_id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    assigned_to_name: PropTypes.string,
+    created_by_name: PropTypes.string,
+    assigned_at: PropTypes.string,
+    seen_at: PropTypes.string,
+    case_id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    attachments: PropTypes.arrayOf(PropTypes.string),
+    completion_comment: PropTypes.string,
+  }).isRequired,
+  index: PropTypes.number.isRequired,
+  onEdit: PropTypes.func.isRequired,
+  onDelete: PropTypes.func,
+  onStatusChange: PropTypes.func.isRequired,
+  currentUser: PropTypes.shape({
+    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+    function: PropTypes.string,
+    role: PropTypes.string,
+  }).isRequired,
 };
 
 export default TaskCard;

@@ -1,14 +1,29 @@
-import React, { useState, useEffect, useCallback } from 'react';
-    import { motion } from 'framer-motion';
-    import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, View } from 'lucide-react';
-    import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay, parseISO, addWeeks, subWeeks, eachDayOfInterval, setHours, setMinutes, getDay } from 'date-fns';
-    import { fr } from 'date-fns/locale';
-    import { Button } from '@/components/ui/button';
-    import { supabase } from '@/lib/customSupabaseClient';
-    import { toast } from '@/components/ui/use-toast';
-    import EventForm from '@/components/EventForm';
+import { useState, useEffect, useCallback } from 'react';
+import PropTypes from 'prop-types';
+import { motion } from 'framer-motion';
+import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay, parseISO, addWeeks, subWeeks, eachDayOfInterval, setHours } from 'date-fns';
+import { fr } from 'date-fns/locale';
+import { Button } from '@/components/ui/button';
+import { supabase } from '@/lib/customSupabaseClient';
+import { toast } from '@/components/ui/use-toast';
+import EventForm from '@/components/EventForm';
 
-    const Calendar = ({ currentUser }) => {
+    const getPriorityClass = (priority, darker = false) => {
+  const opacity = darker ? '80' : '70';
+  switch (priority) {
+    case 'urgent':
+      return `bg-red-500/${opacity} text-white`;
+    case 'high':
+      return `bg-orange-500/${opacity} text-white`;
+    case 'medium':
+      return `bg-yellow-500/${opacity} text-slate-900`;
+    default:
+      return `bg-green-500/${opacity} text-white`;
+  }
+};
+
+const Calendar = ({ currentUser }) => {
       const [currentDate, setCurrentDate] = useState(new Date());
       const [view, setView] = useState('week'); // 'month' or 'week'
       const [events, setEvents] = useState([]);
@@ -42,8 +57,7 @@ import React, { useState, useEffect, useCallback } from 'react';
           
           const userVisibleEvents = data.filter(event => {
             if (isAdmin) return true;
-            if (event.created_by === currentUser.id) return true;
-            return event.attendees && event.attendees.includes(currentUser.id);
+            return event.attendees?.includes(currentUser?.id);
           });
 
           return userVisibleEvents.map(e => ({ ...e, type: 'event', deadline: e.start_time }));
@@ -64,7 +78,7 @@ import React, { useState, useEffect, useCallback } from 'react';
       };
 
       const renderHeader = () => {
-        const dateFormat = view === 'month' ? "MMMM yyyy" : "MMMM yyyy";
+        const dateFormat = "MMMM yyyy";
         return (
           <div className="flex items-center justify-between mb-6">
             <Button variant="ghost" size="icon" onClick={() => view === 'month' ? setCurrentDate(subMonths(currentDate, 1)) : setCurrentDate(subWeeks(currentDate, 1))}>
@@ -123,10 +137,7 @@ import React, { useState, useEffect, useCallback } from 'react';
                   {dayItems.map(item => (
                     <div key={`${item.type}-${item.id}`} className={`px-1.5 py-0.5 text-xs rounded-md truncate ${
                       item.type === 'task' ? 
-                        (item.priority === 'urgent' ? 'bg-red-500/70 text-white' :
-                        item.priority === 'high' ? 'bg-orange-500/70 text-white' :
-                        item.priority === 'medium' ? 'bg-yellow-500/70 text-slate-900' :
-                        'bg-green-500/70 text-white') :
+                        getPriorityClass(item.priority) :
                         'bg-purple-500/70 text-white'
                     }`}>
                       {item.title}
@@ -182,10 +193,7 @@ import React, { useState, useEffect, useCallback } from 'react';
                             key={`${item.type}-${item.id}`}
                             className={`absolute w-full p-1 text-xs rounded-md truncate z-10 ${
                               item.type === 'task' ? 
-                                (item.priority === 'urgent' ? 'bg-red-500/80 text-white' :
-                                item.priority === 'high' ? 'bg-orange-500/80 text-white' :
-                                item.priority === 'medium' ? 'bg-yellow-500/80 text-slate-900' :
-                                'bg-green-500/80 text-white') :
+                                getPriorityClass(item.priority, true) :
                                 'bg-purple-500/80 text-white'
                             }`}
                             style={{ top: `${top}rem` }}
@@ -246,5 +254,12 @@ import React, { useState, useEffect, useCallback } from 'react';
         </>
       );
     };
-
+    Calendar.propTypes = {
+      currentUser: PropTypes.shape({
+        id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+        function: PropTypes.string,
+        role: PropTypes.string,
+      }),
+    };
+    
     export default Calendar;

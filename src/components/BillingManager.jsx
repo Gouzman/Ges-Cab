@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Search, Receipt, Printer, Edit, Trash2, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -77,7 +77,7 @@ const BillingManager = ({ currentUser }) => {
     setInvoices(mockInvoices.map(inv => ({ ...inv, status: getInvoiceStatus(inv) })));
   };
 
-  const handleAddInvoice = async (invoiceData) => {
+  const handleAddInvoice = async (_invoiceData) => {
     toast({
       variant: "destructive",
       title: "Fonctionnalité non disponible",
@@ -86,7 +86,7 @@ const BillingManager = ({ currentUser }) => {
     setShowForm(false);
   };
 
-  const handleEditInvoice = async (invoiceData) => {
+  const handleEditInvoice = async (_invoiceData) => {
      toast({
       variant: "destructive",
       title: "Fonctionnalité non disponible",
@@ -96,7 +96,7 @@ const BillingManager = ({ currentUser }) => {
     setShowForm(false);
   };
 
-  const handleDeleteInvoice = async (invoiceId) => {
+  const handleDeleteInvoice = async (_invoiceId) => {
     toast({
       variant: "destructive",
       title: "Fonctionnalité non disponible",
@@ -256,6 +256,12 @@ const BillingManager = ({ currentUser }) => {
       )}
     </div>
   );
+};
+
+import PropTypes from 'prop-types';
+
+BillingManager.propTypes = {
+  currentUser: PropTypes.object,
 };
 
 export default BillingManager;

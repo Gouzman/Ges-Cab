@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { X, Calendar, FileText, User, Paperclip, RefreshCw, Download, ScanLine, CheckSquare, Trash2 } from 'lucide-react';
+import { X, Calendar, FileText, User, Paperclip, RefreshCw, Download, ScanLine } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/customSupabaseClient';
@@ -146,10 +146,11 @@ const TaskForm = ({ task, onSubmit, onCancel, teamMembers, cases, currentUser })
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
+            <label htmlFor="title" className="block text-sm font-medium text-slate-300 mb-2">
               Titre de la tâche *
             </label>
             <input
+              id="title"
               type="text"
               name="title"
               value={formData.title}
@@ -161,10 +162,11 @@ const TaskForm = ({ task, onSubmit, onCancel, teamMembers, cases, currentUser })
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
+            <label htmlFor="description" className="block text-sm font-medium text-slate-300 mb-2">
               Description
             </label>
             <textarea
+              id="description"
               name="description"
               value={formData.description}
               onChange={handleChange}
@@ -176,23 +178,24 @@ const TaskForm = ({ task, onSubmit, onCancel, teamMembers, cases, currentUser })
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Catégorie Principale
+              <label htmlFor="main_category" className="block text-sm font-medium text-slate-300 mb-2">
+                  Catégorie Principale
               </label>
               <select
-                name="main_category"
-                value={formData.main_category}
-                onChange={handleChange}
-                className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  id="main_category"
+                  name="main_category"
+                  value={formData.main_category}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="">-- Sélectionner une catégorie --</option>
-                {taskCategoriesData.map(cat => (
-                  <option key={cat.name} value={cat.name}>{cat.name}</option>
-                ))}
+                  <option value="">-- Sélectionner une catégorie --</option>
+                  {taskCategoriesData.map(cat => (
+                    <option key={cat.name} value={cat.name}>{cat.name}</option>
+                  ))}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+              <label htmlFor="associated-tasks" className="block text-sm font-medium text-slate-300 mb-2">
                 Tâches Associées
               </label>
               <div className="p-3 bg-slate-700/50 border border-slate-600 rounded-lg max-h-40 overflow-y-auto">
@@ -216,27 +219,29 @@ const TaskForm = ({ task, onSubmit, onCancel, teamMembers, cases, currentUser })
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Priorité
+              <label htmlFor="priority" className="block text-sm font-medium text-slate-300 mb-2">
+                  Priorité
               </label>
               <select
-                name="priority"
-                value={formData.priority}
-                onChange={handleChange}
-                className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  id="priority"
+                  name="priority"
+                  value={formData.priority}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="low">🟢 Faible</option>
-                <option value="medium">🟡 Moyenne</option>
-                <option value="high">🟠 Élevée</option>
-                <option value="urgent">🔴 Urgente</option>
+                  <option value="low">🟢 Faible</option>
+                  <option value="medium">🟡 Moyenne</option>
+                  <option value="high">🟠 Élevée</option>
+                  <option value="urgent">🔴 Urgente</option>
               </select>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+              <label htmlFor="status" className="block text-sm font-medium text-slate-300 mb-2">
                 Statut
               </label>
               <select
+                id="status"
                 name="status"
                 value={formData.status}
                 onChange={handleChange}
@@ -276,7 +281,7 @@ const TaskForm = ({ task, onSubmit, onCancel, teamMembers, cases, currentUser })
                 className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Aucun dossier</option>
-                {cases && cases.map(c => (
+                {cases?.map(c => (
                   <option key={c.id} value={c.id}>{c.title}</option>
                 ))}
               </select>
@@ -284,11 +289,12 @@ const TaskForm = ({ task, onSubmit, onCancel, teamMembers, cases, currentUser })
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
+            <label htmlFor="assigned-to" className="block text-sm font-medium text-slate-300 mb-2">
               <User className="w-4 h-4 inline mr-2" />
               Assigné à
             </label>
             <select
+              id="assigned-to"
               name="assigned_to_id"
               value={formData.assigned_to_id}
               onChange={handleChange}
@@ -296,7 +302,7 @@ const TaskForm = ({ task, onSubmit, onCancel, teamMembers, cases, currentUser })
               disabled={!isAdmin && !showReassign && task && task.assigned_to_id !== currentUser.id}
             >
               <option value="">Non assigné</option>
-              {teamMembers && teamMembers.map(member => (
+              {teamMembers?.map(member => (
                 <option key={member.id} value={member.id}>{member.name}</option>
               ))}
             </select>
@@ -324,16 +330,16 @@ const TaskForm = ({ task, onSubmit, onCancel, teamMembers, cases, currentUser })
               </Button>
             </div>
             <div className="mt-2 space-y-2">
-              {formData.attachments.map((path, index) => (
-                <div key={index} className="flex items-center justify-between text-sm text-slate-400 bg-slate-700/30 p-2 rounded-md">
+              {formData.attachments.map((path) => (
+                <div key={path} className="flex items-center justify-between text-sm text-slate-400 bg-slate-700/30 p-2 rounded-md">
                   <span>{path.split('/').pop()}</span>
                   <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleDownload(path)}>
                     <Download className="h-4 w-4" />
                   </Button>
                 </div>
               ))}
-              {formData.filesToUpload.map((file, index) => (
-                <div key={index} className="text-sm text-green-400 bg-green-900/30 p-2 rounded-md">{file.name} (nouveau)</div>
+              {formData.filesToUpload.map((file) => (
+                <div key={file.name} className="text-sm text-green-400 bg-green-900/30 p-2 rounded-md">{file.name} (nouveau)</div>
               ))}
             </div>
           </div>
@@ -358,6 +364,17 @@ const TaskForm = ({ task, onSubmit, onCancel, teamMembers, cases, currentUser })
       </motion.div>
     </motion.div>
   );
+};
+
+import PropTypes from 'prop-types';
+
+TaskForm.propTypes = {
+  task: PropTypes.object,
+  onSubmit: PropTypes.func.isRequired,
+  onCancel: PropTypes.func.isRequired,
+  teamMembers: PropTypes.array,
+  cases: PropTypes.array,
+  currentUser: PropTypes.object
 };
 
 export default TaskForm;

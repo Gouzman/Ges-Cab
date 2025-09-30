@@ -8,6 +8,12 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       
+      - name: Check Gitleaks License
+        run: |
+          if [ -z "${{ secrets.GITLEAKS_LICENSE }}" ]; then
+            echo "Warning: GITLEAKS_LICENSE is not set. Some features might be limited."
+          fi
+
       - name: Detect hardcoded secrets
         uses: gitleaks/gitleaks-action@v2
         env:

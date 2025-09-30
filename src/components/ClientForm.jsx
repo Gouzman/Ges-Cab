@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { X, User, Building, Phone, Mail, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';

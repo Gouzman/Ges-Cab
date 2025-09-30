@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Settings as SettingsIcon, Tag, Save, Plus, Trash2, Shield, Users } from 'lucide-react';
+import { Settings as SettingsIcon, Tag, Save, Plus, Trash2, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/customSupabaseClient';
@@ -43,11 +43,23 @@ const Settings = () => {
   const isAdmin = user && (user.function === 'Gerant' || user.function === 'Associe Emerite' || (user.role && user.role.toLowerCase() === 'admin'));
 
   useEffect(() => {
+    const fetchCategories = async () => {
+      const { data } = await supabase.from('app_metadata').select('task_categories').single();
+      if (data?.task_categories) {
+        setTaskCategories(data.task_categories);
+      }
+    };
+
+    const fetchCollaborators = async () => {
+      const { data } = await supabase.from('profiles').select('*').neq('id', user.id);
+      setCollaborators(data || []);
+    };
+
     if (isAdmin) {
       fetchCategories();
       fetchCollaborators();
     }
-  }, [isAdmin]);
+  }, [isAdmin, user.id]);
 
   useEffect(() => {
     const fetchPermissions = async () => {
@@ -67,18 +79,6 @@ const Settings = () => {
     };
     fetchPermissions();
   }, [selectedUser]);
-
-  const fetchCategories = async () => {
-    const { data } = await supabase.from('app_metadata').select('task_categories').single();
-    if (data && data.task_categories) {
-      setTaskCategories(data.task_categories);
-    }
-  };
-
-  const fetchCollaborators = async () => {
-    const { data } = await supabase.from('profiles').select('*').neq('id', user.id);
-    setCollaborators(data || []);
-  };
 
   const handleAddCategory = () => {
     if (newCategory.trim() === '') return;

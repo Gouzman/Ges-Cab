@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { BarChart3, PieChart, TrendingUp, FileText, Download, Users, CheckSquare, Briefcase, DollarSign } from 'lucide-react';
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, Pie, Cell } from 'recharts';
@@ -6,7 +6,7 @@ import { toast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/customSupabaseClient';
 import Papa from 'papaparse';
-import { startOfMonth, startOfQuarter, startOfYear, isWithinInterval, getYear, startOfWeek, endOfMonth, endOfQuarter, endOfYear, endOfWeek } from 'date-fns';
+import { startOfMonth, startOfQuarter, isWithinInterval, endOfMonth, endOfQuarter } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 const formatCurrency = (value) => {
@@ -14,7 +14,7 @@ const formatCurrency = (value) => {
   return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'XOF' }).format(value);
 };
 
-const startOfSemester = (date) => {
+const _startOfSemester = (date) => {
   const month = date.getMonth();
   const year = date.getFullYear();
   if (month < 6) {
@@ -24,7 +24,7 @@ const startOfSemester = (date) => {
   }
 };
 
-const Reports = ({ currentUser }) => {
+const Reports = ({ _currentUser }) => {
   const [activeReport, setActiveReport] = useState('overview');
   const [data, setData] = useState({ tasks: [], cases: [], team: [], invoices: [] });
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());

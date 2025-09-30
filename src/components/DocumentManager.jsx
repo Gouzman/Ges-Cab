@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
     import { motion } from 'framer-motion';
-    import { FileArchive, Search, Printer, Eye, Trash2, Timer, Download } from 'lucide-react';
+    import { FileArchive, Search, Eye, Trash2, Timer, Download } from 'lucide-react';
     import { Button } from '@/components/ui/button';
     import { toast } from '@/components/ui/use-toast';
     import { supabase } from '@/lib/customSupabaseClient';
@@ -20,6 +20,27 @@ import React, { useState, useEffect } from 'react';
         fetchProfile();
       }, [currentUser]);
 
+      // Helper function to flatten documents from tasks
+      const extractDocumentsFromTasks = (tasks) => {
+        if (!Array.isArray(tasks)) return [];
+        const docs = [];
+        for (const task of tasks) {
+          const attachments = task.attachments || [];
+          for (const attachmentPath of attachments) {
+            docs.push({
+              id: `${task.id}-${attachmentPath}`,
+              name: attachmentPath.split('/').pop(),
+              path: attachmentPath,
+              taskTitle: task.title,
+              taskId: task.id,
+              date: task.updated_at,
+              timeSpent: task.time_spent || 0,
+            });
+          }
+        }
+        return docs;
+      };
+
       useEffect(() => {
         const fetchDocuments = async () => {
           let query = supabase.from('tasks').select('id, title, updated_at, time_spent, attachments');
@@ -32,18 +53,8 @@ import React, { useState, useEffect } from 'react';
             toast({ variant: "destructive", title: "Erreur", description: "Impossible de charger les documents." });
             return;
           }
-          
-          const allDocs = (tasks || []).flatMap(task => 
-            (task.attachments || []).map(attachmentPath => ({
-              id: `${task.id}-${attachmentPath}`,
-              name: attachmentPath.split('/').pop(),
-              path: attachmentPath,
-              taskTitle: task.title,
-              taskId: task.id,
-              date: task.updated_at,
-              timeSpent: task.time_spent || 0,
-            }))
-          );
+
+          const allDocs = extractDocumentsFromTasks(tasks);
           setDocuments(allDocs);
         };
 
@@ -98,8 +109,8 @@ import React, { useState, useEffect } from 'react';
       };
 
       const filteredDocuments = documents.filter(doc =>
-        (doc.name && doc.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (doc.taskTitle && doc.taskTitle.toLowerCase().includes(searchTerm.toLowerCase()))
+        (doc.name?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (doc.taskTitle?.toLowerCase().includes(searchTerm.toLowerCase()))
       );
 
       return (
@@ -172,6 +183,16 @@ import React, { useState, useEffect } from 'react';
           </div>
         </div>
       );
+    };
+
+    import PropTypes from 'prop-types';
+
+    DocumentManager.propTypes = {
+      currentUser: PropTypes.shape({
+        id: PropTypes.string.isRequired,
+        function: PropTypes.string,
+        role: PropTypes.string,
+      }).isRequired,
     };
 
     export default DocumentManager;

@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { X, User, FileText, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { numberToWords } from '@/lib/numberToWords';
+import PropTypes from 'prop-types';
 
 const formatCurrency = (value) => {
   if (value === '' || value === null || value === undefined) return '';
@@ -13,11 +14,11 @@ const formatCurrency = (value) => {
 
 const parseCurrency = (value) => {
   if (typeof value !== 'string') return 0;
-  const number = Number(value.replace(/\s/g, '').replace(/[^0-9]/g, ""));
+  const number = Number(value.replace(/\s/g, '').replace(/\D/g, ""));
   return isNaN(number) ? 0 : number;
 };
 
-const InvoiceForm = ({ invoice, onSubmit, onCancel, onPrint, currentUser }) => {
+const InvoiceForm = ({ invoice, onSubmit, onCancel, onPrint, _currentUser }) => {
   const [formData, setFormData] = useState({
     clientName: '',
     caseId: '',
@@ -56,7 +57,7 @@ const InvoiceForm = ({ invoice, onSubmit, onCancel, onPrint, currentUser }) => {
   };
 
   const handlePaymentChange = (e) => {
-    const { name, value, type } = e.target;
+    const { name, value } = e.target;
     const isProvisionRadio = name === 'provision';
 
     setFormData(prev => {
@@ -74,7 +75,7 @@ const InvoiceForm = ({ invoice, onSubmit, onCancel, onPrint, currentUser }) => {
     });
   };
 
-  const { totalDebours, totalHonoraires, totalHT, tva, totalTTC, resteAPayer } = useMemo(() => {
+  const { _totalDebours, _totalHonoraires, totalHT, tva, totalTTC, resteAPayer } = useMemo(() => {
     const totalDebours = Object.values(formData.debours).reduce((sum, val) => sum + (Number(val) || 0), 0);
     const totalHonoraires = Object.values(formData.honoraires).reduce((sum, val) => sum + (Number(val) || 0), 0);
     const totalHT = totalDebours + totalHonoraires;
@@ -229,5 +230,34 @@ const InvoiceForm = ({ invoice, onSubmit, onCancel, onPrint, currentUser }) => {
     </motion.div>
   );
 };
+InvoiceForm.propTypes = {
+  invoice: PropTypes.shape({
+    clientName: PropTypes.string,
+    caseId: PropTypes.string,
+    debours: PropTypes.shape({
+      entrevue: PropTypes.number,
+      dossier: PropTypes.number,
+      plaidoirie: PropTypes.number,
+      huissier: PropTypes.number,
+      deplacement: PropTypes.number,
+    }),
+    honoraires: PropTypes.shape({
+      forfait: PropTypes.number,
+      tauxHoraire: PropTypes.number,
+      base: PropTypes.number,
+      resultat: PropTypes.number,
+    }),
+    payment: PropTypes.shape({
+      method: PropTypes.string,
+      provision: PropTypes.bool,
+      provisionAmount: PropTypes.number,
+    }),
+  }),
+  onSubmit: PropTypes.func.isRequired,
+  onCancel: PropTypes.func.isRequired,
+  onPrint: PropTypes.func,
+  _currentUser: PropTypes.object,
+};
 
+export default InvoiceForm;
 export default InvoiceForm;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Search, Briefcase, User, Upload, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -68,7 +68,7 @@ const TeamManager = ({ currentUser }) => {
     }
   };
 
-  const handleDeleteMember = async (memberId) => {
+  const handleDeleteMember = async (_memberId) => {
     toast({ variant: "destructive", title: "Action non disponible", description: "La suppression d'utilisateurs doit être gérée depuis les paramètres d'administration de Supabase." });
   };
 

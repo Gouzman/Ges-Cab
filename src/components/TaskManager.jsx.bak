@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import PropTypes from 'prop-types';
 import { motion } from 'framer-motion';
 import { Search, Calendar, ListTodo, FilePlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -32,6 +31,7 @@ const TaskManager = ({ currentUser }) => {
 
   const isGerantOrAssocie = currentUser && (currentUser.function === 'Gerant' || currentUser.function === 'Associe Emerite');
   const isAdmin = isGerantOrAssocie || (currentUser.role && currentUser.role.toLowerCase() === 'admin');
+  const _permissions = currentUser?.permissions?.tasks || { visible: true, create: true, edit: true, delete: true };
 
   useEffect(() => {
     const fetchTasks = async () => {
@@ -57,18 +57,13 @@ const TaskManager = ({ currentUser }) => {
     };
 
     const fetchCases = async () => {
-      const { data, error } = await supabase.from('cases').select('id, title');
-      if (error) {
-        toast({ variant: "destructive", title: "Erreur", description: "Impossible de charger les dossiers." });
-      } else {
-        setCases(data);
-      }
-    };
-
-    fetchTasks();
-    fetchTeamMembers();
-    fetchCases();
-  }, [currentUser?.id, isAdmin]);
+    const { data, error } = await supabase.from('cases').select('id, title');
+    if (error) {
+      toast({ variant: "destructive", title: "Erreur", description: "Impossible de charger les dossiers." });
+    } else {
+      setCases(data);
+    }
+  };
 
   const handleFileUpload = async (file, taskId) => {
     const filePath = `${currentUser.id}/${taskId}/${file.name}`;
@@ -210,7 +205,7 @@ const TaskManager = ({ currentUser }) => {
 
   const filteredTasks = tasks.filter(task => {
     const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         task.description?.toLowerCase().includes(searchTerm.toLowerCase()) || false;
+                         (task.description && task.description.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesStatus = filterStatus === 'all' || task.status === filterStatus;
     const matchesPriority = filterPriority === 'all' || task.priority === filterPriority;
     
@@ -370,23 +365,6 @@ const TaskManager = ({ currentUser }) => {
       </AlertDialog>
     </div>
   );
-}
-
-TaskManager.propTypes = {
-  currentUser: PropTypes.shape({
-    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
-    name: PropTypes.string.isRequired,
-    function: PropTypes.string,
-    role: PropTypes.string,
-    permissions: PropTypes.shape({
-      tasks: PropTypes.shape({
-        visible: PropTypes.bool,
-        create: PropTypes.bool,
-        edit: PropTypes.bool,
-        delete: PropTypes.bool
-      })
-    })
-  }).isRequired
 };
 
 export default TaskManager;
