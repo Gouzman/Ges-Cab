@@ -5,7 +5,7 @@ import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay, parseISO, addWeeks, subWeeks, eachDayOfInterval, setHours } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
-import { supabase } from '@/lib/customSupabaseClient';
+import { db } from '@/lib/db';
 import { toast } from '@/components/ui/use-toast';
 import EventForm from '@/components/EventForm';
 
@@ -35,7 +35,9 @@ const Calendar = ({ currentUser }) => {
 
       const fetchData = useCallback(async () => {
         const fetchTasks = async () => {
-          let query = supabase.from('tasks').select('id, title, deadline, priority').not('deadline', 'is', null);
+          let query = db.query(
+            'SELECT id, title, deadline, priority FROM tasks WHERE deadline IS NOT NULL'
+          );
           if (!isAdmin) {
             query = query.eq('assigned_to_id', currentUser.id);
           }
@@ -48,7 +50,6 @@ const Calendar = ({ currentUser }) => {
         };
 
         const fetchEvents = async () => {
-          let query = supabase.from('calendar_events').select('*');
           const { data, error } = await query;
           if (error) {
             toast({ variant: "destructive", title: "Erreur", description: "Impossible de charger les événements." });

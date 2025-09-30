@@ -6,8 +6,8 @@ import { toast } from '@/components/ui/use-toast';
 import TeamMemberForm from '@/components/TeamMemberForm';
 import TeamMemberCard from '@/components/TeamMemberCard';
 import Papa from 'papaparse';
-import { supabase } from '@/lib/customSupabaseClient';
-import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { db } from '@/lib/db';
+import { useAuth } from '@/contexts/AuthContext';
 
 const TeamManager = ({ currentUser }) => {
   const [members, setMembers] = useState([]);
@@ -22,7 +22,7 @@ const TeamManager = ({ currentUser }) => {
   }, []);
 
   const fetchMembers = async () => {
-    const { data, error } = await supabase.from('profiles').select('*');
+    const { rows: users } = await db.query('SELECT * FROM users');
     if (error) {
       toast({ variant: "destructive", title: "Erreur", description: "Impossible de charger les collaborateurs." });
     } else {
@@ -51,12 +51,18 @@ const TeamManager = ({ currentUser }) => {
 
   const handleEditMember = async (memberData) => {
     if (!editingMember) return;
-    const { data, error } = await supabase.from('profiles').update({
-      name: memberData.name,
-      title: memberData.title,
-      function: memberData.function,
-      role: memberData.role,
-    }).eq('id', editingMember.id).select();
+    // Correction: Use Supabase update query and proper error handling
+    const { error, data } = await db
+      .from('users')
+      .update({
+        name: memberData.name,
+        email: memberData.email,
+        role: memberData.role,
+        title: memberData.title,
+        function: memberData.function,
+      })
+      .eq('id', editingMember.id)
+      .select();
 
     if (error) {
       toast({ variant: "destructive", title: "Erreur", description: "Impossible de modifier le collaborateur." });

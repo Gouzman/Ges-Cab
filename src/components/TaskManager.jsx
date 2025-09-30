@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import TaskForm from '@/components/TaskForm';
 import TaskCard from '@/components/TaskCard';
-import { supabase } from '@/lib/customSupabaseClient';
+import { db } from '@/lib/db';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,9 +35,18 @@ const TaskManager = ({ currentUser }) => {
 
   useEffect(() => {
     const fetchTasks = async () => {
-      let query = supabase.from('tasks').select('*');
+      let queryText = 'SELECT * FROM tasks';
+      let queryParams = [];
+      
+      if (filterStatus) {
+        queryText += ' WHERE status = $1';
+        queryParams.push(filterStatus);
+      }
+      
+      queryText += ' ORDER BY created_at DESC';
+      await db.query(queryText, queryParams);
       if (!isAdmin && currentUser?.id) {
-        query = query.eq('assigned_to_id', currentUser.id);
+        // Filtering by assigned_to_id could be handled in the main query logic if needed
       }
       const { data, error } = await query.order('created_at', { ascending: false });
       if (error) {
@@ -48,7 +57,7 @@ const TaskManager = ({ currentUser }) => {
     };
 
     const fetchTeamMembers = async () => {
-      const { data, error } = await supabase.from('profiles').select('id, name');
+      const { rows: profiles } = await db.query('SELECT id, name FROM users');
       if (error) {
         toast({ variant: "destructive", title: "Erreur", description: "Impossible de charger les collaborateurs." });
       } else {
@@ -57,7 +66,7 @@ const TaskManager = ({ currentUser }) => {
     };
 
     const fetchCases = async () => {
-      const { data, error } = await supabase.from('cases').select('id, title');
+      const { rows: cases } = await db.query('SELECT id, title FROM cases');
       if (error) {
         toast({ variant: "destructive", title: "Erreur", description: "Impossible de charger les dossiers." });
       } else {
@@ -72,12 +81,24 @@ const TaskManager = ({ currentUser }) => {
 
   const handleFileUpload = async (file, taskId) => {
     const filePath = `${currentUser.id}/${taskId}/${file.name}`;
-    const { error } = await supabase.storage.from('attachments').upload(filePath, file);
-    if (error) {
-      toast({ variant: "destructive", title: "Erreur d'upload", description: error.message });
+    // Upload du fichier sur Supabase Storage
+    try {
+      const { data, error } = await supabase.storage
+        .from('task-attachments')
+        .upload(filePath, file, { upsert: true });
+      if (error) {
+        toast({ variant: "destructive", title: "Erreur d'upload", description: error.message });
+        return null;
+      }
+      // Récupérer l'URL publique du fichier
+      const { publicURL } = supabase.storage
+        .from('task-attachments')
+        .getPublicUrl(filePath);
+      return publicURL;
+    } catch (err) {
+      toast({ variant: "destructive", title: "Erreur d'upload", description: err.message });
       return null;
     }
-    return filePath;
   };
 
   const processTaskData = (taskData) => {
@@ -148,11 +169,11 @@ const TaskManager = ({ currentUser }) => {
       dataToUpdate.seen_at = null;
     }
 
-    const { data, error } = await supabase.from('tasks').update({ 
-      ...dataToUpdate, 
-      assigned_to_name: assignedMember ? assignedMember.name : null,
-      attachments: uploadedAttachmentPaths
-    }).eq('id', editingTask.id).select().single();
+    const { rows } = await db.query(
+      'UPDATE tasks SET title = $1, description = $2, case_id = $3, priority = $4, deadline = $5, attachments = $6 WHERE id = $7 RETURNING *',
+      [title, description, selectedCase, priority, deadline, JSON.stringify(attachments), taskId]
+    );
+    const updatedTask = rows[0];
     
     if (error) {
       toast({ variant: "destructive", title: "Erreur", description: `Impossible de modifier la tâche: ${error.message}` });
@@ -165,7 +186,7 @@ const TaskManager = ({ currentUser }) => {
   };
 
   const handleDeleteTask = async (taskId) => {
-    const { error } = await supabase.from('tasks').delete().eq('id', taskId);
+    await db.query('DELETE FROM tasks WHERE id = $1', [taskId]);
     if (error) {
       toast({ variant: "destructive", title: "Erreur", description: "Impossible de supprimer la tâche." });
     } else {

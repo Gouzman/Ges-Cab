@@ -4,7 +4,7 @@ import { BarChart3, PieChart, TrendingUp, FileText, Download, Users, CheckSquare
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, Pie, Cell } from 'recharts';
 import { toast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
-import { supabase } from '@/lib/customSupabaseClient';
+import { db } from '@/lib/db';
 import Papa from 'papaparse';
 import { startOfMonth, startOfQuarter, isWithinInterval, endOfMonth, endOfQuarter } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -33,9 +33,9 @@ const Reports = ({ _currentUser }) => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const { data: tasks } = await supabase.from('tasks').select('*');
-      const { data: cases } = await supabase.from('cases').select('*');
-      const { data: team } = await supabase.from('profiles').select('id, name');
+      const { rows: tasks } = await db.query('SELECT * FROM tasks');
+      const { rows: cases } = await db.query('SELECT * FROM cases');
+      const { rows: team } = await db.query('SELECT id, name FROM users');
       
       const mockInvoices = [
         { id: 1, invoiceNumber: 'FACT-2025-001', clientName: 'Société Alpha', caseId: 'D-001', totalTTC: 1770000, date: '2025-09-15', payment: { provision: true, provisionAmount: 1770000 } },

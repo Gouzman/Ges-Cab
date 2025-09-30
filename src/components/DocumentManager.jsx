@@ -3,7 +3,9 @@ import { useState, useEffect } from 'react';
     import { FileArchive, Search, Eye, Trash2, Timer, Download } from 'lucide-react';
     import { Button } from '@/components/ui/button';
     import { toast } from '@/components/ui/use-toast';
-    import { supabase } from '@/lib/customSupabaseClient';
+    import { db } from '@/lib/db';
+    import { promises as fs } from 'fs';
+    import path from 'path';
 
     const DocumentManager = ({ currentUser }) => {
       const [documents, setDocuments] = useState([]);
@@ -14,7 +16,8 @@ import { useState, useEffect } from 'react';
 
       useEffect(() => {
         const fetchProfile = async () => {
-          const { data } = await supabase.from('profiles').select('*').eq('id', currentUser.id).single();
+          const { rows } = await db.query('SELECT * FROM users WHERE id = $1', [currentUser.id]);
+          const data = rows[0];
           setProfile(data);
         };
         fetchProfile();
@@ -43,18 +46,13 @@ import { useState, useEffect } from 'react';
 
       useEffect(() => {
         const fetchDocuments = async () => {
-          let query = supabase.from('tasks').select('id, title, updated_at, time_spent, attachments');
+          const { rows: rawTasks } = await db.query('SELECT id, title, updated_at, time_spent, attachments FROM tasks');
+          let filteredTasks = rawTasks;
           if (!isAdmin) {
-            query = query.eq('assigned_to_id', currentUser.id);
-          }
-          const { data: tasks, error } = await query;
-
-          if (error) {
-            toast({ variant: "destructive", title: "Erreur", description: "Impossible de charger les documents." });
-            return;
+            filteredTasks = rawTasks.filter(task => task.assigned_to_id === currentUser.id);
           }
 
-          const allDocs = extractDocumentsFromTasks(tasks);
+          const allDocs = extractDocumentsFromTasks(filteredTasks);
           setDocuments(allDocs);
         };
 
@@ -64,7 +62,8 @@ import { useState, useEffect } from 'react';
       }, [currentUser, profile, isAdmin]);
 
       const handleDownload = async (path, name) => {
-        const { data, error } = await supabase.storage.from('attachments').download(path);
+        const filePath = path.join(process.env.VITE_UPLOAD_DIR || 'uploads', path);
+        const data = await fs.readFile(filePath);
         if (error) {
           toast({ variant: "destructive", title: "Erreur de téléchargement", description: error.message });
           return;
@@ -90,7 +89,8 @@ import { useState, useEffect } from 'react';
       };
 
       const handleDelete = async (doc) => {
-        const { error: storageError } = await supabase.storage.from('attachments').remove([doc.path]);
+        const filePath = path.join(process.env.VITE_UPLOAD_DIR || 'uploads', doc.path);
+        await fs.unlink(filePath);
         if (storageError) {
           toast({ variant: "destructive", title: "Erreur de suppression du fichier", description: storageError.message });
           return;

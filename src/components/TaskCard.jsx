@@ -19,7 +19,9 @@ import {
   UserCheck
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { supabase } from '@/lib/customSupabaseClient';
+import { db } from '@/lib/db';
+import { promises as fs } from 'fs';
+import path from 'path';
 import { toast } from '@/components/ui/use-toast';
 
 const TaskCard = ({ task, index, onEdit, onDelete, onStatusChange, currentUser }) => {
@@ -92,7 +94,8 @@ const TaskCard = ({ task, index, onEdit, onDelete, onStatusChange, currentUser }
   const statusIcons = { 'pending': <Eye className="w-4 h-4" />, 'seen': <Play className="w-4 h-4" />, 'in-progress': <CheckCircle className="w-4 h-4" />, 'completed': <AlertTriangle className="w-4 h-4" /> };
 
   const handleDownload = async (filePath) => {
-    const { data, error } = await supabase.storage.from('attachments').download(filePath);
+    const fullPath = path.join(process.env.VITE_UPLOAD_DIR || 'uploads', filePath);
+    const data = await fs.readFile(fullPath);
     if (error) {
       toast({ variant: "destructive", title: "Erreur de téléchargement", description: error.message });
       return;
@@ -108,7 +111,8 @@ const TaskCard = ({ task, index, onEdit, onDelete, onStatusChange, currentUser }
   };
 
   const handlePrint = (filePath) => {
-    const { data } = supabase.storage.from('attachments').getPublicUrl(filePath);
+    const fullPath = path.join(process.env.VITE_UPLOAD_DIR || 'uploads', filePath);
+    const data = { publicUrl: `/api/files/${filePath}` };
     if (data.publicUrl) {
       const printWindow = window.open(data.publicUrl, '_blank');
       printWindow.onload = () => {

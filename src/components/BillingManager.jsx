@@ -4,6 +4,7 @@ import { Plus, Search, Receipt, Printer, Edit, Trash2, Filter } from 'lucide-rea
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import InvoiceForm from '@/components/InvoiceForm';
+import { query } from '@/lib/db';
 
 const formatCurrency = (value) => {
   if (isNaN(value) || value === null) return '0';
@@ -35,73 +36,164 @@ const BillingManager = ({ currentUser }) => {
   }, []);
 
   const fetchInvoices = async () => {
-    toast({
-      title: "Chargement des factures...",
-      description: "Cette fonctionnalité nécessite une base de données pour fonctionner. Des données de démonstration sont affichées.",
-    });
-    const mockInvoices = [
-      {
-        id: 1,
-        invoiceNumber: 'FACT-2025-001',
-        clientName: 'Société Alpha',
-        caseId: 'D-001',
-        totalTTC: 1770000,
-        date: '2025-09-15',
-        debours: { entrevue: 50000, dossier: 100000, plaidoirie: 0, huissier: 0, deplacement: 0 },
-        honoraires: { forfait: 1350000, tauxHoraire: 0, base: 0, resultat: 0 },
-        payment: { method: 'virement', provision: true, provisionAmount: 1770000 },
-      },
-      {
-        id: 2,
-        invoiceNumber: 'FACT-2025-002',
-        clientName: 'Monsieur Beta',
-        caseId: 'D-002',
-        totalTTC: 590000,
-        date: '2025-09-20',
-        debours: { entrevue: 50000, dossier: 0, plaidoirie: 0, huissier: 0, deplacement: 0 },
-        honoraires: { forfait: 0, tauxHoraire: 0, base: 450000, resultat: 0 },
-        payment: { method: 'cheque', provision: true, provisionAmount: 200000 },
-      },
-      {
-        id: 3,
-        invoiceNumber: 'FACT-2025-003',
-        clientName: 'Entreprise Gamma',
-        caseId: 'D-003',
-        totalTTC: 885000,
-        date: '2025-08-10',
-        debours: { entrevue: 0, dossier: 0, plaidoirie: 0, huissier: 0, deplacement: 0 },
-        honoraires: { forfait: 750000, tauxHoraire: 0, base: 0, resultat: 0 },
-        payment: { method: 'virement', provision: false, provisionAmount: 0 },
-      }
-    ];
-    setInvoices(mockInvoices.map(inv => ({ ...inv, status: getInvoiceStatus(inv) })));
+    try {
+      const { data, error } = await query(
+        `SELECT i.*, 
+         c.name as client_name,
+         p.method as payment_method,
+         p.provision,
+         p.amount as provision_amount
+         FROM invoices i
+         LEFT JOIN clients c ON i.client_id = c.id
+         LEFT JOIN payments p ON i.id = p.invoice_id
+         ORDER BY i.created_at DESC`
+      );
+
+      if (error) throw error;
+
+      const formattedInvoices = data.map(invoice => ({
+        id: invoice.id,
+        invoiceNumber: invoice.number,
+        clientName: invoice.client_name,
+        caseId: invoice.case_id,
+        totalTTC: invoice.total_ttc,
+        date: invoice.created_at,
+        debours: invoice.debours,
+        honoraires: invoice.honoraires,
+        payment: {
+          method: invoice.payment_method,
+          provision: invoice.provision,
+          provisionAmount: invoice.provision_amount
+        }
+      }));
+
+      setInvoices(formattedInvoices.map(inv => ({ ...inv, status: getInvoiceStatus(inv) })));
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Impossible de charger les factures."
+      });
+      console.error('Erreur lors du chargement des factures:', error);
+    }
   };
 
-  const handleAddInvoice = async (_invoiceData) => {
-    toast({
-      variant: "destructive",
-      title: "Fonctionnalité non disponible",
-      description: "La création de factures nécessite l'intégration de Supabase. Veuillez compléter l'intégration.",
-    });
+  const handleAddInvoice = async (invoiceData) => {
+    try {
+      const { data, error } = await query(
+        `INSERT INTO invoices (
+          number, client_id, case_id, total_ttc, debours, honoraires, created_by
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+        [
+          invoiceData.number,
+          invoiceData.clientId,
+          invoiceData.caseId,
+          invoiceData.totalTTC,
+          invoiceData.debours,
+          invoiceData.honoraires,
+          currentUser.id
+        ]
+      );
+
+      if (error) throw error;
+
+      if (invoiceData.payment) {
+        await query(
+          `INSERT INTO payments (invoice_id, method, provision, amount)
+           VALUES ($1, $2, $3, $4)`,
+          [data[0].id, invoiceData.payment.method, invoiceData.payment.provision, invoiceData.payment.provisionAmount]
+        );
+      }
+
+      await fetchInvoices();
+      toast({
+        title: "✅ Facture créée",
+        description: "La nouvelle facture a été ajoutée avec succès."
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Impossible de créer la facture."
+      });
+      console.error('Erreur lors de la création de la facture:', error);
+    }
     setShowForm(false);
   };
 
-  const handleEditInvoice = async (_invoiceData) => {
-     toast({
-      variant: "destructive",
-      title: "Fonctionnalité non disponible",
-      description: "La modification de factures nécessite l'intégration de Supabase. Veuillez compléter l'intégration.",
-    });
+  const handleEditInvoice = async (invoiceData) => {
+    try {
+      const { error } = await query(
+        `UPDATE invoices 
+         SET number = $1, client_id = $2, case_id = $3,
+             total_ttc = $4, debours = $5, honoraires = $6,
+             updated_at = CURRENT_TIMESTAMP,
+             updated_by = $7
+         WHERE id = $8`,
+        [
+          invoiceData.number,
+          invoiceData.clientId,
+          invoiceData.caseId,
+          invoiceData.totalTTC,
+          invoiceData.debours,
+          invoiceData.honoraires,
+          currentUser.id,
+          invoiceData.id
+        ]
+      );
+
+      if (error) throw error;
+
+      if (invoiceData.payment) {
+        await query(
+          `UPDATE payments 
+           SET method = $1, provision = $2, amount = $3
+           WHERE invoice_id = $4`,
+          [invoiceData.payment.method, invoiceData.payment.provision, 
+           invoiceData.payment.provisionAmount, invoiceData.id]
+        );
+      }
+
+      await fetchInvoices();
+      toast({
+        title: "✅ Facture modifiée",
+        description: "La facture a été mise à jour avec succès."
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Impossible de modifier la facture."
+      });
+      console.error('Erreur lors de la modification de la facture:', error);
+    }
     setEditingInvoice(null);
     setShowForm(false);
   };
 
-  const handleDeleteInvoice = async (_invoiceId) => {
-    toast({
-      variant: "destructive",
-      title: "Fonctionnalité non disponible",
-      description: "La suppression de factures nécessite l'intégration de Supabase. Veuillez compléter l'intégration.",
-    });
+  const handleDeleteInvoice = async (invoiceId) => {
+    try {
+      // Supprimer d'abord les paiements associés
+      await query('DELETE FROM payments WHERE invoice_id = $1', [invoiceId]);
+      
+      // Puis supprimer la facture
+      const { error } = await query('DELETE FROM invoices WHERE id = $1', [invoiceId]);
+      
+      if (error) throw error;
+
+      setInvoices(invoices.filter(inv => inv.id !== invoiceId));
+      toast({
+        title: "✅ Facture supprimée",
+        description: "La facture a été supprimée avec succès."
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Impossible de supprimer la facture."
+      });
+      console.error('Erreur lors de la suppression de la facture:', error);
+    }
   };
 
   const handlePrint = () => {
@@ -115,8 +207,8 @@ const BillingManager = ({ currentUser }) => {
   const filteredInvoices = useMemo(() => {
     return invoices
       .filter(invoice => {
-        const searchMatch = (invoice.clientName && invoice.clientName.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                            (invoice.invoiceNumber && invoice.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase()));
+        const searchMatch = invoice.clientName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            invoice.invoiceNumber?.toLowerCase().includes(searchTerm.toLowerCase());
         return searchMatch;
       })
       .filter(invoice => {

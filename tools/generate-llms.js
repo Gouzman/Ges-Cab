@@ -4,7 +4,7 @@ import fs from 'fs';
 import path from 'path';
 
 const CLEAN_CONTENT_REGEX = {
-  comments: /\/\*[\s\S]*?\*\/|\/\/.*$/gm,
+  comments: /(\/\*[\s\S]*?\*\/)|(\/\/.*$)/gm,
   templateLiterals: /`[\s\S]*?`/g,
   strings: /'[^']*'|"[^"]*"/g,
   jsxExpressions: /\{.*?\}/g,

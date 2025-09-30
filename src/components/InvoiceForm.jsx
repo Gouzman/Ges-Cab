@@ -75,7 +75,7 @@ const InvoiceForm = ({ invoice, onSubmit, onCancel, onPrint, _currentUser }) => 
     });
   };
 
-  const { _totalDebours, _totalHonoraires, totalHT, tva, totalTTC, resteAPayer } = useMemo(() => {
+  const { totalHT, tva, totalTTC, resteAPayer } = useMemo(() => {
     const totalDebours = Object.values(formData.debours).reduce((sum, val) => sum + (Number(val) || 0), 0);
     const totalHonoraires = Object.values(formData.honoraires).reduce((sum, val) => sum + (Number(val) || 0), 0);
     const totalHT = totalDebours + totalHonoraires;
@@ -173,33 +173,67 @@ const InvoiceForm = ({ invoice, onSubmit, onCancel, onPrint, _currentUser }) => 
           <div className="space-y-4 p-4 border border-slate-700 rounded-lg print:border-gray-300">
             <h3 className="text-lg font-semibold text-green-400 print:text-green-600">Paiement</h3>
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2 print:text-black">Mode de paiement envisagé</label>
+              <label htmlFor="payment-method-virement" className="block text-sm font-medium text-slate-300 mb-2 print:text-black">Mode de paiement envisagé</label>
               <div className="flex flex-wrap gap-4">
-                {['Virement', 'Chèque', 'Carte bancaire', 'Espèces', 'Autre'].map(method => (
+                {['Virement', 'Chèque', 'Carte bancaire', 'Espèces', 'Autre'].map((method, idx) => (
                   <label key={method} className="flex items-center text-slate-300 print:text-black">
-                    <input type="radio" name="method" value={method.toLowerCase().replace(' ', '')} checked={formData.payment.method === method.toLowerCase().replace(' ', '')} onChange={handlePaymentChange} className="mr-2 h-4 w-4 text-indigo-600 focus:ring-indigo-500 print:hidden" />
+                    <input
+                      id={`payment-method-${method.toLowerCase().replace(' ', '')}`}
+                      type="radio"
+                      name="method"
+                      value={method.toLowerCase().replace(' ', '')}
+                      checked={formData.payment.method === method.toLowerCase().replace(' ', '')}
+                      onChange={handlePaymentChange}
+                      className="mr-2 h-4 w-4 text-indigo-600 focus:ring-indigo-500 print:hidden"
+                    />
                     {method}
                   </label>
                 ))}
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2 print:text-black">Dépôt de provision / Avance sur frais demandé(e)</label>
+              <label htmlFor="provision-true" className="block text-sm font-medium text-slate-300 mb-2 print:text-black">Dépôt de provision / Avance sur frais demandé(e)</label>
               <div className="flex items-center gap-4">
-                <label className="flex items-center text-slate-300 print:text-black">
-                  <input type="radio" name="provision" value="true" checked={formData.payment.provision === true} onChange={handlePaymentChange} className="mr-2 h-4 w-4 text-indigo-600 focus:ring-indigo-500 print:hidden" />
-                  Oui
-                </label>
-                <label className="flex items-center text-slate-300 print:text-black">
-                  <input type="radio" name="provision" value="false" checked={formData.payment.provision === false} onChange={handlePaymentChange} className="mr-2 h-4 w-4 text-indigo-600 focus:ring-indigo-500 print:hidden" />
-                  Non
-                </label>
-                {formData.payment.provision && (
-                  <div className="relative flex-1">
-                    <input type="text" name="provisionAmount" value={formatCurrency(formData.payment.provisionAmount)} onChange={handlePaymentChange} className="w-full pl-3 pr-14 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white text-right print:bg-white print:text-black print:border-gray-300" placeholder="Montant" />
-                     <span className="absolute inset-y-0 right-3 flex items-center text-slate-400 text-sm print:text-gray-500">F CFA</span>
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center">
+                    <input
+                      id="provision-true"
+                      type="radio"
+                      name="provision"
+                      value="true"
+                      checked={formData.payment.provision === true}
+                      onChange={handlePaymentChange}
+                      className="mr-2 h-4 w-4 text-indigo-600 focus:ring-indigo-500 print:hidden"
+                    />
+                    <span className="text-slate-300 print:text-black">Oui</span>
                   </div>
-                )}
+                  <div className="flex items-center">
+                    <input
+                      id="provision-false"
+                      type="radio"
+                      name="provision"
+                      value="false"
+                      checked={formData.payment.provision === false}
+                      onChange={handlePaymentChange}
+                      className="mr-2 h-4 w-4 text-indigo-600 focus:ring-indigo-500 print:hidden"
+                    />
+                    <span className="text-slate-300 print:text-black">Non</span>
+                  </div>
+                  {formData.payment.provision && (
+                    <div className="relative flex-1">
+                      <input
+                        id="provisionAmount"
+                        type="text"
+                        name="provisionAmount"
+                        value={formatCurrency(formData.payment.provisionAmount)}
+                        onChange={handlePaymentChange}
+                        className="w-full pl-3 pr-14 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white text-right print:bg-white print:text-black print:border-gray-300"
+                        placeholder="Montant"
+                      />
+                      <span className="absolute inset-y-0 right-3 flex items-center text-slate-400 text-sm print:text-gray-500">F CFA</span>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
             {formData.payment.provision && (
@@ -259,5 +293,4 @@ InvoiceForm.propTypes = {
   _currentUser: PropTypes.object,
 };
 
-export default InvoiceForm;
 export default InvoiceForm;

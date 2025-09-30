@@ -3,8 +3,8 @@ import { motion } from 'framer-motion';
 import { Settings as SettingsIcon, Tag, Save, Plus, Trash2, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
-import { supabase } from '@/lib/customSupabaseClient';
-import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { db } from '@/lib/db';
+import { useAuth } from '@/contexts/AuthContext';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 
@@ -44,14 +44,18 @@ const Settings = () => {
 
   useEffect(() => {
     const fetchCategories = async () => {
-      const { data } = await supabase.from('app_metadata').select('task_categories').single();
+      const { rows: metadataRows } = await db.query('SELECT task_categories FROM app_metadata WHERE id = 1');
+      if (metadataRows.length > 0) {
+        setTaskCategories(metadataRows[0].task_categories || []);
+      }
       if (data?.task_categories) {
         setTaskCategories(data.task_categories);
       }
     };
 
     const fetchCollaborators = async () => {
-      const { data } = await supabase.from('profiles').select('*').neq('id', user.id);
+      const { rows: teamRows } = await db.query('SELECT * FROM users WHERE id != $1', [user.id]);
+      setTeamMembers(teamRows);
       setCollaborators(data || []);
     };
 
@@ -64,7 +68,10 @@ const Settings = () => {
   useEffect(() => {
     const fetchPermissions = async () => {
       if (selectedUser) {
-        const { data, error } = await supabase.from('user_permissions').select('permissions').eq('user_id', selectedUser.id).maybeSingle();
+        const { rows: permissionRows } = await db.query('SELECT permissions FROM user_permissions WHERE user_id = $1', [selectedUser.id]);
+      if (permissionRows.length > 0) {
+        setPermissions(permissionRows[0].permissions);
+      }
         
         if (error) {
           console.error("Error fetching permissions:", error);
@@ -96,7 +103,7 @@ const Settings = () => {
   };
 
   const handleSaveSettings = async () => {
-    const { error } = await supabase.from('app_metadata').upsert({ id: 1, task_categories: taskCategories });
+    await db.query('INSERT INTO app_metadata (id, task_categories) VALUES (1, $1) ON CONFLICT (id) DO UPDATE SET task_categories = $1', [JSON.stringify(taskCategories)]);
     if (error) {
       toast({ variant: "destructive", title: "Erreur", description: "Impossible de sauvegarder les paramètres." });
     } else {
@@ -124,7 +131,7 @@ const Settings = () => {
 
   const handleSavePermissions = async () => {
     if (!selectedUser || !permissions) return;
-    const { error } = await supabase.from('user_permissions').upsert({ user_id: selectedUser.id, permissions: permissions }, { onConflict: 'user_id' });
+    await db.query('INSERT INTO user_permissions (user_id, permissions) VALUES ($1, $2) ON CONFLICT (user_id) DO UPDATE SET permissions = $2', [selectedUser.id, permissions]);
     if (error) {
       console.error("Error saving permissions:", error);
       toast({ variant: "destructive", title: "Erreur", description: "Impossible de sauvegarder les permissions. Vérifiez les logs de la console." });
