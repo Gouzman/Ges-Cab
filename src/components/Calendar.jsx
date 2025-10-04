@@ -5,7 +5,7 @@ import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay, parseISO, addWeeks, subWeeks, eachDayOfInterval, setHours } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
-import { api } from "@/lib/api";
+import { db } from '@/lib/db';
 import { toast } from '@/components/ui/use-toast';
 import EventForm from '@/components/EventForm';
 

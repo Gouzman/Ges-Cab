@@ -6,7 +6,7 @@ import { toast } from '@/components/ui/use-toast';
 import ClientForm from '@/components/ClientForm';
 import ClientCard from '@/components/ClientCard';
 import Papa from 'papaparse';
-import { api } from "@/lib/api";
+import { db } from '@/lib/db';
 
 const ClientManager = () => {
   const [clients, setClients] = useState([]);
@@ -20,7 +20,7 @@ const ClientManager = () => {
   }, []);
 
   const fetchClients = async () => {
-    const { rows } = await db.query(
+    const { data, error } = await db.query(
       'SELECT * FROM clients ORDER BY created_at DESC'
     );
     if (error) {
@@ -31,7 +31,7 @@ const ClientManager = () => {
   };
 
   const handleAddClient = async (clientData) => {
-    const { rows } = await db.query(
+    const { data, error } = await db.query(
       `INSERT INTO clients (${Object.keys(clientData).join(', ')})
        VALUES (${Object.keys(clientData).map((_, i) => `$${i + 1}`).join(', ')})
        RETURNING *`,
@@ -116,11 +116,11 @@ const ClientManager = () => {
   const filteredClients = clients.filter(client => {
     const searchLower = searchTerm.toLowerCase();
     return (
-      (client.first_name && client.first_name.toLowerCase().includes(searchLower)) ||
-      (client.last_name && client.last_name.toLowerCase().includes(searchLower)) ||
-      (client.email && client.email.toLowerCase().includes(searchLower)) ||
-      (client.company && client.company.toLowerCase().includes(searchLower)) ||
-      (client.phone && client.phone.includes(searchTerm))
+      client.first_name?.toLowerCase().includes(searchLower) ||
+      client.last_name?.toLowerCase().includes(searchLower) ||
+      client.email?.toLowerCase().includes(searchLower) ||
+      client.company?.toLowerCase().includes(searchLower) ||
+      client.phone?.includes(searchTerm)
     );
   });
 

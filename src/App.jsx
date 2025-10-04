@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
     import { Helmet } from 'react-helmet';
     import { motion } from 'framer-motion';
     import { Toaster } from '@/components/ui/toaster';
@@ -13,16 +13,15 @@ import { useState } from 'react';
     import LoginScreen from '@/components/LoginScreen';
     import DocumentManager from '@/components/DocumentManager';
     import Settings from '@/components/Settings';
-    import BillingManager from '@/components/BillingManager';
+    import { useAuth } from '@/contexts/SupabaseAuthContext';
     import { Loader2 } from 'lucide-react';
-    import { useAuth } from '@/contexts/AuthContext';
 
     function App() {
       const [activeView, setActiveView] = useState('dashboard');
-      const { user, loading, logout } = useAuth();
+      const { user, loading, signOut } = useAuth();
 
       const handleLogout = async () => {
-        await logout();
+        await signOut();
         setActiveView('dashboard');
       };
 
@@ -44,8 +43,6 @@ import { useState } from 'react';
             return <Reports currentUser={user} />;
           case 'documents':
             return <DocumentManager currentUser={user} />;
-          case 'billing':
-            return <BillingManager currentUser={user} />;
           case 'settings':
             return <Settings currentUser={user} />;
           default:

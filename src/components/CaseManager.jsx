@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
 import CaseForm from "@/components/CaseForm";
 import CaseCard from "@/components/CaseCard";
-import { api } from "@/lib/api";
+import { db } from "@/lib/db";
 
 const CaseManager = ({ currentUser }) => {
   const [cases, setCases] = useState([]);

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import TaskForm from '@/components/TaskForm';
 import TaskCard from '@/components/TaskCard';
-import { api } from "@/lib/api";
+import { db } from '@/lib/db';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,45 +35,42 @@ const TaskManager = ({ currentUser }) => {
 
   useEffect(() => {
     const fetchTasks = async () => {
-      try {
-        const data = await api.tasks.getAll();
-        // Filter tasks if user is not admin
-        const filteredTasks = !isAdmin && currentUser?.id 
-          ? data.filter(task => task.assigned_to_id === currentUser.id)
-          : data;
-        setTasks(filteredTasks);
-      } catch (error) {
-        toast({ 
-          variant: "destructive", 
-          title: "Erreur", 
-          description: "Impossible de charger les tâches." 
-        });
+      let queryText = 'SELECT * FROM tasks';
+      let queryParams = [];
+      
+      if (filterStatus) {
+        queryText += ' WHERE status = $1';
+        queryParams.push(filterStatus);
+      }
+      
+      queryText += ' ORDER BY created_at DESC';
+      await db.query(queryText, queryParams);
+      if (!isAdmin && currentUser?.id) {
+        // Filtering by assigned_to_id could be handled in the main query logic if needed
+      }
+      const { data, error } = await query.order('created_at', { ascending: false });
+      if (error) {
+        toast({ variant: "destructive", title: "Erreur", description: "Impossible de charger les tâches." });
+      } else {
+        setTasks(data);
       }
     };
 
     const fetchTeamMembers = async () => {
-      try {
-        const data = await api.team.getAll();
+      const { data, error } = await db.query('SELECT id, name FROM users');
+      if (error) {
+        toast({ variant: "destructive", title: "Erreur", description: "Impossible de charger les collaborateurs." });
+      } else {
         setTeamMembers(data);
-      } catch (error) {
-        toast({ 
-          variant: "destructive", 
-          title: "Erreur", 
-          description: "Impossible de charger les collaborateurs." 
-        });
       }
     };
 
     const fetchCases = async () => {
-      try {
-        const data = await api.cases.getAll();
+      const { data, error } = await db.query('SELECT id, title FROM cases');
+      if (error) {
+        toast({ variant: "destructive", title: "Erreur", description: "Impossible de charger les dossiers." });
+      } else {
         setCases(data);
-      } catch (error) {
-        toast({ 
-          variant: "destructive", 
-          title: "Erreur", 
-          description: "Impossible de charger les dossiers." 
-        });
       }
     };
 
@@ -83,20 +80,23 @@ const TaskManager = ({ currentUser }) => {
   }, [currentUser?.id, isAdmin]);
 
   const handleFileUpload = async (file, taskId) => {
+    const filePath = `${currentUser.id}/${taskId}/${file.name}`;
+    // Upload du fichier sur Supabase Storage
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('taskId', taskId);
-      formData.append('userId', currentUser.id);
-      
-      const response = await api.tasks.uploadFile(formData);
-      return response.fileUrl;
-    } catch (error) {
-      toast({ 
-        variant: "destructive", 
-        title: "Erreur d'upload", 
-        description: error.message 
-      });
+      const { error } = await supabase.storage
+        .from('task-attachments')
+        .upload(filePath, file, { upsert: true });
+      if (error) {
+        toast({ variant: "destructive", title: "Erreur d'upload", description: error.message });
+        return null;
+      }
+      // Récupérer l'URL publique du fichier
+      const { publicURL } = supabase.storage
+        .from('task-attachments')
+        .getPublicUrl(filePath);
+      return publicURL;
+    } catch (err) {
+      toast({ variant: "destructive", title: "Erreur d'upload", description: err.message });
       return null;
     }
   };
@@ -110,114 +110,88 @@ const TaskManager = ({ currentUser }) => {
   };
 
   const handleAddTask = async (taskData) => {
-    try {
-      const { filesToUpload, data: taskToCreate } = processTaskData(taskData);
-      const assignedMember = teamMembers.find(m => m.id === taskToCreate.assigned_to_id);
-      
-      const taskWithMetadata = {
-        ...taskToCreate,
-        assigned_to_name: assignedMember?.name || null,
-        attachments: [],
-        assigned_at: taskToCreate.assigned_to_id ? new Date().toISOString() : null,
-        created_by_id: currentUser.id,
-        created_by_name: currentUser.name
-      };
-
-      // Créer la tâche
-      const newTask = await api.tasks.create(taskWithMetadata);
-
-      // Gérer les pièces jointes
-      if (filesToUpload?.length > 0) {
-        const attachmentPaths = [];
-        for (const file of filesToUpload) {
-          const path = await handleFileUpload(file, newTask.id);
-          if (path) attachmentPaths.push(path);
-        }
-
-        if (attachmentPaths.length > 0) {
-          const updatedTask = await api.tasks.update(newTask.id, {
-            ...newTask,
-            attachments: attachmentPaths
-          });
-          setTasks([updatedTask, ...tasks.filter(t => t.id !== newTask.id)]);
-        } else {
-          setTasks([newTask, ...tasks]);
-        }
-      } else {
-        setTasks([newTask, ...tasks]);
-      }
-
-      setActiveTab('suivi');
-      toast({ 
-        title: "✅ Tâche créée", 
-        description: "La nouvelle tâche a été ajoutée." 
-      });
-    } catch (error) {
-      toast({ 
-        variant: "destructive", 
-        title: "Erreur", 
-        description: `Impossible de créer la tâche: ${error.message}` 
-      });
+    const { filesToUpload, data: dataToInsert } = processTaskData(taskData);
+    const assignedMember = teamMembers.find(m => m.id === dataToInsert.assigned_to_id);
+    
+    const { data, error } = await supabase.from('tasks').insert([{ 
+      ...dataToInsert, 
+      assigned_to_name: assignedMember ? assignedMember.name : null,
+      attachments: [],
+      assigned_at: dataToInsert.assigned_to_id ? new Date().toISOString() : null,
+      created_by_id: currentUser.id,
+      created_by_name: currentUser.name
+    }]).select().single();
+    
+    if (error) {
+      toast({ variant: "destructive", title: "Erreur", description: `Impossible de créer la tâche: ${error.message}` });
+      return;
     }
+
+    const uploadedAttachmentPaths = [];
+    for (const file of filesToUpload || []) {
+      const path = await handleFileUpload(file, data.id);
+      if (path) uploadedAttachmentPaths.push(path);
+    }
+
+    if (uploadedAttachmentPaths.length > 0) {
+      const { data: updatedData, error: updateError } = await supabase
+        .from('tasks')
+        .update({ attachments: uploadedAttachmentPaths })
+        .eq('id', data.id)
+        .select()
+        .single();
+
+      if (updateError) {
+        toast({ variant: "destructive", title: "Erreur", description: "Impossible de lier les fichiers." });
+      } else {
+        setTasks([updatedData, ...tasks.filter(t => t.id !== data.id)]);
+      }
+    } else {
+      setTasks([data, ...tasks]);
+    }
+
+    setActiveTab('suivi');
+    toast({ title: "✅ Tâche créée", description: "La nouvelle tâche a été ajoutée." });
   };
 
   const handleEditTask = async (taskData) => {
-    try {
-      const { filesToUpload, data: dataToUpdate } = processTaskData(taskData);
-      const assignedMember = teamMembers.find(m => m.id === dataToUpdate.assigned_to_id);
+    const { filesToUpload, data: dataToUpdate } = processTaskData(taskData);
 
-      // Gérer les pièces jointes existantes et nouvelles
-      const attachments = [...(editingTask.attachments || [])];
-      if (filesToUpload?.length > 0) {
-        for (const file of filesToUpload) {
-          const path = await handleFileUpload(file, editingTask.id);
-          if (path) attachments.push(path);
-        }
-      }
+    const uploadedAttachmentPaths = [...(editingTask.attachments || [])];
+    for (const file of filesToUpload || []) {
+      const path = await handleFileUpload(file, editingTask.id);
+      if (path) uploadedAttachmentPaths.push(path);
+    }
 
-      // Mettre à jour les métadonnées si l'assignation change
-      if (editingTask.assigned_to_id !== dataToUpdate.assigned_to_id) {
-        dataToUpdate.assigned_at = new Date().toISOString();
-        dataToUpdate.seen_at = null;
-        dataToUpdate.assigned_to_name = assignedMember?.name || null;
-      }
+    if (editingTask.assigned_to_id !== dataToUpdate.assigned_to_id) {
+      dataToUpdate.assigned_at = new Date().toISOString();
+      dataToUpdate.seen_at = null;
+    }
 
-      // Mettre à jour la tâche avec toutes les données
-      const updatedTask = await api.tasks.update(editingTask.id, {
-        ...dataToUpdate,
-        attachments
-      });
+    dataToUpdate.attachments = uploadedAttachmentPaths;
 
-      setTasks(tasks.map(t => t.id === editingTask.id ? updatedTask : t));
+    const { data, error } = await db.query(
+      'UPDATE tasks SET title = $1, description = $2, case_id = $3, priority = $4, deadline = $5, attachments = $6, assigned_to_id = $7, assigned_at = $8, seen_at = $9 WHERE id = $10 RETURNING *',
+      [dataToUpdate.title, dataToUpdate.description, dataToUpdate.case_id, dataToUpdate.priority, dataToUpdate.deadline, JSON.stringify(uploadedAttachmentPaths), dataToUpdate.assigned_to_id, dataToUpdate.assigned_at, dataToUpdate.seen_at, editingTask.id]
+    );
+    
+    if (error) {
+      toast({ variant: "destructive", title: "Erreur", description: `Impossible de modifier la tâche: ${error.message}` });
+    } else {
+      setTasks(tasks.map(t => t.id === editingTask.id ? data : t));
       setEditingTask(null);
       setActiveTab('suivi');
-      toast({ 
-        title: "✅ Tâche modifiée", 
-        description: "La tâche a été mise à jour." 
-      });
-    } catch (error) {
-      toast({ 
-        variant: "destructive", 
-        title: "Erreur", 
-        description: `Impossible de modifier la tâche: ${error.message}` 
-      });
+      toast({ title: "✅ Tâche modifiée", description: "La tâche a été mise à jour." });
     }
   };
 
   const handleDeleteTask = async (taskId) => {
-    try {
-      await api.tasks.delete(taskId);
+    await db.query('DELETE FROM tasks WHERE id = $1', [taskId]);
+    if (error) {
+      toast({ variant: "destructive", title: "Erreur", description: "Impossible de supprimer la tâche." });
+    } else {
       setTasks(tasks.filter(t => t.id !== taskId));
-      toast({ 
-        title: "🗑️ Tâche supprimée", 
-        description: "La tâche a été supprimée." 
-      });
-    } catch (error) {
-      toast({ 
-        variant: "destructive", 
-        title: "Erreur", 
-        description: "Impossible de supprimer la tâche." 
-      });
+      toast({ title: "🗑️ Tâche supprimée", description: "La tâche a été supprimée." });
     }
   };
 
@@ -235,20 +209,15 @@ const TaskManager = ({ currentUser }) => {
   };
 
   const updateTaskStatus = async (taskId, updatePayload, comment = null) => {
-    try {
-      if (comment !== null) {
-        updatePayload.completion_comment = comment;
-      }
-      
-      const updatedTask = await api.tasks.update(taskId, updatePayload);
-      setTasks(tasks.map(t => t.id === taskId ? updatedTask : t));
+    if (comment !== null) {
+      updatePayload.completion_comment = comment;
+    }
+    const { data, error } = await supabase.from('tasks').update(updatePayload).eq('id', taskId).select();
+    if (error) {
+      toast({ variant: "destructive", title: "Erreur", description: "Impossible de changer le statut." });
+    } else {
+      setTasks(tasks.map(t => t.id === taskId ? data[0] : t));
       toast({ title: "✅ Statut mis à jour" });
-    } catch (error) {
-      toast({ 
-        variant: "destructive", 
-        title: "Erreur", 
-        description: "Impossible de changer le statut." 
-      });
     }
   };
 

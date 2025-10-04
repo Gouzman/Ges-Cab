@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   CheckSquare, 
@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
-import PropTypes from 'prop-types';
+import { supabase } from '@/lib/customSupabaseClient';
 
 const Dashboard = ({ currentUser, setActiveView }) => {
   const [stats, setStats] = useState({
@@ -296,16 +296,5 @@ const Dashboard = ({ currentUser, setActiveView }) => {
     </div>
   );
 };
-Dashboard.propTypes = {
-  currentUser: PropTypes.shape({
-    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-    name: PropTypes.string,
-    email: PropTypes.string,
-    function: PropTypes.string,
-    role: PropTypes.string,
-  }),
-  setActiveView: PropTypes.func.isRequired,
-};
-
 
 export default Dashboard;

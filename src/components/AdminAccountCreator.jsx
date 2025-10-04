@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { Loader2, CheckCircle, AlertTriangle } from 'lucide-react';
 import { motion } from 'framer-motion';

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { X, User, Building, Phone, Mail, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -113,7 +113,7 @@ const ClientForm = ({ client, onSubmit, onCancel }) => {
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">
                 <Building className="w-4 h-4 inline mr-2" />
-                Dénomination *
+                Nom de l'entreprise *
               </label>
               <input
                 type="text"
@@ -130,7 +130,7 @@ const ClientForm = ({ client, onSubmit, onCancel }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">
-                {formData.type === 'company' ? 'Prénoms (Dirigeant) *' : 'Prénom *'}
+                Prénom *
               </label>
               <input
                 type="text"
@@ -145,7 +145,7 @@ const ClientForm = ({ client, onSubmit, onCancel }) => {
 
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">
-                {formData.type === 'company' ? 'Nom (Dirigeant) *' : 'Nom *'}
+                Nom *
               </label>
               <input
                 type="text"

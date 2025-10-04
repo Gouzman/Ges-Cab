@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import PropTypes from 'prop-types';
 import { motion } from 'framer-motion';
 import { Plus, Search, Briefcase, User, Upload, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -6,8 +7,8 @@ import { toast } from '@/components/ui/use-toast';
 import TeamMemberForm from '@/components/TeamMemberForm';
 import TeamMemberCard from '@/components/TeamMemberCard';
 import Papa from 'papaparse';
-import { api } from "@/lib/api";
-import { useAuth } from '@/contexts/AuthContext';
+import supabase from '@/lib/customSupabaseClient';
+import { useAuth } from '@/contexts/SupabaseAuthContext';
 
 const TeamManager = ({ currentUser }) => {
   const [members, setMembers] = useState([]);
@@ -22,7 +23,9 @@ const TeamManager = ({ currentUser }) => {
   }, []);
 
   const fetchMembers = async () => {
-    const { rows: users } = await db.query('SELECT * FROM users');
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*');
     if (error) {
       toast({ variant: "destructive", title: "Erreur", description: "Impossible de charger les collaborateurs." });
     } else {
@@ -111,14 +114,14 @@ const TeamManager = ({ currentUser }) => {
     if (!member) return false;
     const searchLower = searchTerm.toLowerCase();
     return (
-      (member.name && member.name.toLowerCase().includes(searchLower)) ||
-      (member.email && member.email.toLowerCase().includes(searchLower)) ||
-      (member.role && member.role.toLowerCase().includes(searchLower))
+      member.name?.toLowerCase().includes(searchLower) ||
+      member.email?.toLowerCase().includes(searchLower) ||
+      member.role?.toLowerCase().includes(searchLower)
     );
   });
 
   const roleCounts = members.reduce((acc, member) => {
-    if (member && member.role) {
+    if (member?.role) {
       const role = member.role.toLowerCase();
       acc[role] = (acc[role] || 0) + 1;
     }
@@ -196,7 +199,7 @@ const TeamManager = ({ currentUser }) => {
               setShowForm(true);
             }}
             onDelete={handleDeleteMember}
-            isCurrentUser={member.id === currentUser.id}
+            isCurrentUser={member.id === currentUser?.id}
           />
         ))}
       </div>
@@ -223,6 +226,12 @@ const TeamManager = ({ currentUser }) => {
       )}
     </div>
   );
+};
+
+TeamManager.propTypes = {
+  currentUser: PropTypes.shape({
+    id: PropTypes.string
+  })
 };
 
 export default TeamManager;

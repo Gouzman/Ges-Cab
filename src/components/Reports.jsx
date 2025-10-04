@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
+import PropTypes from 'prop-types';
 import { motion } from 'framer-motion';
 import { BarChart3, PieChart, TrendingUp, FileText, Download, Users, CheckSquare, Briefcase, DollarSign } from 'lucide-react';
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, Pie, Cell } from 'recharts';
 import { toast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
-import { api } from "@/lib/api";
+import { db } from '@/lib/db';
 import Papa from 'papaparse';
 import { startOfMonth, startOfQuarter, isWithinInterval, endOfMonth, endOfQuarter } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -24,7 +25,7 @@ const _startOfSemester = (date) => {
   }
 };
 
-const Reports = ({ _currentUser }) => {
+const Reports = () => {
   const [activeReport, setActiveReport] = useState('overview');
   const [data, setData] = useState({ tasks: [], cases: [], team: [], invoices: [] });
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -178,8 +179,8 @@ const Reports = ({ _currentUser }) => {
               <div className="flex-1 min-w-[150px]">
                 <label htmlFor="select-month" className="block text-sm font-medium text-slate-300 mb-1">Mois</label>
                 <select id="select-month" value={selectedMonth} onChange={(e) => setSelectedMonth(parseInt(e.target.value))} className="w-full px-3 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                  {Array.from({ length: 12 }).map((_, i) => (
-                    <option key={i} value={i} className="capitalize">{fr.localize.month(i, { width: 'wide' })}</option>
+                  {Array.from({ length: 12 }, (_, i) => ({ value: i, name: fr.localize.month(i, { width: 'wide' }) })).map((month) => (
+                    <option key={`month-${month.value}`} value={month.value} className="capitalize">{month.name}</option>
                   ))}
                 </select>
               </div>
@@ -187,7 +188,7 @@ const Reports = ({ _currentUser }) => {
                 <label htmlFor="select-quarter" className="block text-sm font-medium text-slate-300 mb-1">Trimestre</label>
                 <select id="select-quarter" value={selectedQuarter} onChange={(e) => setSelectedQuarter(parseInt(e.target.value))} className="w-full px-3 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
                   {['1er Trimestre', '2ème Trimestre', '3ème Trimestre', '4ème Trimestre'].map((q, i) => (
-                    <option key={i} value={i}>{q}</option>
+                    <option key={q} value={i}>{q}</option>
                   ))}
                 </select>
               </div>
@@ -296,6 +297,13 @@ const StatCard = ({ icon: Icon, title, value, color = 'text-blue-400' }) => (
   </div>
 );
 
+StatCard.propTypes = {
+  icon: PropTypes.elementType.isRequired,
+  title: PropTypes.string.isRequired,
+  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+  color: PropTypes.string,
+};
+
 const PieChartCard = ({ title, data, colors }) => (
   <div className="h-96 bg-slate-800/50 p-4 rounded-lg">
     <h4 className="text-lg font-semibold text-white text-center mb-4">{title}</h4>
@@ -303,7 +311,7 @@ const PieChartCard = ({ title, data, colors }) => (
       <PieChart>
         <Pie data={data} cx="50%" cy="50%" labelLine={false} outerRadius={80} fill="#8884d8" dataKey="value" nameKey="name" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
           {data.map((entry, index) => (
-            <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
+            <Cell key={`${title}-cell-${entry.name}-${index}`} fill={colors[index % colors.length]} />
           ))}
         </Pie>
         <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155' }} />
@@ -312,5 +320,14 @@ const PieChartCard = ({ title, data, colors }) => (
     </ResponsiveContainer>
   </div>
 );
+
+PieChartCard.propTypes = {
+  title: PropTypes.string.isRequired,
+  data: PropTypes.arrayOf(PropTypes.shape({
+    name: PropTypes.string.isRequired,
+    value: PropTypes.number.isRequired,
+  })).isRequired,
+  colors: PropTypes.arrayOf(PropTypes.string).isRequired,
+};
 
 export default Reports;

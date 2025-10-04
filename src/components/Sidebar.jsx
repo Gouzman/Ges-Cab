@@ -11,8 +11,7 @@ import {
   Settings,
   Briefcase,
   LogOut,
-  FileArchive,
-  Receipt
+  FileArchive
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -34,7 +33,6 @@ const Sidebar = ({ activeView, setActiveView, currentUser, onLogout }) => {
     { id: 'cases', label: 'Dossiers', icon: FileText },
     { id: 'calendar', label: 'Agenda', icon: Calendar },
     { id: 'documents', label: 'Documents', icon: FileArchive },
-    { id: 'billing', label: 'Facturation', icon: Receipt },
     { id: 'team', label: 'Collaborateurs', icon: Briefcase },
     { id: 'reports', label: 'Statistiques', icon: BarChart3 },
   ].filter(item => hasPermission(item.id));
