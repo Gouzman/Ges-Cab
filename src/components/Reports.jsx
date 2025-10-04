@@ -4,7 +4,7 @@ import { BarChart3, PieChart, TrendingUp, FileText, Download, Users, CheckSquare
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, Pie, Cell } from 'recharts';
 import { toast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
-import { db } from '@/lib/db';
+import { api } from "@/lib/api";
 import Papa from 'papaparse';
 import { startOfMonth, startOfQuarter, isWithinInterval, endOfMonth, endOfQuarter } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -109,7 +109,7 @@ const Reports = ({ _currentUser }) => {
         csvData = Papa.unparse(teamPerformanceData);
         filename = 'rapport_activite_equipe.csv';
         break;
-      case 'distribution':
+      case 'distribution': {
         const distributionData = [
           { type: 'Statut', ...Object.fromEntries(taskStatusData.map(d => [d.name, d.value])) },
           { type: 'Priorité', ...Object.fromEntries(taskPriorityData.map(d => [d.name, d.value])) },
@@ -118,7 +118,8 @@ const Reports = ({ _currentUser }) => {
         csvData = Papa.unparse(distributionData);
         filename = 'rapport_repartition_taches.csv';
         break;
-      case 'finances':
+      }
+      case 'finances': {
         const finData = [
           { Indicateur: `Encaissé (${fr.localize.month(selectedMonth, { width: 'abbreviated' })} ${selectedYear})`, Valeur: financialData.collectedForSelectedMonth },
           { Indicateur: `Encaissé (T${selectedQuarter + 1} ${selectedYear})`, Valeur: financialData.collectedForSelectedQuarter },
@@ -128,7 +129,8 @@ const Reports = ({ _currentUser }) => {
         csvData = Papa.unparse(finData);
         filename = 'rapport_financier.csv';
         break;
-      case 'overview':
+      }
+      case 'overview': {
         const overviewData = [
           { 'Indicateur': 'Tâches totales', 'Valeur': data.tasks.length },
           { 'Indicateur': 'Dossiers actifs', 'Valeur': data.cases.filter(c => c.status === 'active').length },
@@ -137,6 +139,7 @@ const Reports = ({ _currentUser }) => {
         csvData = Papa.unparse(overviewData);
         filename = 'rapport_vue_ensemble.csv';
         break;
+      }
       default:
         toast({
           title: "Exportation non disponible",
@@ -173,24 +176,24 @@ const Reports = ({ _currentUser }) => {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             <div className="flex flex-wrap gap-4 mb-6 p-4 bg-slate-700/30 rounded-lg">
               <div className="flex-1 min-w-[150px]">
-                <label className="block text-sm font-medium text-slate-300 mb-1">Mois</label>
-                <select value={selectedMonth} onChange={(e) => setSelectedMonth(parseInt(e.target.value))} className="w-full px-3 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <label htmlFor="select-month" className="block text-sm font-medium text-slate-300 mb-1">Mois</label>
+                <select id="select-month" value={selectedMonth} onChange={(e) => setSelectedMonth(parseInt(e.target.value))} className="w-full px-3 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
                   {Array.from({ length: 12 }).map((_, i) => (
                     <option key={i} value={i} className="capitalize">{fr.localize.month(i, { width: 'wide' })}</option>
                   ))}
                 </select>
               </div>
               <div className="flex-1 min-w-[150px]">
-                <label className="block text-sm font-medium text-slate-300 mb-1">Trimestre</label>
-                <select value={selectedQuarter} onChange={(e) => setSelectedQuarter(parseInt(e.target.value))} className="w-full px-3 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <label htmlFor="select-quarter" className="block text-sm font-medium text-slate-300 mb-1">Trimestre</label>
+                <select id="select-quarter" value={selectedQuarter} onChange={(e) => setSelectedQuarter(parseInt(e.target.value))} className="w-full px-3 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
                   {['1er Trimestre', '2ème Trimestre', '3ème Trimestre', '4ème Trimestre'].map((q, i) => (
                     <option key={i} value={i}>{q}</option>
                   ))}
                 </select>
               </div>
               <div className="flex-1 min-w-[150px]">
-                <label className="block text-sm font-medium text-slate-300 mb-1">Année</label>
-                <select value={selectedYear} onChange={(e) => setSelectedYear(parseInt(e.target.value))} className="w-full px-3 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <label htmlFor="select-year" className="block text-sm font-medium text-slate-300 mb-1">Année</label>
+                <select id="select-year" value={selectedYear} onChange={(e) => setSelectedYear(parseInt(e.target.value))} className="w-full px-3 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
                   {[2023, 2024, 2025].map(year => <option key={year} value={year}>{year}</option>)}
                 </select>
               </div>

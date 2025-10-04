@@ -6,7 +6,7 @@ import { toast } from '@/components/ui/use-toast';
 import TeamMemberForm from '@/components/TeamMemberForm';
 import TeamMemberCard from '@/components/TeamMemberCard';
 import Papa from 'papaparse';
-import { db } from '@/lib/db';
+import { api } from "@/lib/api";
 import { useAuth } from '@/contexts/AuthContext';
 
 const TeamManager = ({ currentUser }) => {

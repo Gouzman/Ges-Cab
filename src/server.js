@@ -1,9 +1,10 @@
 import express from 'express';
 import cors from 'cors';
-import { db } from './lib/db.js';
-import filesRouter from './api/files.js';
 import jwt from 'jsonwebtoken';
-import bcrypt from 'bcrypt';
+import filesRouter from './api/files.js';
+import downloadRouter from './server/routes/download.js';
+import dbRouter from './server/routes/db.js';
+import authRouter from './server/routes/auth/index.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -14,44 +15,31 @@ app.use(express.json());
 // Middleware d'authentification
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+  const token = authHeader?.split(' ')[1];
 
   if (!token) {
     return res.status(401).json({ error: 'Token manquant' });
   }
 
-  jwt.verify(token, process.env.VITE_JWT_SECRET, (err, user) => {
-    if (err) {
-      return res.status(403).json({ error: 'Token invalide' });
-    }
+  try {
+    const user = jwt.verify(token, process.env.VITE_JWT_SECRET);
     req.user = user;
     next();
-  });
+  } catch (err) {
+    return res.status(403).json({ error: 'Token invalide' });
+  }
 };
 
 // Routes d'authentification
-app.post('/api/auth/login', async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    
-    const { rows } = await db.query('SELECT * FROM users WHERE email = $1', [email]);
-    const user = rows[0];
+app.use('/api/auth', authRouter);
 
-    if (!user || !bcrypt.compareSync(password, user.password_hash)) {
-      return res.status(401).json({ error: 'Identifiants invalides' });
-    }
+// Routes protégées par authentification
+app.use('/api/download', authenticateToken, downloadRouter);
+app.use('/api/db', authenticateToken, dbRouter);
 
-    const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role },
-      process.env.VITE_JWT_SECRET,
-      { expiresIn: '24h' }
-    );
-
-    res.json({ token, user: { id: user.id, email: user.email, role: user.role } });
-  } catch (error) {
-    console.error('Erreur de connexion:', error);
-    res.status(500).json({ error: 'Erreur de connexion' });
-  }
+// Exemple de route protégée
+app.get('/api/protected', authenticateToken, (req, res) => {
+  res.json({ message: 'Cette route est protégée', user: req.user });
 });
 
 // Routes des fichiers

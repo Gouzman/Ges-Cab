@@ -3,17 +3,17 @@ import { useState, useEffect } from 'react';
     import { X, FileText, User, Calendar, Paperclip, Timer, Eye, ScanLine, Users } from 'lucide-react';
     import { Button } from '@/components/ui/button';
     import { toast } from '@/components/ui/use-toast';
-    import { supabase } from '@/lib/customSupabaseClient';
+
 
     const formatCurrency = (value) => {
       if (!value) return '';
-      const numberValue = Number(String(value).replace(/[^0-9]/g, ''));
+      const numberValue = Number(String(value).replace(/\D/g, ''));
       return new Intl.NumberFormat('fr-FR').format(numberValue);
     };
 
     const parseCurrency = (value) => {
       if (!value) return 0;
-      return Number(String(value).replace(/[^0-9]/g, ''));
+      return Number(String(value).replace(/\D/g, ''));
     };
 
     const CaseForm = ({ case: caseData, onSubmit, onCancel, currentUser }) => {
@@ -100,8 +100,8 @@ import { useState, useEffect } from 'react';
       };
 
       const handleFileChange = (e) => {
-        if (e.target.files && e.target.files[0]) {
-          const file = e.target.files[0];
+        const file = e.target.files?.[0];
+        if (file) {
           setFormData(prev => ({
             ...prev,
             attachments: [...prev.attachments, file.name]
@@ -161,10 +161,11 @@ import { useState, useEffect } from 'react';
 
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
+                <label htmlFor="case-id" className="block text-sm font-medium text-slate-300 mb-2">
                   ID du Dossier (texte libre) *
                 </label>
                 <input
+                  id="case-id"
                   type="text"
                   name="id"
                   value={formData.id}
@@ -224,9 +225,9 @@ import { useState, useEffect } from 'react';
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Description
-                </label>
+                                  <label htmlFor="description" className="block text-sm font-medium text-slate-300 mb-2">
+                    Description
+                  </label>
                 <textarea
                   name="description"
                   value={formData.description}
@@ -239,26 +240,28 @@ import { useState, useEffect } from 'react';
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Type de droit
-                  </label>
-                  <select
-                    name="type"
-                    value={formData.type}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  >
-                    {caseTypes.map(type => (
-                      <option key={type.value} value={type.value}>{type.label}</option>
-                    ))}
-                  </select>
+                  <label htmlFor="type-select" className="block text-sm font-medium text-slate-300 mb-2">
+                      Type de droit
+                    </label>
+                    <select
+                      id="type-select"
+                      name="type"
+                      value={formData.type}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    >
+                      {caseTypes.map(type => (
+                        <option key={type.value} value={type.value}>{type.label}</option>
+                      ))}
+                    </select>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                  <label htmlFor="status-select" className="block text-sm font-medium text-slate-300 mb-2">
                     Statut
                   </label>
                   <select
+                    id="status-select"
                     name="status"
                     value={formData.status}
                     onChange={handleChange}
@@ -274,38 +277,40 @@ import { useState, useEffect } from 'react';
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Priorité
-                  </label>
-                  <select
-                    name="priority"
-                    value={formData.priority}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  >
-                    <option value="low">🟢 Faible</option>
-                    <option value="medium">🟡 Moyenne</option>
-                    <option value="high">🟠 Élevée</option>
-                    <option value="urgent">🔴 Urgente</option>
-                  </select>
+                  <label htmlFor="priority-select" className="block text-sm font-medium text-slate-300 mb-2">
+                      Priorité
+                    </label>
+                    <select
+                      id="priority-select"
+                      name="priority"
+                      value={formData.priority}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    >
+                      <option value="low">🟢 Faible</option>
+                      <option value="medium">🟡 Moyenne</option>
+                      <option value="high">🟠 Élevée</option>
+                      <option value="urgent">🔴 Urgente</option>
+                    </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    Honoraire
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      name="honoraire"
-                      value={formData.honoraire}
-                      onChange={handleChange}
-                      className="w-full pl-4 pr-16 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      placeholder="Ex: 5 000 000"
-                    />
-                    <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400">
-                      FCFA
-                    </span>
-                  </div>
+                  <label htmlFor="honoraire-input" className="block text-sm font-medium text-slate-300 mb-2">
+                      Honoraire
+                    </label>
+                    <div className="relative">
+                      <input
+                        id="honoraire-input"
+                        type="text"
+                        name="honoraire"
+                        value={formData.honoraire}
+                        onChange={handleChange}
+                        className="w-full pl-4 pr-16 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        placeholder="Ex: 5 000 000"
+                      />
+                      <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400">
+                        FCFA
+                      </span>
+                    </div>
                 </div>
               </div>
 
@@ -398,8 +403,8 @@ import { useState, useEffect } from 'react';
                   </Button>
                 </div>
                 <div className="mt-2 space-y-2">
-                  {formData.attachments.map((name, index) => (
-                    <div key={index} className="text-sm text-slate-400 bg-slate-700/30 p-2 rounded-md">{name}</div>
+                  {formData.attachments.map((name) => (
+                    <div key={name} className="text-sm text-slate-400 bg-slate-700/30 p-2 rounded-md">{name}</div>
                   ))}
                 </div>
               </div>
@@ -424,6 +429,15 @@ import { useState, useEffect } from 'react';
           </motion.div>
         </motion.div>
       );
+    };
+
+    import PropTypes from 'prop-types';
+
+    CaseForm.propTypes = {
+      case: PropTypes.object,
+      onSubmit: PropTypes.func.isRequired,
+      onCancel: PropTypes.func.isRequired,
+      currentUser: PropTypes.object.isRequired,
     };
 
     export default CaseForm;

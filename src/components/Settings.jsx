@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Settings as SettingsIcon, Tag, Save, Plus, Trash2, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
-import { db } from '@/lib/db';
+import { api } from "@/lib/api";
 import { useAuth } from '@/contexts/AuthContext';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";

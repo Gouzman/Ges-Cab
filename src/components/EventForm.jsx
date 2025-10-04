@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import { motion } from 'framer-motion';
 import { X, Calendar, Users, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
-import { supabase } from '@/lib/customSupabaseClient';
+import { db } from '@/lib/db';
 
 const EventForm = ({ currentUser, onCancel, onEventCreated }) => {
   const [formData, setFormData] = useState({
@@ -16,7 +17,7 @@ const EventForm = ({ currentUser, onCancel, onEventCreated }) => {
 
   useEffect(() => {
     const fetchCollaborators = async () => {
-      const { data, error } = await supabase.from('profiles').select('id, name');
+      const { data, error } = await db.query('SELECT id, name FROM profiles');
       if (error) {
         toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de charger les collaborateurs.' });
       } else {
@@ -47,15 +48,17 @@ const EventForm = ({ currentUser, onCancel, onEventCreated }) => {
       return;
     }
 
-    const { error } = await supabase.from('calendar_events').insert([
-      {
-        title: formData.title,
-        start_time: formData.startTime,
-        description: formData.description,
-        created_by: currentUser.id,
-        attendees: formData.attendees,
-      },
-    ]);
+    const { error } = await db.query(
+      `INSERT INTO calendar_events (title, description, start_time, created_by, attendees)
+       VALUES ($1, $2, $3, $4, $5)`,
+      [
+        formData.title,
+        formData.description,
+        formData.startTime,
+        currentUser.id,
+        formData.attendees,
+      ]
+    );
 
     if (error) {
       toast({ variant: 'destructive', title: 'Erreur', description: "L'événement n'a pas pu être créé." });
@@ -118,10 +121,11 @@ const EventForm = ({ currentUser, onCancel, onEventCreated }) => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
+            <label htmlFor="event-description" className="block text-sm font-medium text-slate-300 mb-2">
               Description
             </label>
             <textarea
+              id="event-description"
               name="description"
               value={formData.description}
               onChange={handleChange}
@@ -167,6 +171,14 @@ const EventForm = ({ currentUser, onCancel, onEventCreated }) => {
       </motion.div>
     </motion.div>
   );
+};
+EventForm.propTypes = {
+  currentUser: PropTypes.shape({
+    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+    name: PropTypes.string,
+  }).isRequired,
+  onCancel: PropTypes.func.isRequired,
+  onEventCreated: PropTypes.func.isRequired,
 };
 
 export default EventForm;

@@ -6,7 +6,7 @@ import { toast } from '@/components/ui/use-toast';
 import ClientForm from '@/components/ClientForm';
 import ClientCard from '@/components/ClientCard';
 import Papa from 'papaparse';
-import { supabase } from '@/lib/customSupabaseClient';
+import { api } from "@/lib/api";
 
 const ClientManager = () => {
   const [clients, setClients] = useState([]);
@@ -20,7 +20,9 @@ const ClientManager = () => {
   }, []);
 
   const fetchClients = async () => {
-    const { data, error } = await supabase.from('clients').select('*').order('created_at', { ascending: false });
+    const { rows } = await db.query(
+      'SELECT * FROM clients ORDER BY created_at DESC'
+    );
     if (error) {
       toast({ variant: "destructive", title: "Erreur", description: "Impossible de charger les clients." });
     } else {
@@ -29,7 +31,12 @@ const ClientManager = () => {
   };
 
   const handleAddClient = async (clientData) => {
-    const { data, error } = await supabase.from('clients').insert([clientData]).select();
+    const { rows } = await db.query(
+      `INSERT INTO clients (${Object.keys(clientData).join(', ')})
+       VALUES (${Object.keys(clientData).map((_, i) => `$${i + 1}`).join(', ')})
+       RETURNING *`,
+      Object.values(clientData)
+    );
     if (error) {
       toast({ variant: "destructive", title: "Erreur", description: "Impossible d'ajouter le client." });
     } else {

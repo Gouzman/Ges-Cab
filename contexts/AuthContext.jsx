@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { db } from '@/lib/db';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import PropTypes from 'prop-types';
+import { api } from '@/lib/api';
 
 const AuthContext = createContext({});
 
@@ -8,10 +9,8 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Vérifier si un token existe dans le localStorage
     const token = localStorage.getItem('auth_token');
     if (token) {
-      // TODO: Implémenter la vérification du token avec le backend
       validateToken(token);
     } else {
       setLoading(false);
@@ -20,29 +19,23 @@ export const AuthProvider = ({ children }) => {
 
   const validateToken = async (token) => {
     try {
-      // TODO: Ajouter la validation du token avec le backend
+      const response = await api.auth.validateToken(token);
+      setUser(response.user);
       setLoading(false);
     } catch (error) {
       console.error('Erreur de validation du token:', error);
+      localStorage.removeItem('auth_token');
+      setUser(null);
       setLoading(false);
     }
   };
 
   const login = async (email, password) => {
     try {
-      // TODO: Implémenter l'authentification avec le backend
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      });
-      
-      if (!response.ok) throw new Error('Échec de l\'authentification');
-      
-      const data = await response.json();
-      localStorage.setItem('auth_token', data.token);
-      setUser(data.user);
-      return { user: data.user };
+      const response = await api.auth.login(email, password);
+      localStorage.setItem('auth_token', response.token);
+      setUser(response.user);
+      return { user: response.user };
     } catch (error) {
       console.error('Erreur de connexion:', error);
       throw error;
@@ -51,19 +44,23 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
+      await api.auth.logout();
       localStorage.removeItem('auth_token');
       setUser(null);
     } catch (error) {
       console.error('Erreur de déconnexion:', error);
+      // On supprime quand même le token en local en cas d'erreur
+      localStorage.removeItem('auth_token');
+      setUser(null);
     }
   };
 
-  const value = {
+  const value = useMemo(() => ({
     user,
     login,
     logout,
     loading
-  };
+  }), [user, loading]);
 
   return (
     <AuthContext.Provider value={value}>
@@ -71,11 +68,14 @@ export const AuthProvider = ({ children }) => {
     </AuthContext.Provider>
   );
 };
-
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
     throw new Error('useAuth doit être utilisé à l\'intérieur d\'un AuthProvider');
   }
   return context;
+};
+
+AuthProvider.propTypes = {
+  children: PropTypes.node.isRequired,
 };

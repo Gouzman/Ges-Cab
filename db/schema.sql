@@ -108,3 +108,4 @@ INSERT INTO clients (name, type, email, created_by)
 VALUES ('Client Test', 'Société', 'test@example.com', 
         (SELECT id FROM users WHERE email = 'admin@ges-cab.com'))
 ON CONFLICT DO NOTHING;
+

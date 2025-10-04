@@ -1,6 +1,5 @@
 import express from 'express';
 import { fileService } from '../lib/fileService.js';
-import { db } from '../lib/db.js';
 import multer from 'multer';
 import path from 'path';
 
@@ -23,7 +22,7 @@ router.post('/upload', upload.single('file'), async (req, res) => {
 });
 
 // Point d'API pour télécharger un fichier
-router.get('/:filePath(*)', async (req, res) => {
+router.get('/:filepath', async (req, res) => {
   try {
     const filePath = req.params.filePath;
     const fileData = await fileService.getFileStream(filePath);

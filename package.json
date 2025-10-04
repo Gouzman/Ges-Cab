@@ -1,16 +1,15 @@
 {
-  "name": "web-app",
-  "type": "module",
-  "version": "0.0.0",
+  "name": "ges-cab",
   "private": true,
+  "version": "0.0.0",
+  "type": "module",
   "scripts": {
-    "dev": "vite --host :: --port 3000",
-    "lint": "eslint src --ext js,jsx --report-unused-disable-directives --max-warnings 0",
-    "build": "node tools/generate-llms.js || true && vite build",
-    "preview": "vite preview --host :: --port 3000",
-    "prepare": "husky install",
-    "security-check": "secretlint \"**/*\"",
-    "rotate-keys": "node tools/rotate-supabase-keys.js"
+    "dev:client": "vite",
+    "dev:server": "node src/server.test.js",
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "build": "vite build",
+    "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
+    "preview": "vite preview"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.0.5",
@@ -54,6 +53,7 @@
     "@types/react-dom": "^18.2.7",
     "@vitejs/plugin-react": "^4.0.3",
     "autoprefixer": "^10.4.16",
+    "concurrently": "^9.2.1",
     "dotenv": "^17.2.2",
     "eslint": "^8.57.1",
     "eslint-config-react-app": "^7.0.1",

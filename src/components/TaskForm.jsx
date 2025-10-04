@@ -3,9 +3,7 @@ import { motion } from 'framer-motion';
 import { X, Calendar, FileText, User, Paperclip, RefreshCw, Download, ScanLine } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
-import { db } from '@/lib/db';
-import { promises as fs } from 'fs';
-import path from 'path';
+
 import { taskCategoriesData } from '@/lib/taskCategories';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -93,20 +91,23 @@ const TaskForm = ({ task, onSubmit, onCancel, teamMembers, cases, currentUser })
   };
 
   const handleDownload = async (filePath) => {
-    const fullPath = path.join(process.env.VITE_UPLOAD_DIR || 'uploads', filePath);
-    const data = await fs.readFile(fullPath);
-    if (error) {
+    try {
+      const response = await fetch(`/api/download/${filePath}`);
+      if (!response.ok) {
+        throw new Error(`Erreur HTTP: ${response.status}`);
+      }
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filePath.split('/').pop();
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
       toast({ variant: "destructive", title: "Erreur de téléchargement", description: error.message });
-      return;
     }
-    const url = URL.createObjectURL(data);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filePath.split('/').pop();
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
   };
 
   const handleScan = () => {

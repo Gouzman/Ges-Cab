@@ -2,16 +2,14 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Scale, User, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { useAuth } from '@/contexts/AuthContext'
 const LoginScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const {
-    signIn
-  } = useAuth();
+  const { login } = useAuth();
   const handleLogin = async e => {
     e.preventDefault();
-    await signIn(email, password);
+    await login(email, password)
   };
   return <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 p-4">
       <motion.div initial={{
@@ -34,7 +32,7 @@ const LoginScreen = () => {
 
         <form onSubmit={handleLogin} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
+            <label htmlFor="email" className="block text-sm font-medium text-slate-300 mb-2">
               Email
             </label>
             <div className="relative">
@@ -44,7 +42,7 @@ const LoginScreen = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
+            <label htmlFor="password" className="block text-sm font-medium text-slate-300 mb-2">
               Mot de passe
             </label>
             <div className="relative">

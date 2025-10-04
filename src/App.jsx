@@ -14,15 +14,15 @@ import { useState } from 'react';
     import DocumentManager from '@/components/DocumentManager';
     import Settings from '@/components/Settings';
     import BillingManager from '@/components/BillingManager';
-    import { useAuth } from '@/contexts/SupabaseAuthContext';
     import { Loader2 } from 'lucide-react';
+    import { useAuth } from '@/contexts/AuthContext';
 
     function App() {
       const [activeView, setActiveView] = useState('dashboard');
-      const { user, loading, signOut } = useAuth();
+      const { user, loading, logout } = useAuth();
 
       const handleLogout = async () => {
-        await signOut();
+        await logout();
         setActiveView('dashboard');
       };
 

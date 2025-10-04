@@ -4,7 +4,7 @@ import { Plus, Search, Receipt, Printer, Edit, Trash2, Filter } from 'lucide-rea
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import InvoiceForm from '@/components/InvoiceForm';
-import { query } from '@/lib/db';
+import { api } from '@/lib/api';
 
 const formatCurrency = (value) => {
   if (isNaN(value) || value === null) return '0';
@@ -37,7 +37,7 @@ const BillingManager = ({ currentUser }) => {
 
   const fetchInvoices = async () => {
     try {
-      const { data, error } = await query(
+      const { data, error } = await api.query(
         `SELECT i.*, 
          c.name as client_name,
          p.method as payment_method,
@@ -80,7 +80,7 @@ const BillingManager = ({ currentUser }) => {
 
   const handleAddInvoice = async (invoiceData) => {
     try {
-      const { data, error } = await query(
+      const { data, error } = await api.query(
         `INSERT INTO invoices (
           number, client_id, case_id, total_ttc, debours, honoraires, created_by
         ) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
@@ -98,7 +98,7 @@ const BillingManager = ({ currentUser }) => {
       if (error) throw error;
 
       if (invoiceData.payment) {
-        await query(
+        await api.query(
           `INSERT INTO payments (invoice_id, method, provision, amount)
            VALUES ($1, $2, $3, $4)`,
           [data[0].id, invoiceData.payment.method, invoiceData.payment.provision, invoiceData.payment.provisionAmount]
@@ -123,7 +123,7 @@ const BillingManager = ({ currentUser }) => {
 
   const handleEditInvoice = async (invoiceData) => {
     try {
-      const { error } = await query(
+      const { error } = await api.query(
         `UPDATE invoices 
          SET number = $1, client_id = $2, case_id = $3,
              total_ttc = $4, debours = $5, honoraires = $6,
@@ -145,7 +145,7 @@ const BillingManager = ({ currentUser }) => {
       if (error) throw error;
 
       if (invoiceData.payment) {
-        await query(
+        await api.query(
           `UPDATE payments 
            SET method = $1, provision = $2, amount = $3
            WHERE invoice_id = $4`,
@@ -174,10 +174,10 @@ const BillingManager = ({ currentUser }) => {
   const handleDeleteInvoice = async (invoiceId) => {
     try {
       // Supprimer d'abord les paiements associés
-      await query('DELETE FROM payments WHERE invoice_id = $1', [invoiceId]);
+      await api.query('DELETE FROM payments WHERE invoice_id = $1', [invoiceId]);
       
       // Puis supprimer la facture
-      const { error } = await query('DELETE FROM invoices WHERE id = $1', [invoiceId]);
+      const { error } = await api.query('DELETE FROM invoices WHERE id = $1', [invoiceId]);
       
       if (error) throw error;
 

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
 import CaseForm from "@/components/CaseForm";
 import CaseCard from "@/components/CaseCard";
-import { supabase } from "@/lib/customSupabaseClient";
+import { api } from "@/lib/api";
 
 const CaseManager = ({ currentUser }) => {
   const [cases, setCases] = useState([]);
@@ -25,14 +25,11 @@ const CaseManager = ({ currentUser }) => {
     const fetchCases = async () => {
       setIsLoading(true);
       try {
-        const { data, error } = await supabase
-          .from("cases")
-          .select("*")
-          .order("created_at", { ascending: false });
+        const { rows } = await db.query(
+          `SELECT * FROM cases ORDER BY created_at DESC`
+        );
 
-        if (error) throw error;
-
-        setCases(isAdmin ? data : data.filter(c => 
+        setCases(isAdmin ? rows : rows.filter(c => 
           c.created_by === currentUser.id || 
           c.visible_to?.includes(currentUser.id)
         ));
@@ -64,14 +61,14 @@ const CaseManager = ({ currentUser }) => {
   const handleAddCase = async (caseData) => {
     try {
       validateCaseData(caseData);
-      const { data, error } = await supabase
-        .from("cases")
-        .insert([{ ...caseData, created_by: currentUser.id }])
-        .select();
+      const { rows } = await db.query(
+        `INSERT INTO cases (${Object.keys({ ...caseData, created_by: currentUser.id }).join(", ")})
+         VALUES (${Object.keys({ ...caseData, created_by: currentUser.id }).map((_, i) => `$${i + 1}`).join(", ")})
+         RETURNING *`,
+        Object.values({ ...caseData, created_by: currentUser.id })
+      );
 
-      if (error) throw error;
-
-      setCases(prev => [data[0], ...prev]);
+      setCases(prev => [rows[0], ...prev]);
       setShowForm(false);
       toast({
         title: "✅ Dossier créé",
@@ -90,15 +87,17 @@ const CaseManager = ({ currentUser }) => {
   const handleEditCase = async (caseData) => {
     try {
       validateCaseData(caseData);
-      const { error } = await supabase
-        .from("cases")
-        .update(caseData)
-        .match({ id: caseData.id });
-
-      if (error) throw error;
+      const { id, ...updateData } = caseData;
+      const { rows } = await db.query(
+        `UPDATE cases
+         SET ${Object.keys(updateData).map((key, i) => `${key} = $${i + 2}`).join(", ")}
+         WHERE id = $1
+         RETURNING *`,
+        [id, ...Object.values(updateData)]
+      );
 
       setCases(prev => prev.map(c => 
-        c.id === caseData.id ? { ...c, ...caseData } : c
+        c.id === caseData.id ? { ...c, ...rows[0] } : c
       ));
       setEditingCase(null);
       toast({
@@ -117,12 +116,10 @@ const CaseManager = ({ currentUser }) => {
 
   const handleDeleteCase = async (caseId) => {
     try {
-      const { error } = await supabase
-        .from("cases")
-        .delete()
-        .match({ id: caseId });
-
-      if (error) throw error;
+      await db.query(
+        'DELETE FROM cases WHERE id = $1',
+        [caseId]
+      );
 
       setCases(prev => prev.filter(c => c.id !== caseId));
       toast({

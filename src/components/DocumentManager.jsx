@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
     import { FileArchive, Search, Eye, Trash2, Timer, Download } from 'lucide-react';
     import { Button } from '@/components/ui/button';
     import { toast } from '@/components/ui/use-toast';
-    import { db } from '@/lib/db';
+    import { api } from "@/lib/api";
     import { promises as fs } from 'fs';
     import path from 'path';
 
