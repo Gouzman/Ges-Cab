@@ -10,7 +10,7 @@ import React, { useState } from 'react';
     import Calendar from '@/components/Calendar';
     import Reports from '@/components/Reports';
     import TeamManager from '@/components/TeamManager';
-    import LoginScreen from '@/components/LoginScreen';
+    import NewLoginScreen from '@/components/NewLoginScreen';
     import DocumentManager from '@/components/DocumentManager';
     import Settings from '@/components/Settings';
     import { useAuth } from '@/contexts/SupabaseAuthContext';
@@ -59,7 +59,7 @@ import React, { useState } from 'react';
       }
 
       if (!user) {
-        return <LoginScreen />;
+        return <NewLoginScreen />;
       }
 
       return (
@@ -78,13 +78,13 @@ import React, { useState } from 'react';
                 onLogout={handleLogout}
               />
               
-              <main className="flex-1 ml-64 print:ml-0">
+                            <main className="flex-1 print:ml-0">
                 <motion.div
                   key={activeView}
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.3 }}
-                  className="p-6 print:p-0"
+                  className="min-h-screen bg-gradient-to-br from-white via-gray-50 to-gray-100 p-6 print:p-0"
                 >
                   {renderActiveView()}
                 </motion.div>

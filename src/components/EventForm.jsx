@@ -47,13 +47,18 @@ const EventForm = ({ currentUser, onCancel, onEventCreated }) => {
       return;
     }
 
-    const { error } = await supabase.from('calendar_events').insert([
+    // Utiliser la structure EXACTE de la table events
+    const { error } = await supabase.from('events').insert([
       {
         title: formData.title,
-        start_time: formData.startTime,
-        description: formData.description,
-        created_by: currentUser.id,
-        attendees: formData.attendees,
+        description: formData.description || null,
+        start_date: formData.startTime, // start_date pas start_time !
+        end_date: formData.endTime || null,
+        all_day: formData.allDay || false,
+        location: formData.location || null,
+        case_id: formData.caseId || null,
+        created_by: currentUser?.id || null,
+        attendees: formData.attendees || []
       },
     ]);
 

@@ -5,7 +5,7 @@ import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay, parseISO, addWeeks, subWeeks, eachDayOfInterval, setHours } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
-import { db } from '@/lib/db';
+import { supabase } from '@/lib/customSupabaseClient';
 import { toast } from '@/components/ui/use-toast';
 import EventForm from '@/components/EventForm';
 
@@ -35,9 +35,10 @@ const Calendar = ({ currentUser }) => {
 
       const fetchData = useCallback(async () => {
         const fetchTasks = async () => {
-          let query = db.query(
-            'SELECT id, title, deadline, priority FROM tasks WHERE deadline IS NOT NULL'
-          );
+          let query = supabase
+            .from('tasks')
+            .select('id, title, deadline, priority')
+            .not('deadline', 'is', null);
           if (!isAdmin) {
             query = query.eq('assigned_to_id', currentUser.id);
           }
@@ -50,21 +51,25 @@ const Calendar = ({ currentUser }) => {
         };
 
         const fetchEvents = async () => {
-          const { data, error } = await query;
-          if (error) {
-            toast({ variant: "destructive", title: "Erreur", description: "Impossible de charger les événements." });
-            return [];
-          }
+          try {
+            const { data, error } = await supabase
+              .from('events')
+              .select('*')
+              .order('start_date');
+            if (error) throw error;
+            if (!data) return [];
           
           const userVisibleEvents = data.filter(event => {
             if (isAdmin) return true;
-            return event.attendees?.includes(currentUser?.id);
+            return event.created_by === currentUser.id || event.attendees.includes(currentUser.id);
           });
-
-          return userVisibleEvents.map(e => ({ ...e, type: 'event', deadline: e.start_time }));
-        };
-
-        const [taskData, eventData] = await Promise.all([fetchTasks(), fetchEvents()]);
+          
+          return userVisibleEvents.map(e => ({ ...e, type: 'event' }));
+        } catch (error) {
+          toast({ variant: "destructive", title: "Erreur", description: "Impossible de charger les événements." });
+          return [];
+        }
+        };        const [taskData, eventData] = await Promise.all([fetchTasks(), fetchEvents()]);
         setTasks(taskData);
         setEvents(eventData);
       }, [currentUser, isAdmin]);

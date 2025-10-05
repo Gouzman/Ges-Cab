@@ -7,7 +7,7 @@ import { toast } from '@/components/ui/use-toast';
 import TeamMemberForm from '@/components/TeamMemberForm';
 import TeamMemberCard from '@/components/TeamMemberCard';
 import Papa from 'papaparse';
-import supabase from '@/lib/customSupabaseClient';
+import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 
 const TeamManager = ({ currentUser }) => {
@@ -175,15 +175,15 @@ const TeamManager = ({ currentUser }) => {
         ))}
       </div>
 
-      <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl p-6 print:hidden">
+      <div className="bg-gradient-to-r from-red-50 to-rose-50 backdrop-blur-sm border border-red-200 rounded-xl p-6 print:hidden">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-red-500 w-5 h-5" />
           <input
             type="text"
             placeholder="Rechercher un collaborateur par nom, email ou rôle..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-green-500"
+            className="w-full pl-12 pr-4 py-3 bg-gradient-to-r from-red-100/50 to-rose-100/50 border-2 border-red-300 rounded-lg text-red-900 placeholder-red-500 focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-red-400"
           />
         </div>
       </div>

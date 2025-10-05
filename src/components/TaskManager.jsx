@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import TaskForm from '@/components/TaskForm';
 import TaskCard from '@/components/TaskCard';
-import { db } from '@/lib/db';
+import { supabase } from '@/lib/customSupabaseClient';
+import { usePermissions } from '@/hooks/usePermissions';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,24 +31,26 @@ const TaskManager = ({ currentUser }) => {
   const [taskToComment, setTaskToComment] = useState(null);
   const [completionComment, setCompletionComment] = useState('');
 
-  const isGerantOrAssocie = currentUser && (currentUser.function === 'Gerant' || currentUser.function === 'Associe Emerite');
-  const isAdmin = isGerantOrAssocie || (currentUser.role && currentUser.role.toLowerCase() === 'admin');
+  // Utilisation du nouveau système de permissions
+  const { 
+    hasModuleAccess, 
+    userIsAdmin 
+  } = usePermissions();
+
+  const isAdmin = userIsAdmin();
 
   useEffect(() => {
     const fetchTasks = async () => {
-      let queryText = 'SELECT * FROM tasks';
-      let queryParams = [];
+      let query = supabase.from('tasks').select('*');
       
-      if (filterStatus) {
-        queryText += ' WHERE status = $1';
-        queryParams.push(filterStatus);
+      if (filterStatus && filterStatus !== 'all') {
+        query = query.eq('status', filterStatus);
       }
       
-      queryText += ' ORDER BY created_at DESC';
-      await db.query(queryText, queryParams);
       if (!isAdmin && currentUser?.id) {
-        // Filtering by assigned_to_id could be handled in the main query logic if needed
+        query = query.eq('assigned_to_id', currentUser.id);
       }
+      
       const { data, error } = await query.order('created_at', { ascending: false });
       if (error) {
         toast({ variant: "destructive", title: "Erreur", description: "Impossible de charger les tâches." });
@@ -57,7 +60,7 @@ const TaskManager = ({ currentUser }) => {
     };
 
     const fetchTeamMembers = async () => {
-      const { data, error } = await db.query('SELECT id, name FROM users');
+      const { data, error } = await supabase.from('profiles').select('id, name');
       if (error) {
         toast({ variant: "destructive", title: "Erreur", description: "Impossible de charger les collaborateurs." });
       } else {
@@ -66,7 +69,7 @@ const TaskManager = ({ currentUser }) => {
     };
 
     const fetchCases = async () => {
-      const { data, error } = await db.query('SELECT id, title FROM cases');
+      const { data, error } = await supabase.from('cases').select('id, title');
       if (error) {
         toast({ variant: "destructive", title: "Erreur", description: "Impossible de charger les dossiers." });
       } else {
@@ -170,15 +173,26 @@ const TaskManager = ({ currentUser }) => {
 
     dataToUpdate.attachments = uploadedAttachmentPaths;
 
-    const { data, error } = await db.query(
-      'UPDATE tasks SET title = $1, description = $2, case_id = $3, priority = $4, deadline = $5, attachments = $6, assigned_to_id = $7, assigned_at = $8, seen_at = $9 WHERE id = $10 RETURNING *',
-      [dataToUpdate.title, dataToUpdate.description, dataToUpdate.case_id, dataToUpdate.priority, dataToUpdate.deadline, JSON.stringify(uploadedAttachmentPaths), dataToUpdate.assigned_to_id, dataToUpdate.assigned_at, dataToUpdate.seen_at, editingTask.id]
-    );
+    const { data, error } = await supabase
+      .from('tasks')
+      .update({
+        title: dataToUpdate.title,
+        description: dataToUpdate.description,
+        case_id: dataToUpdate.case_id,
+        priority: dataToUpdate.priority,
+        deadline: dataToUpdate.deadline,
+        attachments: uploadedAttachmentPaths,
+        assigned_to_id: dataToUpdate.assigned_to_id,
+        assigned_at: dataToUpdate.assigned_at,
+        seen_at: dataToUpdate.seen_at
+      })
+      .eq('id', editingTask.id)
+      .select();
     
     if (error) {
       toast({ variant: "destructive", title: "Erreur", description: `Impossible de modifier la tâche: ${error.message}` });
     } else {
-      setTasks(tasks.map(t => t.id === editingTask.id ? data : t));
+      setTasks(tasks.map(t => t.id === editingTask.id ? data[0] : t));
       setEditingTask(null);
       setActiveTab('suivi');
       toast({ title: "✅ Tâche modifiée", description: "La tâche a été mise à jour." });
@@ -186,7 +200,7 @@ const TaskManager = ({ currentUser }) => {
   };
 
   const handleDeleteTask = async (taskId) => {
-    await db.query('DELETE FROM tasks WHERE id = $1', [taskId]);
+    const { error } = await supabase.from('tasks').delete().eq('id', taskId);
     if (error) {
       toast({ variant: "destructive", title: "Erreur", description: "Impossible de supprimer la tâche." });
     } else {
@@ -251,6 +265,20 @@ const TaskManager = ({ currentUser }) => {
     setActiveTab('nouvelle');
   };
 
+  // Vérification d'accès au module
+  if (!hasModuleAccess('tasks')) {
+    return (
+      <div className="text-center py-20">
+        <div className="w-16 h-16 bg-slate-600 rounded-full flex items-center justify-center mx-auto mb-4">
+          <ListTodo className="w-8 h-8 text-slate-400" />
+        </div>
+        <h1 className="text-2xl font-bold text-white">Accès non autorisé</h1>
+        <p className="text-slate-400">Vous n'avez pas les permissions pour accéder aux tâches.</p>
+        <p className="text-slate-500 text-sm mt-2">Contactez votre administrateur pour obtenir les droits nécessaires.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -306,17 +334,17 @@ const TaskManager = ({ currentUser }) => {
             ))}
           </div>
 
-          <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl p-6 mb-6">
+          <div className="bg-gradient-to-r from-red-50 to-rose-50 backdrop-blur-sm border border-red-200 rounded-xl p-6 mb-6">
             <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-red-500 w-4 h-4" />
                   <input
                     type="text"
                     placeholder="Rechercher une tâche..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full pl-10 pr-4 py-2 bg-gradient-to-r from-red-100/50 to-rose-100/50 border-2 border-red-300 rounded-lg text-red-900 placeholder-red-500 focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-red-400"
                   />
                 </div>
               </div>

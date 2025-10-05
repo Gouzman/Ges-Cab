@@ -16,16 +16,22 @@ import {
 import { Button } from '@/components/ui/button';
 
 const CaseCard = ({ case: caseData, index, onEdit, onDelete }) => {
+  // Protection contre les données undefined ou null
+  if (!caseData) {
+    return null;
+  }
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'active':
-        return 'bg-green-500/20 text-green-400';
+      case 'Open':
+        return 'bg-bordeaux-500/20 text-bordeaux-400';
       case 'pending':
-        return 'bg-orange-500/20 text-orange-400';
+        return 'bg-bordeaux-300/20 text-bordeaux-300';
       case 'closed':
-        return 'bg-blue-500/20 text-blue-400';
+        return 'bg-bordeaux-700/20 text-bordeaux-700';
       default:
-        return 'bg-slate-500/20 text-slate-400';
+        return 'bg-bordeaux-200/20 text-bordeaux-200';
     }
   };
 
@@ -42,18 +48,20 @@ const CaseCard = ({ case: caseData, index, onEdit, onDelete }) => {
     }
   };
 
-  const getPriorityColor = (priority) => {
+  const getPriorityBorderColor = (priority) => {
     switch (priority) {
-      case 'urgent':
-        return 'border-red-500 bg-red-500/10';
       case 'high':
-        return 'border-orange-500 bg-orange-500/10';
+      case 'Haute':
+        return 'border-bordeaux-500 bg-bordeaux-500/10';
       case 'medium':
-        return 'border-yellow-500 bg-yellow-500/10';
+      case 'Medium':
+      case 'Moyenne':
+        return 'border-bordeaux-400 bg-bordeaux-400/10';
       case 'low':
-        return 'border-green-500 bg-green-500/10';
+      case 'Basse':
+        return 'border-bordeaux-300 bg-bordeaux-300/10';
       default:
-        return 'border-slate-600 bg-slate-800/50';
+        return 'border-bordeaux-600 bg-bordeaux-900/30';
     }
   };
 
@@ -81,14 +89,16 @@ const CaseCard = ({ case: caseData, index, onEdit, onDelete }) => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
-      className={`${getPriorityColor(caseData.priority)} backdrop-blur-sm border rounded-xl p-6 hover:scale-105 transition-all duration-200 flex flex-col`}
+      className={`${getPriorityColor(caseData.priority || 'Moyenne')} backdrop-blur-sm border rounded-xl p-6 hover:scale-105 transition-all duration-200 flex flex-col`}
     >
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-2">
-          {getStatusIcon(caseData.status)}
-          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(caseData.status)}`}>
-            {caseData.status === 'active' ? 'Actif' : 
-             caseData.status === 'pending' ? 'En attente' : 'Fermé'}
+          {getStatusIcon(caseData.status || 'En cours')}
+          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(caseData.status || 'En cours')}`}>
+            {(caseData.status || 'En cours') === 'active' ? 'Actif' : 
+             (caseData.status || 'En cours') === 'pending' ? 'En attente' : 
+             (caseData.status || 'En cours') === 'Ouvert' ? 'Ouvert' :
+             (caseData.status || 'En cours') === 'En cours' ? 'En cours' : 'Fermé'}
           </span>
         </div>
         
@@ -116,10 +126,10 @@ const CaseCard = ({ case: caseData, index, onEdit, onDelete }) => {
       <div className="mb-4 flex-grow">
         <div className="flex items-center gap-2 mb-2">
           <FileText className="w-4 h-4 text-slate-400" />
-          <span className="text-xs text-slate-400 font-mono">{caseData.id}</span>
+          <span className="text-xs text-slate-400 font-mono">{caseData.id || 'ID non défini'}</span>
         </div>
         <h3 className="text-lg font-semibold text-white mb-2 line-clamp-2">
-          {caseData.title}
+          {caseData.title || 'Titre non défini'}
         </h3>
         {caseData.description && (
           <p className="text-slate-400 text-sm line-clamp-3">

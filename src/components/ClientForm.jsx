@@ -22,14 +22,14 @@ const ClientForm = ({ client, onSubmit, onCancel }) => {
     if (client) {
       setFormData({
         type: client.type || 'individual',
-        firstName: client.firstName || '',
-        lastName: client.lastName || '',
+        firstName: client.first_name || client.firstName || '',
+        lastName: client.last_name || client.lastName || '',
         company: client.company || '',
         email: client.email || '',
         phone: client.phone || '',
         address: client.address || '',
         city: client.city || '',
-        postalCode: client.postalCode || '',
+        postalCode: client.postal_code || client.postalCode || '',
         country: client.country || 'France',
         notes: client.notes || ''
       });

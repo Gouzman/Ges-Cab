@@ -40,14 +40,15 @@ const Sidebar = ({ activeView, setActiveView, currentUser, onLogout }) => {
   const settingsItem = { id: 'settings', label: 'Paramètres', icon: Settings };
 
   return (
-    <motion.aside
-      initial={{ x: -250 }}
-      animate={{ x: 0 }}
-      className="fixed left-0 top-0 h-screen w-64 bg-slate-800/90 backdrop-blur-sm border-r border-slate-700/50 z-50 flex flex-col print:hidden"
+    <motion.aside 
+      initial={{ x: -300, opacity: 0 }}
+      animate={{ x: 0, opacity: 1 }}
+      transition={{ duration: 0.3 }}
+      className="w-64 min-h-screen bg-gradient-to-b from-slate-900/95 to-slate-800/95 backdrop-blur-sm border-r border-slate-700/50 flex flex-col"
     >
       <div className="p-6">
         <div className="flex items-center gap-3 mb-8">
-          <div className="p-2 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg">
+          <div className="p-2 bg-gradient-to-r from-bordeaux-900 to-bordeaux-700 rounded-lg">
             <Scale className="w-6 h-6 text-white" />
           </div>
           <div>
@@ -68,7 +69,7 @@ const Sidebar = ({ activeView, setActiveView, currentUser, onLogout }) => {
               variant={isActive ? "default" : "ghost"}
               className={`w-full justify-start gap-3 h-12 ${
                 isActive 
-                  ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg' 
+                  ? 'bg-gradient-to-r from-bordeaux-900 to-bordeaux-700 text-white shadow-lg' 
                   : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
               }`}
               onClick={() => setActiveView(item.id)}

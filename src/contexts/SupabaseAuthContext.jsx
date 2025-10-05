@@ -140,6 +140,135 @@ export const AuthProvider = ({ children }) => {
     return { error };
   }, [toast]);
 
+  const trySignIn = useCallback(async (email, password) => {
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    return { error };
+  }, []);
+
+  const checkUserExists = useCallback(async (email) => {
+    try {
+      // Tentative de connexion avec un mot de passe fictif
+      const { error } = await trySignIn(email, 'dummy-password-for-check');
+      
+      // Si l'erreur indique "Invalid login credentials", l'utilisateur existe
+      if (error?.message?.includes('Invalid login credentials')) {
+        return { exists: true, error: null };
+      }
+      
+      // Si l'erreur indique "Email not confirmed", l'utilisateur existe mais n'est pas confirmé
+      if (error?.message?.includes('Email not confirmed')) {
+        return { exists: true, error: null };
+      }
+      
+      // Si pas d'erreur (connexion réussie avec le dummy password - très improbable)
+      if (!error) {
+        await supabase.auth.signOut(); // Déconnexion immédiate
+        return { exists: true, error: null };
+      }
+      
+      // Autres erreurs - on considère que l'utilisateur n'existe pas
+      return { exists: false, error: null };
+    } catch (error) {
+      return { exists: false, error };
+    }
+  }, [trySignIn]);
+
+  const updateUserPermissions = useCallback(async (userId, permissions) => {
+    try {
+      const { error } = await supabase
+        .from('user_permissions')
+        .upsert({
+          user_id: userId,
+          permissions: permissions
+        });
+
+      if (error) {
+        console.error("Error updating permissions:", error);
+        toast({
+          variant: "destructive",
+          title: "Erreur de permissions",
+          description: "Impossible de mettre à jour les permissions."
+        });
+        return { success: false, error };
+      }
+
+      toast({
+        title: "✅ Permissions mises à jour",
+        description: "Les permissions ont été sauvegardées avec succès."
+      });
+
+      return { success: true, error: null };
+    } catch (error) {
+      console.error("Network error updating permissions:", error);
+      toast({
+        variant: "destructive",
+        title: "Erreur réseau",
+        description: "Impossible de sauvegarder les permissions."
+      });
+      return { success: false, error };
+    }
+  }, [toast]);
+
+  const getAllUsers = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, name, email, role, function, created_at')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error("Error fetching users:", error);
+        toast({
+          variant: "destructive",
+          title: "Erreur",
+          description: "Impossible de charger la liste des utilisateurs."
+        });
+        return { data: [], error };
+      }
+
+      return { data: data || [], error: null };
+    } catch (error) {
+      console.error("Network error fetching users:", error);
+      toast({
+        variant: "destructive",
+        title: "Erreur réseau",
+        description: "Impossible de récupérer les utilisateurs."
+      });
+      return { data: [], error };
+    }
+  }, [toast]);
+
+  const getUserPermissions = useCallback(async (userId) => {
+    try {
+      const { data, error } = await supabase
+        .from('user_permissions')
+        .select('permissions')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (error) {
+        console.error("Error fetching user permissions:", error);
+        return { permissions: null, error };
+      }
+
+      return { permissions: data?.permissions || null, error: null };
+    } catch (error) {
+      console.error("Network error fetching permissions:", error);
+      return { permissions: null, error };
+    }
+  }, []);
+
+  const refreshCurrentUser = useCallback(async () => {
+    if (session?.user) {
+      const profile = await fetchUserProfileAndPermissions(session.user.id);
+      setUser(profile);
+    }
+  }, [session?.user, fetchUserProfileAndPermissions]);
+
   const value = useMemo(() => ({
     user,
     session,
@@ -147,7 +276,13 @@ export const AuthProvider = ({ children }) => {
     signUp,
     signIn,
     signOut,
-  }), [user, session, loading, signUp, signIn, signOut]);
+    trySignIn,
+    checkUserExists,
+    updateUserPermissions,
+    getAllUsers,
+    getUserPermissions,
+    refreshCurrentUser,
+  }), [user, session, loading, signUp, signIn, signOut, trySignIn, checkUserExists, updateUserPermissions, getAllUsers, getUserPermissions, refreshCurrentUser]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

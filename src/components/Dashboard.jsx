@@ -131,12 +131,74 @@ const Dashboard = ({ currentUser, setActiveView }) => {
   };
 
   const statCards = [
-    { title: 'Tâches Totales', value: stats.totalTasks, icon: CheckSquare, color: 'from-blue-500 to-blue-600', bgColor: 'bg-blue-500/10', view: 'tasks' },
-    { title: 'Tâches Complétées', value: stats.completedTasks, icon: Target, color: 'from-green-500 to-green-600', bgColor: 'bg-green-500/10', view: 'tasks' },
-    { title: 'Clients Actifs', value: stats.totalClients, icon: Users, color: 'from-purple-500 to-purple-600', bgColor: 'bg-purple-500/10', adminOnly: true, view: 'clients' },
-    { title: 'Dossiers Actifs', value: stats.activeCases, icon: FileText, color: 'from-indigo-500 to-indigo-600', bgColor: 'bg-indigo-500/10', adminOnly: true, view: 'cases' },
-    { title: 'Tâches Urgentes', value: stats.urgentTasks, icon: AlertTriangle, color: 'from-red-500 to-red-600', bgColor: 'bg-red-500/10', view: 'tasks' },
-    { title: 'Échéances Aujourd\'hui', value: stats.todayDeadlines, icon: Clock, color: 'from-orange-500 to-orange-600', bgColor: 'bg-orange-500/10', view: 'calendar' }
+    { 
+      title: 'Tâches Totales', 
+      value: stats.totalTasks, 
+      icon: CheckSquare, 
+      color: 'from-sky-400 to-sky-500', 
+      bgColor: 'bg-sky-50', 
+      borderColor: 'border-sky-200',
+      iconColor: 'text-sky-500',
+      textColor: 'text-sky-700',
+      view: 'tasks' 
+    },
+    { 
+      title: 'Tâches Complétées', 
+      value: stats.completedTasks, 
+      icon: Target, 
+      color: 'from-emerald-400 to-emerald-500', 
+      bgColor: 'bg-emerald-50', 
+      borderColor: 'border-emerald-200',
+      iconColor: 'text-emerald-500',
+      textColor: 'text-emerald-700',
+      view: 'tasks' 
+    },
+    { 
+      title: 'Clients Actifs', 
+      value: stats.totalClients, 
+      icon: Users, 
+      color: 'from-violet-400 to-violet-500', 
+      bgColor: 'bg-violet-50', 
+      borderColor: 'border-violet-200',
+      iconColor: 'text-violet-500',
+      textColor: 'text-violet-700',
+      adminOnly: true, 
+      view: 'clients' 
+    },
+    { 
+      title: 'Dossiers Actifs', 
+      value: stats.activeCases, 
+      icon: FileText, 
+      color: 'from-indigo-400 to-indigo-500', 
+      bgColor: 'bg-indigo-50', 
+      borderColor: 'border-indigo-200',
+      iconColor: 'text-indigo-500',
+      textColor: 'text-indigo-700',
+      adminOnly: true, 
+      view: 'cases' 
+    },
+    { 
+      title: 'Tâches Urgentes', 
+      value: stats.urgentTasks, 
+      icon: AlertTriangle, 
+      color: 'from-rose-400 to-rose-500', 
+      bgColor: 'bg-rose-50', 
+      borderColor: 'border-rose-200',
+      iconColor: 'text-rose-500',
+      textColor: 'text-rose-700',
+      view: 'tasks' 
+    },
+    { 
+      title: 'Échéances Aujourd\'hui', 
+      value: stats.todayDeadlines, 
+      icon: Clock, 
+      color: 'from-amber-400 to-amber-500', 
+      bgColor: 'bg-amber-50', 
+      borderColor: 'border-amber-200',
+      iconColor: 'text-amber-500',
+      textColor: 'text-amber-700',
+      view: 'calendar' 
+    }
   ].filter(card => isAdmin || !card.adminOnly);
 
   const formatDate = (dateString) => {
@@ -148,12 +210,12 @@ const Dashboard = ({ currentUser, setActiveView }) => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Tableau de Bord</h1>
-          <p className="text-slate-400">Bonjour {currentUser.name || currentUser.email}, voici la vue d'ensemble de votre activité.</p>
+          <h1 className="text-3xl font-bold text-bordeaux-900 mb-2">Tableau de Bord</h1>
+          <p className="text-bordeaux-600">Bonjour {currentUser.name || currentUser.email}, voici la vue d'ensemble de votre activité.</p>
         </div>
         <div className="text-right">
-          <p className="text-slate-400">Aujourd'hui</p>
-          <p className="text-white font-semibold">{new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+          <p className="text-bordeaux-600">Aujourd'hui</p>
+          <p className="text-bordeaux-900 font-semibold">{new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
         </div>
       </div>
 
@@ -167,15 +229,15 @@ const Dashboard = ({ currentUser, setActiveView }) => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
               onClick={() => setActiveView(card.view)}
-              className={`${card.bgColor} backdrop-blur-sm border border-slate-700/50 rounded-xl p-6 hover:scale-105 transition-transform duration-200 cursor-pointer`}
+              className={`${card.bgColor} border-2 ${card.borderColor} rounded-2xl p-6 hover:scale-[1.02] hover:shadow-lg hover:shadow-${card.borderColor.replace('border-', '')}/20 transition-all duration-300 cursor-pointer bg-white/80 backdrop-blur-sm`}
             >
               <div className="flex items-center justify-between mb-4">
-                <div className={`p-3 bg-gradient-to-r ${card.color} rounded-lg`}>
+                <div className={`p-3 bg-gradient-to-br ${card.color} rounded-xl shadow-sm`}>
                   <Icon className="w-6 h-6 text-white" />
                 </div>
-                <p className="text-3xl font-bold text-white">{card.value}</p>
+                <p className={`text-3xl font-bold ${card.textColor}`}>{card.value}</p>
               </div>
-              <h3 className="text-slate-300 font-medium">{card.title}</h3>
+              <h3 className="text-gray-600 font-medium text-sm">{card.title}</h3>
             </motion.div>
           );
         })}
@@ -186,31 +248,35 @@ const Dashboard = ({ currentUser, setActiveView }) => {
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.6 }}
-          className="lg:col-span-2 bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl p-6"
+          className="lg:col-span-2 bg-white/90 backdrop-blur-sm border border-rose-100 rounded-2xl p-6 shadow-sm"
         >
           <div className="flex items-center gap-3 mb-4">
-            <UserX className="w-6 h-6 text-red-400" />
-            <h3 className="text-xl font-semibold text-white">Tâches en Retard ({overdueTasks.length})</h3>
+            <div className="p-2 bg-rose-100 rounded-lg">
+              <UserX className="w-5 h-5 text-rose-500" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-800">Tâches en Retard ({overdueTasks.length})</h3>
           </div>
           {overdueTasks.length > 0 ? (
             <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
               {overdueTasks.map(task => (
-                <div key={task.id} className="flex items-center justify-between p-3 bg-red-500/10 rounded-lg">
+                <div key={task.id} className="flex items-center justify-between p-4 bg-rose-50 border border-rose-100 rounded-xl">
                   <div>
-                    <p className="text-white font-medium">{task.title}</p>
-                    <p className="text-slate-400 text-sm">Assigné à: {task.assigned_to_name || 'Non assigné'}</p>
+                    <p className="text-gray-800 font-medium">{task.title}</p>
+                    <p className="text-gray-500 text-sm">Assigné à: {task.assigned_to_name || 'Non assigné'}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-red-400 font-semibold">Retard</p>
-                    <p className="text-slate-400 text-sm">Échéance: {formatDate(task.deadline)}</p>
+                    <p className="text-rose-600 font-semibold text-sm px-2 py-1 bg-rose-100 rounded-md">Retard</p>
+                    <p className="text-gray-500 text-xs mt-1">Échéance: {formatDate(task.deadline)}</p>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
             <div className="text-center py-8">
-              <CheckSquare className="w-12 h-12 text-green-500 mx-auto mb-3" />
-              <p className="text-slate-300">Félicitations ! Aucune tâche en retard.</p>
+              <div className="p-3 bg-emerald-100 rounded-full w-fit mx-auto mb-3">
+                <CheckSquare className="w-8 h-8 text-emerald-500" />
+              </div>
+              <p className="text-gray-600">Félicitations ! Aucune tâche en retard.</p>
             </div>
           )}
         </motion.div>
@@ -219,11 +285,13 @@ const Dashboard = ({ currentUser, setActiveView }) => {
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.7 }}
-          className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl p-6"
+          className="bg-white/90 backdrop-blur-sm border border-amber-100 rounded-2xl p-6 shadow-sm"
         >
           <div className="flex items-center gap-3 mb-4">
-            <Megaphone className="w-6 h-6 text-yellow-400" />
-            <h3 className="text-xl font-semibold text-white">Alertes Récentes</h3>
+            <div className="p-2 bg-amber-100 rounded-lg">
+              <Megaphone className="w-5 h-5 text-amber-500" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-800">Alertes Récentes</h3>
           </div>
           {isAdmin && (
             <div className="flex gap-2 mb-4">
@@ -232,22 +300,22 @@ const Dashboard = ({ currentUser, setActiveView }) => {
                 value={newAlert}
                 onChange={(e) => setNewAlert(e.target.value)}
                 placeholder="Écrire une nouvelle alerte..."
-                className="flex-grow px-3 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                className="flex-grow px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
               />
-              <Button size="icon" onClick={handlePostAlert} className="bg-yellow-500 hover:bg-yellow-600">
+              <Button size="icon" onClick={handlePostAlert} className="bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 rounded-xl">
                 <Send className="w-4 h-4" />
               </Button>
             </div>
           )}
           <div className="space-y-3 max-h-48 overflow-y-auto pr-2">
             {alerts.length > 0 ? alerts.map(alert => (
-              <div key={alert.id} className="p-3 bg-yellow-500/10 rounded-lg">
-                <p className="text-white text-sm">{alert.text}</p>
-                <p className="text-xs text-slate-400 mt-1">
+              <div key={alert.id} className="p-4 bg-amber-50 border border-amber-100 rounded-xl">
+                <p className="text-gray-800 text-sm font-medium">{alert.text}</p>
+                <p className="text-xs text-gray-500 mt-2">
                   Par {alert.author_name} - {new Date(alert.created_at).toLocaleDateString('fr-FR')}
                 </p>
               </div>
-            )) : <p className="text-slate-400 text-center text-sm py-4">Aucune alerte pour le moment.</p>}
+            )) : <p className="text-gray-500 text-center text-sm py-4">Aucune alerte pour le moment.</p>}
           </div>
         </motion.div>
       </div>
@@ -257,32 +325,37 @@ const Dashboard = ({ currentUser, setActiveView }) => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.8 }}
-          className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl p-6"
+          className="bg-white/90 backdrop-blur-sm border border-violet-100 rounded-2xl p-6 shadow-sm"
         >
-          <h3 className="text-xl font-semibold text-white mb-4">Performance de l'Équipe</h3>
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-2 bg-violet-100 rounded-lg">
+              <Users className="w-5 h-5 text-violet-500" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-800">Performance de l'Équipe</h3>
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
-                <tr className="border-b border-slate-700">
-                  <th className="p-3 text-slate-400 font-medium">Collaborateur</th>
-                  <th className="p-3 text-slate-400 font-medium text-center">Tâches Assignées</th>
-                  <th className="p-3 text-slate-400 font-medium text-center">Tâches Terminées</th>
-                  <th className="p-3 text-slate-400 font-medium text-center">En Retard</th>
-                  <th className="p-3 text-slate-400 font-medium text-center">Taux de Complétion</th>
+                <tr className="border-b border-gray-200">
+                  <th className="p-4 text-gray-600 font-semibold text-sm">Collaborateur</th>
+                  <th className="p-4 text-gray-600 font-semibold text-sm text-center">Tâches Assignées</th>
+                  <th className="p-4 text-gray-600 font-semibold text-sm text-center">Tâches Terminées</th>
+                  <th className="p-4 text-gray-600 font-semibold text-sm text-center">En Retard</th>
+                  <th className="p-4 text-gray-600 font-semibold text-sm text-center">Taux de Complétion</th>
                 </tr>
               </thead>
               <tbody>
                 {teamPerformance.map(member => (
-                  <tr key={member.name} className="border-b border-slate-800 hover:bg-slate-700/30">
-                    <td className="p-3 text-white font-medium">{member.name}</td>
-                    <td className="p-3 text-white text-center">{member.total}</td>
-                    <td className="p-3 text-green-400 text-center">{member.completed}</td>
-                    <td className="p-3 text-red-400 text-center">{member.overdue}</td>
-                    <td className="p-3 text-white text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        <span>{member.completionRate}%</span>
-                        <div className="w-24 bg-slate-600 rounded-full h-2.5">
-                          <div className="bg-blue-500 h-2.5 rounded-full" style={{ width: `${member.completionRate}%` }}></div>
+                  <tr key={member.name} className="border-b border-gray-100 hover:bg-gray-50/80 transition-colors">
+                    <td className="p-4 text-gray-800 font-medium">{member.name}</td>
+                    <td className="p-4 text-gray-700 text-center">{member.total}</td>
+                    <td className="p-4 text-emerald-600 text-center font-semibold">{member.completed}</td>
+                    <td className="p-4 text-rose-600 text-center font-semibold">{member.overdue}</td>
+                    <td className="p-4 text-gray-700 text-center">
+                      <div className="flex items-center justify-center gap-3">
+                        <span className="font-semibold text-violet-600">{member.completionRate}%</span>
+                        <div className="w-24 bg-gray-200 rounded-full h-2">
+                          <div className="bg-gradient-to-r from-violet-400 to-violet-500 h-2 rounded-full transition-all duration-300" style={{ width: `${member.completionRate}%` }}></div>
                         </div>
                       </div>
                     </td>

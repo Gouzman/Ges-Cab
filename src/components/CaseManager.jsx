@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
 import CaseForm from "@/components/CaseForm";
 import CaseCard from "@/components/CaseCard";
-import { db } from "@/lib/db";
+import { supabase } from "@/lib/customSupabaseClient";
 
 const CaseManager = ({ currentUser }) => {
   const [cases, setCases] = useState([]);
@@ -25,9 +25,11 @@ const CaseManager = ({ currentUser }) => {
     const fetchCases = async () => {
       setIsLoading(true);
       try {
-        const { rows } = await db.query(
-          `SELECT * FROM cases ORDER BY created_at DESC`
-        );
+        const { data: rows, error } = await supabase
+          .from('cases')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (error) throw error;
 
         setCases(isAdmin ? rows : rows.filter(c => 
           c.created_by === currentUser.id || 
@@ -61,18 +63,26 @@ const CaseManager = ({ currentUser }) => {
   const handleAddCase = async (caseData) => {
     try {
       validateCaseData(caseData);
-      const { rows } = await db.query(
-        `INSERT INTO cases (${Object.keys({ ...caseData, created_by: currentUser.id }).join(", ")})
-         VALUES (${Object.keys({ ...caseData, created_by: currentUser.id }).map((_, i) => `$${i + 1}`).join(", ")})
-         RETURNING *`,
-        Object.values({ ...caseData, created_by: currentUser.id })
-      );
+      
+      // Utiliser EXACTEMENT les colonnes qui existent dans la table cases
+      const dbData = {
+        title: caseData.title || 'Nouveau dossier',
+        status: caseData.status || 'Open',  // Valeur par défaut de la DB
+        priority: caseData.priority || 'Medium'  // Valeur par défaut de la DB
+      };
+      
+      const { data: rows, error } = await supabase
+        .from('cases')
+        .insert([dbData])
+        .select();
+      
+      if (error) throw error;
 
       setCases(prev => [rows[0], ...prev]);
       setShowForm(false);
       toast({
         title: "✅ Dossier créé",
-        description: `Le dossier ${data[0].id} a été créé avec succès.`
+        description: `Le dossier "${rows[0].title}" a été créé avec succès.`
       });
     } catch (error) {
       console.error("Erreur lors de la création du dossier:", error);
@@ -88,13 +98,13 @@ const CaseManager = ({ currentUser }) => {
     try {
       validateCaseData(caseData);
       const { id, ...updateData } = caseData;
-      const { rows } = await db.query(
-        `UPDATE cases
-         SET ${Object.keys(updateData).map((key, i) => `${key} = $${i + 2}`).join(", ")}
-         WHERE id = $1
-         RETURNING *`,
-        [id, ...Object.values(updateData)]
-      );
+      const { data: rows, error } = await supabase
+        .from('cases')
+        .update(updateData)
+        .eq('id', id)
+        .select();
+      
+      if (error) throw error;
 
       setCases(prev => prev.map(c => 
         c.id === caseData.id ? { ...c, ...rows[0] } : c
@@ -116,10 +126,12 @@ const CaseManager = ({ currentUser }) => {
 
   const handleDeleteCase = async (caseId) => {
     try {
-      await db.query(
-        'DELETE FROM cases WHERE id = $1',
-        [caseId]
-      );
+      const { error } = await supabase
+        .from('cases')
+        .delete()
+        .eq('id', caseId);
+      
+      if (error) throw error;
 
       setCases(prev => prev.filter(c => c.id !== caseId));
       toast({
@@ -166,14 +178,14 @@ const CaseManager = ({ currentUser }) => {
 
       <div className="flex gap-4 mb-6">
         <div className="flex-grow">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+          <div className="relative bg-gradient-to-r from-red-50 to-rose-50 border border-red-200 rounded-lg p-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-red-500" />
             <input
               type="text"
               placeholder="Rechercher un dossier..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-slate-800/50 border border-slate-700/50 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-10 pr-4 py-2 bg-gradient-to-r from-red-100/50 to-rose-100/50 border-2 border-red-300 rounded-lg text-red-900 placeholder-red-500 focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-red-400"
             />
           </div>
         </div>

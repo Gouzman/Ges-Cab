@@ -3,30 +3,33 @@
 @tailwind utilities;
 
 :root {
-  --background: 222.2 84% 4.9%;
-  --foreground: 210 40% 98%;
-  --card: 222.2 84% 4.9%;
-  --card-foreground: 210 40% 98%;
-  --popover: 222.2 84% 4.9%;
-  --popover-foreground: 210 40% 98%;
-  --primary: 217.2 91.2% 59.8%;
-  --primary-foreground: 222.2 84% 4.9%;
-  --secondary: 217.2 32.6% 17.5%;
-  --secondary-foreground: 210 40% 98%;
-  --muted: 217.2 32.6% 17.5%;
-  --muted-foreground: 215 20.2% 65.1%;
-  --accent: 217.2 32.6% 17.5%;
-  --accent-foreground: 210 40% 98%;
-  --destructive: 0 62.8% 30.6%;
-  --destructive-foreground: 210 40% 98%;
-  --border: 217.2 32.6% 17.5%;
-  --input: 217.2 32.6% 17.5%;
-  --ring: 224.3 76.3% 94.1%;
+  /* Charte graphique Bordeaux & Blanc Cassé */
+  --background: 0 0% 98%;                /* Blanc cassé pour le fond */
+  --foreground: 351 50% 10%;             /* Bordeaux très sombre pour le texte */
+  --card: 0 0% 100%;                     /* Blanc pur pour les cartes */
+  --card-foreground: 351 50% 10%;        /* Bordeaux sombre pour le texte des cartes */
+  --popover: 0 0% 100%;                  /* Blanc pour les popovers */
+  --popover-foreground: 351 50% 10%;     /* Bordeaux sombre pour le texte des popovers */
+  --primary: 351 91% 22%;                /* Rouge bordeaux principal #6D071A */
+  --primary-foreground: 0 0% 100%;       /* Blanc pour le texte sur bordeaux */
+  --secondary: 351 20% 90%;              /* Bordeaux très clair pour secondaire */
+  --secondary-foreground: 351 50% 15%;   /* Bordeaux sombre pour le texte secondaire */
+  --muted: 351 10% 95%;                  /* Bordeaux très pâle pour muted */
+  --muted-foreground: 351 20% 45%;       /* Bordeaux moyen pour le texte muted */
+  --accent: 351 30% 88%;                 /* Bordeaux accent très clair */
+  --accent-foreground: 351 50% 15%;      /* Bordeaux sombre pour le texte accent */
+  --destructive: 0 84% 60%;              /* Rouge pour les erreurs */
+  --destructive-foreground: 0 0% 100%;   /* Blanc pour le texte d'erreur */
+  --border: 351 20% 85%;                 /* Bordeaux très clair pour les bordures */
+  --input: 0 0% 97%;                     /* Blanc cassé pour les inputs */
+  --ring: 351 91% 50%;                   /* Bordeaux clair pour focus ring */
   --radius: 0.5rem;
 }
 
 body {
-  @apply bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-white;
+  /* Fond blanc cassé élégant avec subtils accents bordeaux */
+  background: linear-gradient(135deg, #FEFEFE 0%, #F9F7F7 25%, #F5F3F3 50%, #F1EFEF 75%, #EEECEC 100%);
+  color: #2D1B1E; /* Texte bordeaux très sombre pour la lisibilité */
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   min-height: 100vh;
 }
@@ -45,23 +48,23 @@ body {
   overflow: hidden;
 }
 
-/* Custom scrollbar */
+/* Custom scrollbar bordeaux sur fond blanc */
 ::-webkit-scrollbar {
   width: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(51, 65, 85, 0.3);
+  background: rgba(109, 7, 26, 0.05);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(100, 116, 139, 0.5);
+  background: rgba(109, 7, 26, 0.3);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(100, 116, 139, 0.7);
+  background: rgba(109, 7, 26, 0.5);
 }
 
 /* Smooth transitions */
@@ -69,12 +72,12 @@ body {
   transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
 }
 
-/* Focus styles */
+/* Focus styles bordeaux */
 input:focus,
 textarea:focus,
 select:focus {
   outline: none;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+  box-shadow: 0 0 0 2px rgba(109, 7, 26, 0.5);
 }
 
 /* Button hover effects */

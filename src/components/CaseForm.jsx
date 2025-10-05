@@ -27,7 +27,7 @@ const CaseForm = ({ case: caseData, onSubmit, onCancel }) => {
     startDate: '',
     expectedEndDate: '',
     budget: '',
-    timeSpent: 0,
+    timeSpent: '0',
     notes: '',
     attachments: []
   });
@@ -45,7 +45,7 @@ const CaseForm = ({ case: caseData, onSubmit, onCancel }) => {
         startDate: caseData.startDate || '',
         expectedEndDate: caseData.expectedEndDate || '',
         budget: caseData.budget ? formatCurrency(caseData.budget) : '',
-        timeSpent: caseData.timeSpent || 0,
+        timeSpent: String(caseData.timeSpent || 0),
         notes: caseData.notes || '',
         attachments: caseData.attachments || []
       });
@@ -64,10 +64,17 @@ const CaseForm = ({ case: caseData, onSubmit, onCancel }) => {
     const { name, value, type } = e.target;
     if (name === 'budget') {
       setFormData(prev => ({ ...prev, budget: formatCurrency(value) }));
+    } else if (type === 'number') {
+      // S'assurer que les valeurs numériques sont valides
+      const numValue = value === '' ? 0 : parseFloat(value);
+      setFormData(prev => ({
+        ...prev,
+        [name]: isNaN(numValue) ? 0 : numValue
+      }));
     } else {
       setFormData(prev => ({
         ...prev,
-        [name]: type === 'number' ? parseFloat(value) : value
+        [name]: value
       }));
     }
   };

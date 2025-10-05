@@ -5,7 +5,7 @@ import { BarChart3, PieChart, TrendingUp, FileText, Download, Users, CheckSquare
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, Pie, Cell } from 'recharts';
 import { toast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
-import { db } from '@/lib/db';
+import { supabase } from '@/lib/customSupabaseClient';
 import Papa from 'papaparse';
 import { startOfMonth, startOfQuarter, isWithinInterval, endOfMonth, endOfQuarter } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -34,18 +34,25 @@ const Reports = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const { rows: tasks } = await db.query('SELECT * FROM tasks');
-      const { rows: cases } = await db.query('SELECT * FROM cases');
-      const { rows: team } = await db.query('SELECT id, name FROM users');
-      
-      const mockInvoices = [
-        { id: 1, invoiceNumber: 'FACT-2025-001', clientName: 'Société Alpha', caseId: 'D-001', totalTTC: 1770000, date: '2025-09-15', payment: { provision: true, provisionAmount: 1770000 } },
-        { id: 2, invoiceNumber: 'FACT-2025-002', clientName: 'Monsieur Beta', caseId: 'D-002', totalTTC: 590000, date: '2025-09-20', payment: { provision: true, provisionAmount: 200000 } },
-        { id: 3, invoiceNumber: 'FACT-2025-003', clientName: 'Entreprise Gamma', caseId: 'D-003', totalTTC: 885000, date: '2025-08-10', payment: { provision: false, provisionAmount: 0 } },
-        { id: 4, invoiceNumber: 'FACT-2025-004', clientName: 'Société Alpha', caseId: 'D-004', totalTTC: 2500000, date: '2025-06-01', payment: { provision: true, provisionAmount: 2500000 } },
-        { id: 5, invoiceNumber: 'FACT-2025-005', clientName: 'Particulier Delta', caseId: 'D-005', totalTTC: 350000, date: '2025-02-15', payment: { provision: true, provisionAmount: 350000 } },
-      ];
-      setData({ tasks: tasks || [], cases: cases || [], team: team || [], invoices: mockInvoices });
+      try {
+        const { data: tasks } = await supabase.from('tasks').select('status');
+        const { data: clients } = await supabase.from('clients').select('id');
+        const { data: cases } = await supabase.from('cases').select('status');
+
+        const team = []; // À implémenter avec Supabase plus tard
+        
+        const mockInvoices = [
+          { id: 1, invoiceNumber: 'FACT-2025-001', clientName: 'Société Alpha', caseId: 'D-001', totalTTC: 1770000, date: '2025-09-15', payment: { provision: true, provisionAmount: 1770000 } },
+          { id: 2, invoiceNumber: 'FACT-2025-002', clientName: 'Monsieur Beta', caseId: 'D-002', totalTTC: 590000, date: '2025-09-20', payment: { provision: true, provisionAmount: 200000 } },
+          { id: 3, invoiceNumber: 'FACT-2025-003', clientName: 'Entreprise Gamma', caseId: 'D-003', totalTTC: 885000, date: '2025-08-10', payment: { provision: false, provisionAmount: 0 } },
+          { id: 4, invoiceNumber: 'FACT-2025-004', clientName: 'Société Alpha', caseId: 'D-004', totalTTC: 2500000, date: '2025-06-01', payment: { provision: true, provisionAmount: 2500000 } },
+          { id: 5, invoiceNumber: 'FACT-2025-005', clientName: 'Particulier Delta', caseId: 'D-005', totalTTC: 350000, date: '2025-02-15', payment: { provision: true, provisionAmount: 350000 } },
+        ];
+        
+        setData({ tasks: tasks || [], cases: cases || [], team: team || [], invoices: mockInvoices });
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
     };
     fetchData();
   }, []);

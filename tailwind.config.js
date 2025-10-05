@@ -17,11 +17,26 @@ module.exports = {
 		},
 		extend: {
 			colors: {
+				// Couleurs système
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
 				ring: 'hsl(var(--ring))',
 				background: 'hsl(var(--background))',
 				foreground: 'hsl(var(--foreground))',
+				// Couleurs de la charte bordeaux
+				'bordeaux': {
+					50: '#FDF2F4',
+					100: '#FCE7EA',
+					200: '#F8D0D6',
+					300: '#F2A8B3',
+					400: '#E9738A',
+					500: '#DC4762',
+					600: '#C8264A',
+					700: '#A81D3D',
+					800: '#8D1A38',
+					900: '#6D071A', // Couleur principale
+					950: '#4A0512',
+				},
 				primary: {
 					DEFAULT: 'hsl(var(--primary))',
 					foreground: 'hsl(var(--primary-foreground))',

@@ -3,9 +3,7 @@ import { useState, useEffect } from 'react';
     import { FileArchive, Search, Eye, Trash2, Timer, Download } from 'lucide-react';
     import { Button } from '@/components/ui/button';
     import { toast } from '@/components/ui/use-toast';
-    import { db } from '@/lib/db';
-    import { promises as fs } from 'fs';
-    import path from 'path';
+    import { supabase } from '@/lib/customSupabaseClient';
 
     const DocumentManager = ({ currentUser }) => {
       const [documents, setDocuments] = useState([]);
@@ -16,9 +14,8 @@ import { useState, useEffect } from 'react';
 
       useEffect(() => {
         const fetchProfile = async () => {
-          const { rows } = await db.query('SELECT * FROM users WHERE id = $1', [currentUser.id]);
-          const data = rows[0];
-          setProfile(data);
+          const { data: rows } = await supabase.from('profiles').select('*').eq('id', currentUser.id).single();
+          setProfile(rows);
         };
         fetchProfile();
       }, [currentUser]);
@@ -46,14 +43,21 @@ import { useState, useEffect } from 'react';
 
       useEffect(() => {
         const fetchDocuments = async () => {
-          const { rows: rawTasks } = await db.query('SELECT id, title, updated_at, time_spent, attachments FROM tasks');
-          let filteredTasks = rawTasks;
-          if (!isAdmin) {
-            filteredTasks = rawTasks.filter(task => task.assigned_to_id === currentUser.id);
-          }
+          try {
+            const { data: rawTasks, error } = await supabase
+              .from('tasks')
+              .select('id, title, created_at, time_spent, attachments');
+            if (error) throw error;
+            let filteredTasks = rawTasks || [];
+            if (!isAdmin) {
+              filteredTasks = filteredTasks.filter(task => task.assigned_to_id === currentUser.id);
+            }
 
-          const allDocs = extractDocumentsFromTasks(filteredTasks);
-          setDocuments(allDocs);
+            const allDocs = extractDocumentsFromTasks(filteredTasks);
+            setDocuments(allDocs);
+          } catch (error) {
+            console.error('Error fetching documents:', error);
+          }
         };
 
         if (profile) {
@@ -61,9 +65,11 @@ import { useState, useEffect } from 'react';
         }
       }, [currentUser, profile, isAdmin]);
 
-      const handleDownload = async (path, name) => {
-        const filePath = path.join(process.env.VITE_UPLOAD_DIR || 'uploads', path);
-        const data = await fs.readFile(filePath);
+      const handleDownload = async (filePath, name) => {
+        const { data, error } = await supabase.storage
+          .from('documents')
+          .download(filePath);
+        
         if (error) {
           toast({ variant: "destructive", title: "Erreur de téléchargement", description: error.message });
           return;
@@ -89,8 +95,10 @@ import { useState, useEffect } from 'react';
       };
 
       const handleDelete = async (doc) => {
-        const filePath = path.join(process.env.VITE_UPLOAD_DIR || 'uploads', doc.path);
-        await fs.unlink(filePath);
+        const { error: storageError } = await supabase.storage
+          .from('documents')
+          .remove([doc.path]);
+          
         if (storageError) {
           toast({ variant: "destructive", title: "Erreur de suppression du fichier", description: storageError.message });
           return;
@@ -122,15 +130,15 @@ import { useState, useEffect } from 'react';
             </div>
           </div>
 
-          <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl p-6">
+          <div className="bg-gradient-to-r from-red-50 to-rose-50 backdrop-blur-sm border border-red-200 rounded-xl p-6">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-red-500 w-5 h-5" />
               <input
                 type="text"
                 placeholder="Rechercher un document par nom ou par tâche..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-12 pr-4 py-3 bg-gradient-to-r from-red-100/50 to-rose-100/50 border-2 border-red-300 rounded-lg text-red-900 placeholder-red-500 focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-red-400"
               />
             </div>
           </div>

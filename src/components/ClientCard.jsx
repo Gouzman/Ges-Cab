@@ -22,14 +22,14 @@ const ClientCard = ({ client, index, onEdit, onDelete }) => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
-      className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl p-6 hover:scale-105 transition-all duration-200 print:bg-white print:border-slate-200 print:shadow-md print:hover:scale-100"
+      className="bg-white backdrop-blur-sm border border-bordeaux-200 rounded-xl p-6 hover:scale-105 transition-all duration-200 shadow-sm hover:shadow-md print:bg-white print:border-slate-200 print:shadow-md print:hover:scale-100"
     >
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
           <div className={`p-3 rounded-lg print:hidden ${
             client.type === 'company' 
-              ? 'bg-blue-500/20 text-blue-400' 
-              : 'bg-purple-500/20 text-purple-400'
+              ? 'bg-bordeaux-500/20 text-bordeaux-400' 
+              : 'bg-bordeaux-300/20 text-bordeaux-300'
           }`}>
             {client.type === 'company' ? (
               <Building className="w-6 h-6" />
@@ -38,11 +38,11 @@ const ClientCard = ({ client, index, onEdit, onDelete }) => {
             )}
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-white print:text-black">
-              {client.firstName} {client.lastName}
+            <h3 className="text-lg font-semibold text-bordeaux-900 print:text-black">
+              {client.first_name || client.firstName} {client.last_name || client.lastName}
             </h3>
             {client.company && (
-              <p className="text-slate-400 text-sm print:text-slate-600">{client.company}</p>
+              <p className="text-bordeaux-600 text-sm print:text-slate-600">{client.company}</p>
             )}
           </div>
         </div>
@@ -71,12 +71,12 @@ const ClientCard = ({ client, index, onEdit, onDelete }) => {
       <div className="space-y-3">
         <div className="flex items-center gap-3 text-sm">
           <Mail className="w-4 h-4 text-slate-400 print:text-slate-500" />
-          <span className="text-slate-300 print:text-slate-700">{client.email}</span>
+          <span className="text-bordeaux-700 print:text-slate-700">{client.email}</span>
         </div>
         
         <div className="flex items-center gap-3 text-sm">
           <Phone className="w-4 h-4 text-slate-400 print:text-slate-500" />
-          <span className="text-slate-300 print:text-slate-700">{client.phone}</span>
+          <span className="text-bordeaux-700 print:text-slate-700">{client.phone}</span>
         </div>
         
         {(client.address || client.city) && (
@@ -86,7 +86,7 @@ const ClientCard = ({ client, index, onEdit, onDelete }) => {
               {client.address && <div>{client.address}</div>}
               {client.city && (
                 <div>
-                  {client.postalCode} {client.city}
+                  {client.postal_code || client.postalCode} {client.city}
                   {client.country && client.country !== 'France' && `, ${client.country}`}
                 </div>
               )}
