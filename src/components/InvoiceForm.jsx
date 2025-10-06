@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import PropTypes from 'prop-types';
 import { motion } from 'framer-motion';
 import { X, User, FileText, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -14,11 +13,11 @@ const formatCurrency = (value) => {
 
 const parseCurrency = (value) => {
   if (typeof value !== 'string') return 0;
-  const number = Number(value.replace(/\s/g, '').replace(/\D/g, ""));
+  const number = Number(value.replace(/\s/g, '').replace(/[^0-9]/g, ""));
   return isNaN(number) ? 0 : number;
 };
 
-const InvoiceForm = ({ invoice, onSubmit, onCancel, onPrint }) => {
+const InvoiceForm = ({ invoice, onSubmit, onCancel, onPrint, currentUser }) => {
   const [formData, setFormData] = useState({
     clientName: '',
     caseId: '',
@@ -57,7 +56,7 @@ const InvoiceForm = ({ invoice, onSubmit, onCancel, onPrint }) => {
   };
 
   const handlePaymentChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type } = e.target;
     const isProvisionRadio = name === 'provision';
 
     setFormData(prev => {
@@ -87,19 +86,7 @@ const InvoiceForm = ({ invoice, onSubmit, onCancel, onPrint }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
-    // Inclure tous les totaux calculés dans les données soumises
-    const completeFormData = {
-      ...formData,
-      totalDebours,
-      totalHonoraires,
-      totalHT,
-      tva,
-      totalTTC,
-      resteAPayer
-    };
-    
-    onSubmit(completeFormData);
+    onSubmit(formData);
   };
 
   const renderCurrencyInput = (label, name, value, onChange) => (
@@ -184,70 +171,36 @@ const InvoiceForm = ({ invoice, onSubmit, onCancel, onPrint }) => {
 
           <div className="space-y-4 p-4 border border-slate-700 rounded-lg print:border-gray-300">
             <h3 className="text-lg font-semibold text-green-400 print:text-green-600">Paiement</h3>
-            <fieldset>
-              <legend className="block text-sm font-medium text-slate-300 mb-2 print:text-black">Mode de paiement envisagé</legend>
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2 print:text-black">Mode de paiement envisagé</label>
               <div className="flex flex-wrap gap-4">
-                {['Virement', 'Chèque', 'Carte bancaire', 'Espèces', 'Autre'].map(method => {
-                  const radioId = `method-${method.toLowerCase().replace(' ', '')}`;
-                  return (
-                    <label key={method} htmlFor={radioId} className="flex items-center text-slate-300 print:text-black">
-                      <input 
-                        id={radioId}
-                        type="radio" 
-                        name="method" 
-                        value={method.toLowerCase().replace(' ', '')} 
-                        checked={formData.payment.method === method.toLowerCase().replace(' ', '')} 
-                        onChange={handlePaymentChange} 
-                        className="mr-2 h-4 w-4 text-indigo-600 focus:ring-indigo-500 print:hidden" 
-                      />
-                      {method}
-                    </label>
-                  );
-                })}
+                {['Virement', 'Chèque', 'Carte bancaire', 'Espèces', 'Autre'].map(method => (
+                  <label key={method} className="flex items-center text-slate-300 print:text-black">
+                    <input type="radio" name="method" value={method.toLowerCase().replace(' ', '')} checked={formData.payment.method === method.toLowerCase().replace(' ', '')} onChange={handlePaymentChange} className="mr-2 h-4 w-4 text-indigo-600 focus:ring-indigo-500 print:hidden" />
+                    {method}
+                  </label>
+                ))}
               </div>
-            </fieldset>
-            <fieldset>
-              <legend className="block text-sm font-medium text-slate-300 mb-2 print:text-black">Dépôt de provision / Avance sur frais demandé(e)</legend>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2 print:text-black">Dépôt de provision / Avance sur frais demandé(e)</label>
               <div className="flex items-center gap-4">
-                <label htmlFor="provision-oui" className="flex items-center text-slate-300 print:text-black">
-                  <input 
-                    id="provision-oui"
-                    type="radio" 
-                    name="provision" 
-                    value="true" 
-                    checked={formData.payment.provision === true} 
-                    onChange={handlePaymentChange} 
-                    className="mr-2 h-4 w-4 text-indigo-600 focus:ring-indigo-500 print:hidden"
-                  />
-                  {' '}Oui
+                <label className="flex items-center text-slate-300 print:text-black">
+                  <input type="radio" name="provision" value="true" checked={formData.payment.provision === true} onChange={handlePaymentChange} className="mr-2 h-4 w-4 text-indigo-600 focus:ring-indigo-500 print:hidden" />
+                  Oui
                 </label>
-                <label htmlFor="provision-non" className="flex items-center text-slate-300 print:text-black">
-                  <input 
-                    id="provision-non"
-                    type="radio" 
-                    name="provision" 
-                    value="false" 
-                    checked={formData.payment.provision === false} 
-                    onChange={handlePaymentChange} 
-                    className="mr-2 h-4 w-4 text-indigo-600 focus:ring-indigo-500 print:hidden"
-                  />
-                  {' '}Non
+                <label className="flex items-center text-slate-300 print:text-black">
+                  <input type="radio" name="provision" value="false" checked={formData.payment.provision === false} onChange={handlePaymentChange} className="mr-2 h-4 w-4 text-indigo-600 focus:ring-indigo-500 print:hidden" />
+                  Non
                 </label>
                 {formData.payment.provision && (
                   <div className="relative flex-1">
-                    <input 
-                      type="text" 
-                      name="provisionAmount" 
-                      value={formatCurrency(formData.payment.provisionAmount)} 
-                      onChange={handlePaymentChange} 
-                      className="w-full pl-3 pr-14 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white text-right print:bg-white print:text-black print:border-gray-300" 
-                      placeholder="Montant" 
-                    />
-                    <span className="absolute inset-y-0 right-3 flex items-center text-slate-400 text-sm print:text-gray-500">F CFA</span>
+                    <input type="text" name="provisionAmount" value={formatCurrency(formData.payment.provisionAmount)} onChange={handlePaymentChange} className="w-full pl-3 pr-14 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white text-right print:bg-white print:text-black print:border-gray-300" placeholder="Montant" />
+                     <span className="absolute inset-y-0 right-3 flex items-center text-slate-400 text-sm print:text-gray-500">F CFA</span>
                   </div>
                 )}
               </div>
-            </fieldset>
+            </div>
             {formData.payment.provision && (
               <div className="mt-4 pt-4 border-t border-slate-700 print:border-gray-300">
                 <div className="flex justify-between text-green-400 font-bold text-lg print:text-green-600">
@@ -275,20 +228,6 @@ const InvoiceForm = ({ invoice, onSubmit, onCancel, onPrint }) => {
       </motion.div>
     </motion.div>
   );
-};
-
-// PropTypes pour la validation des props
-InvoiceForm.propTypes = {
-  invoice: PropTypes.shape({
-    clientName: PropTypes.string,
-    caseId: PropTypes.string,
-    debours: PropTypes.object,
-    honoraires: PropTypes.object,
-    payment: PropTypes.object
-  }),
-  onSubmit: PropTypes.func.isRequired,
-  onCancel: PropTypes.func.isRequired,
-  onPrint: PropTypes.func.isRequired
 };
 
 export default InvoiceForm;

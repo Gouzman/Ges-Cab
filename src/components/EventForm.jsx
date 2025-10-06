@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import PropTypes from 'prop-types';
 import { motion } from 'framer-motion';
 import { X, Calendar, Users, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -10,7 +9,6 @@ const EventForm = ({ currentUser, onCancel, onEventCreated }) => {
   const [formData, setFormData] = useState({
     title: '',
     startTime: '',
-    endTime: '',
     description: '',
     attendees: [],
   });
@@ -49,18 +47,13 @@ const EventForm = ({ currentUser, onCancel, onEventCreated }) => {
       return;
     }
 
-    // Utiliser la structure EXACTE de la table events
-    const { error } = await supabase.from('events').insert([
+    const { error } = await supabase.from('calendar_events').insert([
       {
         title: formData.title,
-        description: formData.description || null,
-        start_date: formData.startTime, // start_date pas start_time !
-        end_date: formData.endTime || null,
-        all_day: formData.allDay || false,
-        location: formData.location || null,
-        case_id: formData.caseId || null,
-        created_by: currentUser?.id || null,
-        attendees: formData.attendees || []
+        start_time: formData.startTime,
+        description: formData.description,
+        created_by: currentUser.id,
+        attendees: formData.attendees,
       },
     ]);
 
@@ -109,52 +102,32 @@ const EventForm = ({ currentUser, onCancel, onEventCreated }) => {
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="startTime" className="block text-sm font-medium text-slate-300 mb-2">
-                <Calendar className="w-4 h-4 inline mr-2" />
-                Date et heure de début *
-              </label>
-              <input
-                id="startTime"
-                type="datetime-local"
-                name="startTime"
-                value={formData.startTime}
-                onChange={handleChange}
-                required
-                className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            
-            <div>
-              <label htmlFor="endTime" className="block text-sm font-medium text-slate-300 mb-2">
-                <Calendar className="w-4 h-4 inline mr-2" />
-                Heure de fin (optionnelle)
-              </label>
-              <input
-                id="endTime"
-                type="datetime-local"
-                name="endTime"
-                value={formData.endTime}
-                onChange={handleChange}
-                min={formData.startTime} // L'heure de fin ne peut pas être antérieure au début
-                className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-2">
+              <Calendar className="w-4 h-4 inline mr-2" />
+              Date et heure de début *
+            </label>
+            <input
+              type="datetime-local"
+              name="startTime"
+              value={formData.startTime}
+              onChange={handleChange}
+              required
+              className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
           </div>
 
           <div>
-            <label htmlFor="description" className="block text-sm font-medium text-slate-300 mb-2">
+            <label className="block text-sm font-medium text-slate-300 mb-2">
               Description
             </label>
             <textarea
-              id="description"
               name="description"
               value={formData.description}
               onChange={handleChange}
               rows={3}
               className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Description de l'événement, détails..."
+              placeholder="Ordre du jour, détails..."
             />
           </div>
 
@@ -194,15 +167,6 @@ const EventForm = ({ currentUser, onCancel, onEventCreated }) => {
       </motion.div>
     </motion.div>
   );
-};
-
-// PropTypes pour la validation des props
-EventForm.propTypes = {
-  currentUser: PropTypes.shape({
-    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired
-  }).isRequired,
-  onCancel: PropTypes.func.isRequired,
-  onEventCreated: PropTypes.func.isRequired
 };
 
 export default EventForm;

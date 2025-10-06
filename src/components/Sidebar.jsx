@@ -1,4 +1,4 @@
-import React, { memo, useMemo } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 import { 
   LayoutDashboard, 
@@ -12,26 +12,20 @@ import {
   Briefcase,
   LogOut,
   FileArchive,
-  Shield,
   Receipt
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-const Sidebar = memo(({ activeView, setActiveView, currentUser, onLogout }) => {
-  const userPermissions = useMemo(() => {
-    const isAssocieOrAdmin = currentUser && (currentUser.function === 'Associe Emerite' || (currentUser.role && currentUser.role.toLowerCase() === 'admin'));
-    const isGerant = currentUser && currentUser.function === 'Gerant';
-    const isSuperUser = isAssocieOrAdmin || isGerant;
-    const isAdminNotGerant = isAssocieOrAdmin || (currentUser?.function === 'Admin' || currentUser?.role?.toLowerCase() === 'admin') && currentUser?.function !== 'Gerant';
+const Sidebar = ({ activeView, setActiveView, currentUser, onLogout }) => {
+  const isAssocieOrAdmin = currentUser && (currentUser.function === 'Associe Emerite' || (currentUser.role && currentUser.role.toLowerCase() === 'admin'));
+  const isGerant = currentUser && currentUser.function === 'Gerant';
+  const isSuperUser = isAssocieOrAdmin || isGerant;
 
-    return { isAssocieOrAdmin, isGerant, isSuperUser, isAdminNotGerant };
-  }, [currentUser]);
-
-  const hasPermission = useMemo(() => (viewId) => {
-    if (userPermissions.isSuperUser) return true;
+  const hasPermission = (viewId) => {
+    if (isSuperUser) return true;
     if (!currentUser?.permissions) return ['dashboard', 'tasks', 'calendar', 'documents'].includes(viewId);
     return currentUser.permissions[viewId]?.visible;
-  }, [currentUser?.permissions, userPermissions.isSuperUser]);
+  };
 
   const menuItems = [
     { id: 'dashboard', label: 'Tableau de Bord', icon: LayoutDashboard },
@@ -46,23 +40,21 @@ const Sidebar = memo(({ activeView, setActiveView, currentUser, onLogout }) => {
   ].filter(item => hasPermission(item.id));
 
   const settingsItem = { id: 'settings', label: 'Paramètres', icon: Settings };
-  const userLogsItem = { id: 'user-logs', label: 'Logs Utilisateur', icon: Shield };
 
   return (
-    <motion.aside 
-      initial={{ x: -300, opacity: 0 }}
-      animate={{ x: 0, opacity: 1 }}
-      transition={{ duration: 0.3 }}
-      className="w-64 min-h-screen bg-gradient-to-b from-cabinet-bg/95 to-secondary/95 backdrop-blur-sm border-r border-cabinet-border flex flex-col scrollbar-cabinet"
+    <motion.aside
+      initial={{ x: -250 }}
+      animate={{ x: 0 }}
+      className="fixed left-0 top-0 h-screen w-64 bg-slate-800/90 backdrop-blur-sm border-r border-slate-700/50 z-50 flex flex-col print:hidden"
     >
       <div className="p-6">
         <div className="flex items-center gap-3 mb-8">
-          <div className="p-2 bg-btn-primary rounded-lg shadow-lg">
+          <div className="p-2 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg">
             <Scale className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-bold cabinet-text-primary cabinet-logo">Tâche Cabinet</h1>
-            <p className="text-sm cabinet-text-secondary cabinet-subtitle">SCPA KERE-ASSOCIES</p>
+            <h1 className="text-xl font-bold text-white">Tâche Cabinet</h1>
+            <p className="text-sm text-slate-400">SCPA KERE-ASSOCIES</p>
           </div>
         </div>
       </div>
@@ -76,10 +68,10 @@ const Sidebar = memo(({ activeView, setActiveView, currentUser, onLogout }) => {
             <Button
               key={item.id}
               variant={isActive ? "default" : "ghost"}
-              className={`w-full justify-start gap-3 h-12 transition-all duration-200 ${
+              className={`w-full justify-start gap-3 h-12 ${
                 isActive 
-                  ? 'bg-btn-primary text-cabinet-text shadow-lg border border-primary/30' 
-                  : 'text-muted hover:text-cabinet-text hover:bg-secondary/50 hover:border hover:border-primary/20'
+                  ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg' 
+                  : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
               }`}
               onClick={() => setActiveView(item.id)}
             >
@@ -91,12 +83,12 @@ const Sidebar = memo(({ activeView, setActiveView, currentUser, onLogout }) => {
       </nav>
 
       <div className="mt-auto p-6">
-        <div className="mb-4 p-3 bg-secondary/50 border border-cabinet-border rounded-lg backdrop-blur-sm">
-          <p className="text-cabinet-text font-semibold truncate">{currentUser.name}</p>
+        <div className="mb-4 p-3 bg-slate-700/50 rounded-lg">
+          <p className="text-white font-semibold truncate">{currentUser.name}</p>
           <p className="text-sm text-slate-400 capitalize">{currentUser.function || currentUser.role}</p>
         </div>
         
-        {userPermissions.isAssocieOrAdmin && (
+        {isAssocieOrAdmin && (
           <Button
             variant={activeView === settingsItem.id ? "default" : "ghost"}
             className={`w-full justify-start gap-3 h-12 mb-2 ${
@@ -111,21 +103,6 @@ const Sidebar = memo(({ activeView, setActiveView, currentUser, onLogout }) => {
           </Button>
         )}
 
-        {userPermissions.isAdminNotGerant && (
-          <Button
-            variant={activeView === userLogsItem.id ? "default" : "ghost"}
-            className={`w-full justify-start gap-3 h-12 mb-2 ${
-              activeView === userLogsItem.id
-                ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-lg'
-                : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
-            }`}
-            onClick={() => setActiveView(userLogsItem.id)}
-          >
-            <userLogsItem.icon className="w-5 h-5" />
-            {userLogsItem.label}
-          </Button>
-        )}
-
         <Button
           variant="ghost"
           className="w-full justify-start gap-3 h-12 text-red-400 hover:text-red-400 hover:bg-red-500/20"
@@ -137,8 +114,6 @@ const Sidebar = memo(({ activeView, setActiveView, currentUser, onLogout }) => {
       </div>
     </motion.aside>
   );
-});
-
-Sidebar.displayName = 'Sidebar';
+};
 
 export default Sidebar;

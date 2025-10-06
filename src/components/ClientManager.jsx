@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Search, Building, User, Upload, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -20,70 +20,34 @@ const ClientManager = () => {
   }, []);
 
   const fetchClients = async () => {
-    try {
-      const { data: rows, error } = await supabase
-        .from('clients')
-        .select('*')
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      setClients(rows || []);
-    } catch (error) {
-      console.error('Erreur lors du chargement des clients:', error);
-      toast({ 
-        variant: "destructive", 
-        title: "Erreur", 
-        description: `Impossible de charger les clients: ${error.message || 'Erreur inconnue'}` 
-      });
+    const { data, error } = await supabase.from('clients').select('*').order('created_at', { ascending: false });
+    if (error) {
+      toast({ variant: "destructive", title: "Erreur", description: "Impossible de charger les clients." });
+    } else {
+      setClients(data);
     }
   };
 
   const handleAddClient = async (clientData) => {
-    try {
-      // Version temporaire avec seulement les colonnes de base existantes
-      const dbData = {
-        name: `${clientData.firstName || ''} ${clientData.lastName || ''}`.trim() || clientData.company || 'Client',
-        company: clientData.company || '',
-        email: clientData.email || '',
-        phone: clientData.phone || ''
-      };
-      
-      const { data, error } = await supabase
-        .from('clients')
-        .insert([dbData])
-        .select();
-      
-      if (error) throw error;
-      
+    const { data, error } = await supabase.from('clients').insert([clientData]).select();
+    if (error) {
+      toast({ variant: "destructive", title: "Erreur", description: "Impossible d'ajouter le client." });
+    } else {
       setClients([data[0], ...clients]);
       setShowForm(false);
       toast({ title: "✅ Client ajouté", description: "Le nouveau client a été ajouté avec succès." });
-    } catch (error) {
-      console.error("Erreur lors de l'ajout du client:", error);
-      toast({ variant: "destructive", title: "Erreur", description: "Impossible d'ajouter le client." });
     }
   };
 
   const handleEditClient = async (clientData) => {
-    try {
-      // Version temporaire avec seulement les colonnes de base existantes
-      const dbData = {
-        name: `${clientData.firstName || ''} ${clientData.lastName || ''}`.trim() || clientData.company || 'Client',
-        company: clientData.company || '',
-        email: clientData.email || '',
-        phone: clientData.phone || ''
-      };
-      
-      const { data, error } = await supabase.from('clients').update(dbData).eq('id', editingClient.id).select();
-      
-      if (error) throw error;
-      
+    const { data, error } = await supabase.from('clients').update(clientData).eq('id', editingClient.id).select();
+    if (error) {
+      toast({ variant: "destructive", title: "Erreur", description: "Impossible de modifier le client." });
+    } else {
       setClients(clients.map(c => c.id === editingClient.id ? data[0] : c));
       setEditingClient(null);
       setShowForm(false);
       toast({ title: "✅ Client modifié", description: "Les informations du client ont été mises à jour." });
-    } catch (error) {
-      console.error("Erreur lors de la modification du client:", error);
-      toast({ variant: "destructive", title: "Erreur", description: "Impossible de modifier le client." });
     }
   };
 
@@ -145,11 +109,11 @@ const ClientManager = () => {
   const filteredClients = clients.filter(client => {
     const searchLower = searchTerm.toLowerCase();
     return (
-      client.first_name?.toLowerCase().includes(searchLower) ||
-      client.last_name?.toLowerCase().includes(searchLower) ||
-      client.email?.toLowerCase().includes(searchLower) ||
-      client.company?.toLowerCase().includes(searchLower) ||
-      client.phone?.includes(searchTerm)
+      (client.first_name && client.first_name.toLowerCase().includes(searchLower)) ||
+      (client.last_name && client.last_name.toLowerCase().includes(searchLower)) ||
+      (client.email && client.email.toLowerCase().includes(searchLower)) ||
+      (client.company && client.company.toLowerCase().includes(searchLower)) ||
+      (client.phone && client.phone.includes(searchTerm))
     );
   });
 
@@ -237,15 +201,15 @@ const ClientManager = () => {
         </motion.div>
       </div>
 
-      <div className="bg-cabinet-surface/20 backdrop-blur-sm border border-cabinet-border rounded-xl p-6 print:hidden">
+      <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl p-6 print:hidden">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-primary w-5 h-5" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
           <input
             type="text"
             placeholder="Rechercher un client par nom, email, téléphone ou entreprise..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 bg-cabinet-surface border-2 border-cabinet-border rounded-lg text-cabinet-text placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+            className="w-full pl-12 pr-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
           />
         </div>
       </div>

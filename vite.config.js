@@ -1,9 +1,14 @@
 import path from 'node:path';
 import react from '@vitejs/plugin-react';
 import { createLogger, defineConfig } from 'vite';
+import dotenv from 'dotenv';
 import inlineEditPlugin from './plugins/visual-editor/vite-plugin-react-inline-editor.js';
 import editModeDevPlugin from './plugins/visual-editor/vite-plugin-edit-mode.js';
 import iframeRouteRestorationPlugin from './plugins/vite-plugin-iframe-route-restoration.js';
+
+// Chargement des variables d'environnement
+dotenv.config({ path: '.env.local' });
+dotenv.config({ path: '.env' });
 
 const isDev = process.env.NODE_ENV !== 'production';
 
@@ -209,7 +214,6 @@ export default defineConfig({
 		addTransformIndexHtml
 	],
 	server: {
-		port: 5174,
 		cors: true,
 		headers: {
 			'Cross-Origin-Embedder-Policy': 'credentialless',
@@ -223,31 +227,13 @@ export default defineConfig({
 		},
 	},
 	build: {
-		target: 'esnext',
-		minify: 'terser',
-		terserOptions: {
-			compress: {
-				drop_console: true,
-				drop_debugger: true,
-			},
-		},
 		rollupOptions: {
 			external: [
 				'@babel/parser',
 				'@babel/traverse',
 				'@babel/generator',
 				'@babel/types'
-			],
-			output: {
-				manualChunks: {
-					'react-vendor': ['react', 'react-dom'],
-					'ui-vendor': ['lucide-react', 'framer-motion'],
-					'supabase-vendor': ['@supabase/supabase-js']
-				}
-			}
+			]
 		}
-	},
-	optimizeDeps: {
-		include: ['react', 'react-dom', 'lucide-react', 'framer-motion']
 	}
 });

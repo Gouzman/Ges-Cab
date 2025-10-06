@@ -1,49 +1,28 @@
 import React from 'react';
-import PropTypes from 'prop-types';
 import { motion } from 'framer-motion';
 import { 
+  Calendar, 
+  User, 
   FileText, 
-  Clock,
+  Edit, 
+  Trash2, 
+  CheckCircle, 
+  Clock, 
   AlertTriangle,
-  Trash2,
-  CheckCircle,
-  Eye,
   Play,
-  RefreshCw,
-  MessageSquare,
-  Calendar,
-  UserCheck,
-  User,
   Paperclip,
+  MessageSquare,
   Download,
-  Printer
+  Eye,
+  RefreshCw,
+  Printer,
+  UserCheck
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/customSupabaseClient';
 import { toast } from '@/components/ui/use-toast';
 
-// Fonctions utilitaires pour éviter les ternaires imbriqués
-const getPriorityDotColor = (priority) => {
-  switch (priority) {
-    case 'urgent': return 'bg-red-400';
-    case 'high': return 'bg-orange-400';
-    case 'medium': return 'bg-yellow-400';
-    case 'low': return 'bg-green-400';
-    default: return 'bg-green-400';
-  }
-};
-
-const getPriorityLabel = (priority) => {
-  switch (priority) {
-    case 'urgent': return 'Urgente';
-    case 'high': return 'Élevée';
-    case 'medium': return 'Moyenne';
-    case 'low': return 'Faible';
-    default: return 'Faible';
-  }
-};
-
-const TaskCard = ({ task, index, onEdit, onDelete, onStatusChange, currentUser, onTaskUpdate, onViewDetails }) => {
+const TaskCard = ({ task, index, onEdit, onDelete, onStatusChange, currentUser }) => {
   const getPriorityColor = (priority) => {
     switch (priority) {
       case 'urgent': return 'border-red-500 bg-red-500/10';
@@ -86,7 +65,7 @@ const TaskCard = ({ task, index, onEdit, onDelete, onStatusChange, currentUser, 
     return new Date(dateString).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   };
 
-  const isOverdue = (deadline) => deadline && new Date(deadline) < new Date() && task.status !== 'completed';
+  const isOverdue = (deadline) => !deadline ? false : new Date(deadline) < new Date() && task.status !== 'completed';
 
   const nextStatus = { 'pending': 'seen', 'seen': 'in-progress', 'in-progress': 'completed', 'completed': 'pending' };
   const statusLabels = { 'pending': 'Marquer comme vu', 'seen': 'Commencer', 'in-progress': 'Terminer', 'completed': 'Réouvrir' };
@@ -124,13 +103,7 @@ const TaskCard = ({ task, index, onEdit, onDelete, onStatusChange, currentUser, 
   const isGerantOrAdmin = currentUser.function === 'Gerant' || currentUser.function === 'Associe Emerite' || currentUser.role === 'admin';
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 20 }} 
-      animate={{ opacity: 1, y: 0 }} 
-      transition={{ delay: index * 0.1 }} 
-      className={`${getPriorityColor(task.priority)} backdrop-blur-sm border rounded-xl p-6 hover:scale-105 transition-all duration-200 flex flex-col cursor-pointer`}
-      onClick={() => onViewDetails && onViewDetails(task)}
-    >
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.1 }} className={`${getPriorityColor(task.priority)} backdrop-blur-sm border rounded-xl p-6 hover:scale-105 transition-all duration-200 flex flex-col`}>
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-2">
           {getStatusIcon(task.status)}
@@ -138,10 +111,10 @@ const TaskCard = ({ task, index, onEdit, onDelete, onStatusChange, currentUser, 
         </div>
         <div className="flex items-center gap-1">
           {isAssignedToCurrentUser && task.status !== 'completed' && (
-            <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); onStatusChange(task.id, nextStatus[task.status]); }} className="w-8 h-8 text-slate-400 hover:text-white" title={statusLabels[task.status]}>{statusIcons[task.status]}</Button>
+            <Button variant="ghost" size="icon" onClick={() => onStatusChange(task.id, nextStatus[task.status])} className="w-8 h-8 text-slate-400 hover:text-white" title={statusLabels[task.status]}>{statusIcons[task.status]}</Button>
           )}
-          {(isAssignedToCurrentUser || isGerantOrAdmin) && <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); onEdit(task); }} className="w-8 h-8 text-slate-400 hover:text-white" title="Modifier/Réassigner"><RefreshCw className="w-4 h-4" /></Button>}
-          {onDelete && <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); onDelete(task.id); }} className="w-8 h-8 text-slate-400 hover:text-red-400" title="Supprimer"><Trash2 className="w-4 h-4" /></Button>}
+          {(isAssignedToCurrentUser || isGerantOrAdmin) && <Button variant="ghost" size="icon" onClick={() => onEdit(task)} className="w-8 h-8 text-slate-400 hover:text-white" title="Modifier/Réassigner"><RefreshCw className="w-4 h-4" /></Button>}
+          {onDelete && <Button variant="ghost" size="icon" onClick={() => onDelete(task.id)} className="w-8 h-8 text-slate-400 hover:text-red-400" title="Supprimer"><Trash2 className="w-4 h-4" /></Button>}
         </div>
       </div>
       <div className="mb-4 flex-grow">
@@ -156,8 +129,8 @@ const TaskCard = ({ task, index, onEdit, onDelete, onStatusChange, currentUser, 
       )}
       <div className="space-y-3 mb-4">
         {task.deadline && <div className="flex items-center gap-2 text-sm"><Calendar className="w-4 h-4 text-slate-400" /><span className={`${isOverdue(task.deadline) ? 'text-red-400' : 'text-slate-300'}`}>{formatDate(task.deadline)}{isOverdue(task.deadline) && ' (En retard)'}</span></div>}
-        {task.created_by_name && <div className="flex items-center gap-2 text-sm"><UserCheck className="w-4 h-4 text-slate-400" /><span className="text-slate-300">Créé par: {task.created_by_name}</span></div>}
-        {task.assigned_to_name && <div className="flex items-center gap-2 text-sm"><User className="w-4 h-4 text-slate-400" /><span className="text-slate-300">Assigné à: {task.assigned_to_name}</span></div>}
+        {task.assigned_to_name && <div className="flex items-center gap-2 text-sm"><User className="w-4 h-4 text-slate-400" /><span className="text-slate-300">{task.assigned_to_name}</span></div>}
+        {task.created_by_name && <div className="flex items-center gap-2 text-sm"><UserCheck className="w-4 h-4 text-slate-400" /><span className="text-slate-300">Par: {task.created_by_name}</span></div>}
         {task.assigned_at && <div className="flex items-center gap-2 text-xs"><Clock className="w-3 h-3 text-slate-500" /><span className="text-slate-400">Assignée le: {formatDate(task.assigned_at)}</span></div>}
         {task.seen_at && <div className="flex items-center gap-2 text-xs"><Eye className="w-3 h-3 text-purple-400" /><span className="text-purple-300">Vue le: {formatDate(task.seen_at)}</span></div>}
         {task.case_id && <div className="flex items-center gap-2 text-sm"><FileText className="w-4 h-4 text-slate-400" /><span className="text-slate-300">Dossier: {task.case_id}</span></div>}
@@ -166,7 +139,7 @@ const TaskCard = ({ task, index, onEdit, onDelete, onStatusChange, currentUser, 
             <div className="flex items-center gap-2 text-sm mb-2"><Paperclip className="w-4 h-4 text-slate-400" /><span className="text-slate-300">Pièces jointes</span></div>
             <div className="flex flex-col gap-1">
               {task.attachments.map((path, i) => (
-                <div key={`${task.id}-attachment-${i}`} className="flex items-center justify-between text-xs text-slate-400 bg-slate-700/30 p-1.5 rounded-md">
+                <div key={i} className="flex items-center justify-between text-xs text-slate-400 bg-slate-700/30 p-1.5 rounded-md">
                   <span className="truncate w-36">{path.split('/').pop()}</span>
                   <div className="flex">
                     <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleDownload(path)} title="Télécharger"><Download className="h-3 w-3" /></Button>
@@ -180,45 +153,12 @@ const TaskCard = ({ task, index, onEdit, onDelete, onStatusChange, currentUser, 
       </div>
       <div className="flex items-center justify-between mt-auto pt-4 border-t border-slate-700/50">
         <div className="flex items-center gap-2">
-          <div className={`w-2 h-2 rounded-full ${getPriorityDotColor(task.priority)}`}></div>
-          <span className="text-xs text-slate-400 capitalize">{getPriorityLabel(task.priority)}</span>
+          <div className={`w-2 h-2 rounded-full ${task.priority === 'urgent' ? 'bg-red-400' : task.priority === 'high' ? 'bg-orange-400' : task.priority === 'medium' ? 'bg-yellow-400' : 'bg-green-400'}`}></div>
+          <span className="text-xs text-slate-400 capitalize">{task.priority === 'urgent' ? 'Urgente' : task.priority === 'high' ? 'Élevée' : task.priority === 'medium' ? 'Moyenne' : 'Faible'}</span>
         </div>
       </div>
     </motion.div>
   );
-};
-
-// PropTypes pour la validation des props
-const TaskPropType = PropTypes.shape({
-  id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
-  title: PropTypes.string,
-  description: PropTypes.string,
-  status: PropTypes.oneOf(['pending', 'seen', 'in-progress', 'completed']),
-  priority: PropTypes.oneOf(['low', 'medium', 'high', 'urgent']),
-  deadline: PropTypes.string,
-  assigned_to_id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-  assigned_to_name: PropTypes.string,
-  created_by_name: PropTypes.string,
-  assigned_at: PropTypes.string,
-  seen_at: PropTypes.string,
-  case_id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-  completion_comment: PropTypes.string,
-  attachments: PropTypes.arrayOf(PropTypes.string)
-});
-
-TaskCard.propTypes = {
-  task: TaskPropType.isRequired,
-  index: PropTypes.number.isRequired,
-  onEdit: PropTypes.func.isRequired,
-  onDelete: PropTypes.func,
-  onStatusChange: PropTypes.func.isRequired,
-  currentUser: PropTypes.shape({
-    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
-    function: PropTypes.string,
-    role: PropTypes.string
-  }).isRequired,
-  onTaskUpdate: PropTypes.func,
-  onViewDetails: PropTypes.func
 };
 
 export default TaskCard;

@@ -1,8 +1,59 @@
 import { createClient } from '@supabase/supabase-js';
+import { rateLimiter } from './rateLimiter.js';
 
-const supabaseUrl = 'https://fhuzkubnxuetakpxkwlr.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZodXprdWJueHVldGFrcHhrd2xyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxMTE4MTEsImV4cCI6MjA3NDY4NzgxMX0.6_fLQrCtBdYAKNXgT2fAo6vHVfhe3DmISq7F-egfyUY';
+// Configuration sécurisée via variables d'environnement
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+// Validation des variables d'environnement
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error(
+    'Configuration Supabase manquante. Vérifiez que VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY sont définis dans votre fichier .env.local'
+  );
+}
 
-export { supabase };
+// Client Supabase avec rate limiting intégré
+const supabaseClient = createClient(supabaseUrl, supabaseKey);
+
+// Proxy pour intercepter les appels et appliquer le rate limiting
+const createRateLimitedProxy = (client) => {
+  return new Proxy(client, {
+    get(target, prop) {
+      if (prop === 'from') {
+        return (table) => {
+          const tableQuery = target.from(table);
+          
+          // Applique le rate limiting sur les méthodes de requête
+          return new Proxy(tableQuery, {
+            get(queryTarget, queryProp) {
+              const originalMethod = queryTarget[queryProp];
+              
+              if (typeof originalMethod === 'function' && 
+                  ['select', 'insert', 'update', 'delete', 'upsert'].includes(queryProp)) {
+                
+                return function(...args) {
+                  // Vérification du rate limit avant l'exécution
+                  if (!rateLimiter.isAllowed(`${queryProp}_${table}`)) {
+                    return Promise.reject(new Error(`Rate limit atteint pour ${queryProp} sur ${table}`));
+                  }
+                  
+                  return originalMethod.apply(this, args);
+                };
+              }
+              
+              return originalMethod;
+            }
+          });
+        };
+      }
+      
+      return target[prop];
+    }
+  });
+};
+
+// Export du client avec rate limiting
+export const supabase = createRateLimitedProxy(supabaseClient);
+
+// Export du client original pour les cas spéciaux
+export const supabaseRaw = supabaseClient;

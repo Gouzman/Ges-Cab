@@ -1,5 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
-import PropTypes from 'prop-types';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Search, Briefcase, User, Upload, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -16,14 +15,14 @@ const TeamManager = ({ currentUser }) => {
   const [editingMember, setEditingMember] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const csvInputRef = useRef(null);
-  const { signUp, getCollaborators } = useAuth();
+  const { signUp } = useAuth();
 
   useEffect(() => {
     fetchMembers();
   }, []);
 
   const fetchMembers = async () => {
-    const { data, error } = await getCollaborators();
+    const { data, error } = await supabase.from('profiles').select('*');
     if (error) {
       toast({ variant: "destructive", title: "Erreur", description: "Impossible de charger les collaborateurs." });
     } else {
@@ -52,18 +51,12 @@ const TeamManager = ({ currentUser }) => {
 
   const handleEditMember = async (memberData) => {
     if (!editingMember) return;
-    // Correction: Use Supabase update query and proper error handling
-    const { error, data } = await supabase
-      .from('users')
-      .update({
-        name: memberData.name,
-        email: memberData.email,
-        role: memberData.role,
-        title: memberData.title,
-        function: memberData.function,
-      })
-      .eq('id', editingMember.id)
-      .select();
+    const { data, error } = await supabase.from('profiles').update({
+      name: memberData.name,
+      title: memberData.title,
+      function: memberData.function,
+      role: memberData.role,
+    }).eq('id', editingMember.id).select();
 
     if (error) {
       toast({ variant: "destructive", title: "Erreur", description: "Impossible de modifier le collaborateur." });
@@ -75,7 +68,7 @@ const TeamManager = ({ currentUser }) => {
     }
   };
 
-  const handleDeleteMember = async (_memberId) => {
+  const handleDeleteMember = async (memberId) => {
     toast({ variant: "destructive", title: "Action non disponible", description: "La suppression d'utilisateurs doit être gérée depuis les paramètres d'administration de Supabase." });
   };
 
@@ -112,14 +105,14 @@ const TeamManager = ({ currentUser }) => {
     if (!member) return false;
     const searchLower = searchTerm.toLowerCase();
     return (
-      member.name?.toLowerCase().includes(searchLower) ||
-      member.email?.toLowerCase().includes(searchLower) ||
-      member.role?.toLowerCase().includes(searchLower)
+      (member.name && member.name.toLowerCase().includes(searchLower)) ||
+      (member.email && member.email.toLowerCase().includes(searchLower)) ||
+      (member.role && member.role.toLowerCase().includes(searchLower))
     );
   });
 
   const roleCounts = members.reduce((acc, member) => {
-    if (member?.role) {
+    if (member && member.role) {
       const role = member.role.toLowerCase();
       acc[role] = (acc[role] || 0) + 1;
     }
@@ -173,15 +166,15 @@ const TeamManager = ({ currentUser }) => {
         ))}
       </div>
 
-      <div className="bg-cabinet-surface/20 backdrop-blur-sm border border-cabinet-border rounded-xl p-6 print:hidden">
+      <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl p-6 print:hidden">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-primary w-5 h-5" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
           <input
             type="text"
             placeholder="Rechercher un collaborateur par nom, email ou rôle..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 bg-cabinet-surface border-2 border-cabinet-border rounded-lg text-cabinet-text placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+            className="w-full pl-12 pr-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-green-500"
           />
         </div>
       </div>
@@ -197,7 +190,7 @@ const TeamManager = ({ currentUser }) => {
               setShowForm(true);
             }}
             onDelete={handleDeleteMember}
-            isCurrentUser={member.id === currentUser?.id}
+            isCurrentUser={member.id === currentUser.id}
           />
         ))}
       </div>
@@ -224,12 +217,6 @@ const TeamManager = ({ currentUser }) => {
       )}
     </div>
   );
-};
-
-TeamManager.propTypes = {
-  currentUser: PropTypes.shape({
-    id: PropTypes.string
-  })
 };
 
 export default TeamManager;

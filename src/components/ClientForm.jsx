@@ -22,14 +22,14 @@ const ClientForm = ({ client, onSubmit, onCancel }) => {
     if (client) {
       setFormData({
         type: client.type || 'individual',
-        firstName: client.first_name || client.firstName || '',
-        lastName: client.last_name || client.lastName || '',
+        firstName: client.firstName || '',
+        lastName: client.lastName || '',
         company: client.company || '',
         email: client.email || '',
         phone: client.phone || '',
         address: client.address || '',
         city: client.city || '',
-        postalCode: client.postal_code || client.postalCode || '',
+        postalCode: client.postalCode || '',
         country: client.country || 'France',
         notes: client.notes || ''
       });
@@ -113,7 +113,7 @@ const ClientForm = ({ client, onSubmit, onCancel }) => {
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">
                 <Building className="w-4 h-4 inline mr-2" />
-                Nom de l'entreprise *
+                Dénomination *
               </label>
               <input
                 type="text"
@@ -130,7 +130,7 @@ const ClientForm = ({ client, onSubmit, onCancel }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">
-                Prénom *
+                {formData.type === 'company' ? 'Prénoms (Dirigeant) *' : 'Prénom *'}
               </label>
               <input
                 type="text"
@@ -145,7 +145,7 @@ const ClientForm = ({ client, onSubmit, onCancel }) => {
 
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">
-                Nom *
+                {formData.type === 'company' ? 'Nom (Dirigeant) *' : 'Nom *'}
               </label>
               <input
                 type="text"

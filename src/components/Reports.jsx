@@ -1,5 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
-import PropTypes from 'prop-types';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { BarChart3, PieChart, TrendingUp, FileText, Download, Users, CheckSquare, Briefcase, DollarSign } from 'lucide-react';
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, Pie, Cell } from 'recharts';
@@ -7,7 +6,7 @@ import { toast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/customSupabaseClient';
 import Papa from 'papaparse';
-import { startOfMonth, startOfQuarter, isWithinInterval, endOfMonth, endOfQuarter } from 'date-fns';
+import { startOfMonth, startOfQuarter, startOfYear, isWithinInterval, getYear, startOfWeek, endOfMonth, endOfQuarter, endOfYear, endOfWeek } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 const formatCurrency = (value) => {
@@ -15,7 +14,7 @@ const formatCurrency = (value) => {
   return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'XOF' }).format(value);
 };
 
-const _startOfSemester = (date) => {
+const startOfSemester = (date) => {
   const month = date.getMonth();
   const year = date.getFullYear();
   if (month < 6) {
@@ -25,7 +24,7 @@ const _startOfSemester = (date) => {
   }
 };
 
-const Reports = () => {
+const Reports = ({ currentUser }) => {
   const [activeReport, setActiveReport] = useState('overview');
   const [data, setData] = useState({ tasks: [], cases: [], team: [], invoices: [] });
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -34,24 +33,18 @@ const Reports = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      try {
-        const { data: tasks } = await supabase.from('tasks').select('status');
-        const { data: cases } = await supabase.from('cases').select('status');
-
-        const team = []; // À implémenter avec Supabase plus tard
-        
-        const mockInvoices = [
-          { id: 1, invoiceNumber: 'FACT-2025-001', clientName: 'Société Alpha', caseId: 'D-001', totalTTC: 1770000, date: '2025-09-15', payment: { provision: true, provisionAmount: 1770000 } },
-          { id: 2, invoiceNumber: 'FACT-2025-002', clientName: 'Monsieur Beta', caseId: 'D-002', totalTTC: 590000, date: '2025-09-20', payment: { provision: true, provisionAmount: 200000 } },
-          { id: 3, invoiceNumber: 'FACT-2025-003', clientName: 'Entreprise Gamma', caseId: 'D-003', totalTTC: 885000, date: '2025-08-10', payment: { provision: false, provisionAmount: 0 } },
-          { id: 4, invoiceNumber: 'FACT-2025-004', clientName: 'Société Alpha', caseId: 'D-004', totalTTC: 2500000, date: '2025-06-01', payment: { provision: true, provisionAmount: 2500000 } },
-          { id: 5, invoiceNumber: 'FACT-2025-005', clientName: 'Particulier Delta', caseId: 'D-005', totalTTC: 350000, date: '2025-02-15', payment: { provision: true, provisionAmount: 350000 } },
-        ];
-        
-        setData({ tasks: tasks || [], cases: cases || [], team: team || [], invoices: mockInvoices });
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      }
+      const { data: tasks } = await supabase.from('tasks').select('*');
+      const { data: cases } = await supabase.from('cases').select('*');
+      const { data: team } = await supabase.from('profiles').select('id, name');
+      
+      const mockInvoices = [
+        { id: 1, invoiceNumber: 'FACT-2025-001', clientName: 'Société Alpha', caseId: 'D-001', totalTTC: 1770000, date: '2025-09-15', payment: { provision: true, provisionAmount: 1770000 } },
+        { id: 2, invoiceNumber: 'FACT-2025-002', clientName: 'Monsieur Beta', caseId: 'D-002', totalTTC: 590000, date: '2025-09-20', payment: { provision: true, provisionAmount: 200000 } },
+        { id: 3, invoiceNumber: 'FACT-2025-003', clientName: 'Entreprise Gamma', caseId: 'D-003', totalTTC: 885000, date: '2025-08-10', payment: { provision: false, provisionAmount: 0 } },
+        { id: 4, invoiceNumber: 'FACT-2025-004', clientName: 'Société Alpha', caseId: 'D-004', totalTTC: 2500000, date: '2025-06-01', payment: { provision: true, provisionAmount: 2500000 } },
+        { id: 5, invoiceNumber: 'FACT-2025-005', clientName: 'Particulier Delta', caseId: 'D-005', totalTTC: 350000, date: '2025-02-15', payment: { provision: true, provisionAmount: 350000 } },
+      ];
+      setData({ tasks: tasks || [], cases: cases || [], team: team || [], invoices: mockInvoices });
     };
     fetchData();
   }, []);
@@ -116,7 +109,7 @@ const Reports = () => {
         csvData = Papa.unparse(teamPerformanceData);
         filename = 'rapport_activite_equipe.csv';
         break;
-      case 'distribution': {
+      case 'distribution':
         const distributionData = [
           { type: 'Statut', ...Object.fromEntries(taskStatusData.map(d => [d.name, d.value])) },
           { type: 'Priorité', ...Object.fromEntries(taskPriorityData.map(d => [d.name, d.value])) },
@@ -125,8 +118,7 @@ const Reports = () => {
         csvData = Papa.unparse(distributionData);
         filename = 'rapport_repartition_taches.csv';
         break;
-      }
-      case 'finances': {
+      case 'finances':
         const finData = [
           { Indicateur: `Encaissé (${fr.localize.month(selectedMonth, { width: 'abbreviated' })} ${selectedYear})`, Valeur: financialData.collectedForSelectedMonth },
           { Indicateur: `Encaissé (T${selectedQuarter + 1} ${selectedYear})`, Valeur: financialData.collectedForSelectedQuarter },
@@ -136,8 +128,7 @@ const Reports = () => {
         csvData = Papa.unparse(finData);
         filename = 'rapport_financier.csv';
         break;
-      }
-      case 'overview': {
+      case 'overview':
         const overviewData = [
           { 'Indicateur': 'Tâches totales', 'Valeur': data.tasks.length },
           { 'Indicateur': 'Dossiers actifs', 'Valeur': data.cases.filter(c => c.status === 'active').length },
@@ -146,7 +137,6 @@ const Reports = () => {
         csvData = Papa.unparse(overviewData);
         filename = 'rapport_vue_ensemble.csv';
         break;
-      }
       default:
         toast({
           title: "Exportation non disponible",
@@ -183,24 +173,24 @@ const Reports = () => {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             <div className="flex flex-wrap gap-4 mb-6 p-4 bg-slate-700/30 rounded-lg">
               <div className="flex-1 min-w-[150px]">
-                <label htmlFor="select-month" className="block text-sm font-medium text-slate-300 mb-1">Mois</label>
-                <select id="select-month" value={selectedMonth} onChange={(e) => setSelectedMonth(parseInt(e.target.value))} className="w-full px-3 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                  {Array.from({ length: 12 }, (_, i) => ({ value: i, name: fr.localize.month(i, { width: 'wide' }) })).map((month) => (
-                    <option key={`month-${month.value}`} value={month.value} className="capitalize">{month.name}</option>
+                <label className="block text-sm font-medium text-slate-300 mb-1">Mois</label>
+                <select value={selectedMonth} onChange={(e) => setSelectedMonth(parseInt(e.target.value))} className="w-full px-3 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  {Array.from({ length: 12 }).map((_, i) => (
+                    <option key={i} value={i} className="capitalize">{fr.localize.month(i, { width: 'wide' })}</option>
                   ))}
                 </select>
               </div>
               <div className="flex-1 min-w-[150px]">
-                <label htmlFor="select-quarter" className="block text-sm font-medium text-slate-300 mb-1">Trimestre</label>
-                <select id="select-quarter" value={selectedQuarter} onChange={(e) => setSelectedQuarter(parseInt(e.target.value))} className="w-full px-3 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <label className="block text-sm font-medium text-slate-300 mb-1">Trimestre</label>
+                <select value={selectedQuarter} onChange={(e) => setSelectedQuarter(parseInt(e.target.value))} className="w-full px-3 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
                   {['1er Trimestre', '2ème Trimestre', '3ème Trimestre', '4ème Trimestre'].map((q, i) => (
-                    <option key={q} value={i}>{q}</option>
+                    <option key={i} value={i}>{q}</option>
                   ))}
                 </select>
               </div>
               <div className="flex-1 min-w-[150px]">
-                <label htmlFor="select-year" className="block text-sm font-medium text-slate-300 mb-1">Année</label>
-                <select id="select-year" value={selectedYear} onChange={(e) => setSelectedYear(parseInt(e.target.value))} className="w-full px-3 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <label className="block text-sm font-medium text-slate-300 mb-1">Année</label>
+                <select value={selectedYear} onChange={(e) => setSelectedYear(parseInt(e.target.value))} className="w-full px-3 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
                   {[2023, 2024, 2025].map(year => <option key={year} value={year}>{year}</option>)}
                 </select>
               </div>
@@ -303,13 +293,6 @@ const StatCard = ({ icon: Icon, title, value, color = 'text-blue-400' }) => (
   </div>
 );
 
-StatCard.propTypes = {
-  icon: PropTypes.elementType.isRequired,
-  title: PropTypes.string.isRequired,
-  value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
-  color: PropTypes.string,
-};
-
 const PieChartCard = ({ title, data, colors }) => (
   <div className="h-96 bg-slate-800/50 p-4 rounded-lg">
     <h4 className="text-lg font-semibold text-white text-center mb-4">{title}</h4>
@@ -317,7 +300,7 @@ const PieChartCard = ({ title, data, colors }) => (
       <PieChart>
         <Pie data={data} cx="50%" cy="50%" labelLine={false} outerRadius={80} fill="#8884d8" dataKey="value" nameKey="name" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
           {data.map((entry, index) => (
-            <Cell key={`${title}-cell-${entry.name}-${index}`} fill={colors[index % colors.length]} />
+            <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
           ))}
         </Pie>
         <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155' }} />
@@ -326,14 +309,5 @@ const PieChartCard = ({ title, data, colors }) => (
     </ResponsiveContainer>
   </div>
 );
-
-PieChartCard.propTypes = {
-  title: PropTypes.string.isRequired,
-  data: PropTypes.arrayOf(PropTypes.shape({
-    name: PropTypes.string.isRequired,
-    value: PropTypes.number.isRequired,
-  })).isRequired,
-  colors: PropTypes.arrayOf(PropTypes.string).isRequired,
-};
 
 export default Reports;

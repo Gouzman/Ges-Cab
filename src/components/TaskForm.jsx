@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { X, Calendar, FileText, User, Paperclip, RefreshCw, Download } from 'lucide-react';
+import { X, Calendar, FileText, User, Paperclip, RefreshCw, Download, ScanLine, CheckSquare, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/customSupabaseClient';
+import { taskCategoriesData } from '@/lib/taskCategories';
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 const TaskForm = ({ task, onSubmit, onCancel, teamMembers, cases, currentUser }) => {
   const [formData, setFormData] = useState({
@@ -14,11 +17,13 @@ const TaskForm = ({ task, onSubmit, onCancel, teamMembers, cases, currentUser })
     deadline: '',
     assigned_to_id: '',
     case_id: '',
-    category: 'general',
+    main_category: '',
+    associated_tasks: [],
     attachments: [],
     filesToUpload: []
   });
   const [showReassign, setShowReassign] = useState(false);
+  const [availableSubTasks, setAvailableSubTasks] = useState([]);
 
   useEffect(() => {
     if (task) {
@@ -30,10 +35,15 @@ const TaskForm = ({ task, onSubmit, onCancel, teamMembers, cases, currentUser })
         deadline: task.deadline ? new Date(task.deadline).toISOString().substring(0, 16) : '',
         assigned_to_id: task.assigned_to_id || '',
         case_id: task.case_id || '',
-        category: task.category || 'general',
+        main_category: task.main_category || '',
+        associated_tasks: task.associated_tasks || [],
         attachments: task.attachments || [],
         filesToUpload: []
       });
+      if (task.main_category) {
+        const category = taskCategoriesData.find(c => c.name === task.main_category);
+        setAvailableSubTasks(category ? category.tasks : []);
+      }
     }
   }, [task]);
 
@@ -48,6 +58,21 @@ const TaskForm = ({ task, onSubmit, onCancel, teamMembers, cases, currentUser })
       ...prev,
       [name]: value
     }));
+
+    if (name === 'main_category') {
+      const category = taskCategoriesData.find(c => c.name === value);
+      setAvailableSubTasks(category ? category.tasks : []);
+      setFormData(prev => ({ ...prev, associated_tasks: [] }));
+    }
+  };
+
+  const handleSubTaskChange = (subTask) => {
+    setFormData(prev => {
+      const newAssociatedTasks = prev.associated_tasks.includes(subTask)
+        ? prev.associated_tasks.filter(st => st !== subTask)
+        : [...prev.associated_tasks, subTask];
+      return { ...prev, associated_tasks: newAssociatedTasks };
+    });
   };
 
   const handleFileChange = (e) => {
@@ -81,15 +106,12 @@ const TaskForm = ({ task, onSubmit, onCancel, teamMembers, cases, currentUser })
     URL.revokeObjectURL(url);
   };
 
-  const categories = [
-    { value: 'general', label: 'Général' },
-    { value: 'consultation', label: 'Consultation' },
-    { value: 'research', label: 'Recherche' },
-    { value: 'documentation', label: 'Documentation' },
-    { value: 'court', label: 'Tribunal' },
-    { value: 'meeting', label: 'Réunion' },
-    { value: 'deadline', label: 'Échéance' }
-  ];
+  const handleScan = () => {
+    toast({
+      title: "🚧 Fonctionnalité non implémentée",
+      description: "La numérisation directe n'est pas encore disponible. Vous pouvez demander cette fonctionnalité dans votre prochain prompt ! 🚀",
+    });
+  };
 
   const isGerantOrAssocie = currentUser && (currentUser.function === 'Gerant' || currentUser.function === 'Associe Emerite');
   const isAdmin = isGerantOrAssocie || (currentUser.role && currentUser.role.toLowerCase() === 'admin');
@@ -106,7 +128,7 @@ const TaskForm = ({ task, onSubmit, onCancel, teamMembers, cases, currentUser })
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
-        className="bg-slate-800 border border-slate-700 rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+        className="bg-slate-800 border border-slate-700 rounded-xl p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto"
       >
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-white">
@@ -146,10 +168,50 @@ const TaskForm = ({ task, onSubmit, onCancel, teamMembers, cases, currentUser })
               name="description"
               value={formData.description}
               onChange={handleChange}
-              rows={4}
+              rows={3}
               className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Détails de la tâche..."
             />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                Catégorie Principale
+              </label>
+              <select
+                name="main_category"
+                value={formData.main_category}
+                onChange={handleChange}
+                className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">-- Sélectionner une catégorie --</option>
+                {taskCategoriesData.map(cat => (
+                  <option key={cat.name} value={cat.name}>{cat.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                Tâches Associées
+              </label>
+              <div className="p-3 bg-slate-700/50 border border-slate-600 rounded-lg max-h-40 overflow-y-auto">
+                {availableSubTasks.length > 0 ? (
+                  availableSubTasks.map(subTask => (
+                    <div key={subTask} className="flex items-center space-x-2 py-1">
+                      <Checkbox
+                        id={subTask}
+                        checked={formData.associated_tasks.includes(subTask)}
+                        onCheckedChange={() => handleSubTaskChange(subTask)}
+                      />
+                      <Label htmlFor={subTask} className="text-slate-300 font-normal">{subTask}</Label>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-slate-400 text-sm">Sélectionnez d'abord une catégorie principale.</p>
+                )}
+              </div>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -202,44 +264,6 @@ const TaskForm = ({ task, onSubmit, onCancel, teamMembers, cases, currentUser })
                 className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Catégorie
-              </label>
-              <select
-                name="category"
-                value={formData.category}
-                onChange={handleChange}
-                className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                {categories.map(cat => (
-                  <option key={cat.value} value={cat.value}>{cat.label}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                <User className="w-4 h-4 inline mr-2" />
-                Assigné à
-              </label>
-              <select
-                name="assigned_to_id"
-                value={formData.assigned_to_id}
-                onChange={handleChange}
-                className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                disabled={!isAdmin && !showReassign && task && task.assigned_to_id !== currentUser.id}
-              >
-                <option value="">Non assigné</option>
-                {teamMembers && teamMembers.map(member => (
-                  <option key={member.id} value={member.id}>{member.name}</option>
-                ))}
-              </select>
-            </div>
-
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">
                 <FileText className="w-4 h-4 inline mr-2" />
@@ -258,6 +282,25 @@ const TaskForm = ({ task, onSubmit, onCancel, teamMembers, cases, currentUser })
               </select>
             </div>
           </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-2">
+              <User className="w-4 h-4 inline mr-2" />
+              Assigné à
+            </label>
+            <select
+              name="assigned_to_id"
+              value={formData.assigned_to_id}
+              onChange={handleChange}
+              className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              disabled={!isAdmin && !showReassign && task && task.assigned_to_id !== currentUser.id}
+            >
+              <option value="">Non assigné</option>
+              {teamMembers && teamMembers.map(member => (
+                <option key={member.id} value={member.id}>{member.name}</option>
+              ))}
+            </select>
+          </div>
           
           {canReassign && !isAdmin && !showReassign && (
             <Button type="button" variant="outline" onClick={() => setShowReassign(true)}>
@@ -271,10 +314,14 @@ const TaskForm = ({ task, onSubmit, onCancel, teamMembers, cases, currentUser })
               Pièces jointes
             </label>
             <div className="flex items-center gap-4">
-              <label htmlFor="file-upload" className="cursor-pointer bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-3 text-slate-300 hover:bg-slate-700">
+              <label htmlFor="file-upload" className="cursor-pointer bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-3 text-slate-300 hover:bg-slate-700 flex items-center gap-2">
                 Choisir des fichiers
               </label>
               <input id="file-upload" name="file-upload" type="file" className="sr-only" onChange={handleFileChange} multiple />
+              <Button type="button" variant="outline" onClick={handleScan} className="flex items-center gap-2 border-slate-600 text-slate-300 hover:bg-slate-700">
+                <ScanLine className="w-4 h-4" />
+                Numériser
+              </Button>
             </div>
             <div className="mt-2 space-y-2">
               {formData.attachments.map((path, index) => (

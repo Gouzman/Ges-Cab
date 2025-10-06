@@ -2,7 +2,6 @@ import { cn } from '@/lib/utils';
 import * as ToastPrimitives from '@radix-ui/react-toast';
 import { cva } from 'class-variance-authority';
 import { X } from 'lucide-react';
-import PropTypes from 'prop-types';
 import React from 'react';
 
 const ToastProvider = ToastPrimitives.Provider;
@@ -65,7 +64,7 @@ const ToastClose = React.forwardRef(({ className, ...props }, ref) => (
 			'absolute right-2 top-2 rounded-md p-1 text-foreground/50 opacity-0 transition-opacity hover:text-foreground focus:opacity-100 focus:outline-none focus:ring-2 group-hover:opacity-100 group-[.destructive]:text-red-300 group-[.destructive]:hover:text-red-50 group-[.destructive]:focus:ring-red-400 group-[.destructive]:focus:ring-offset-red-600',
 			className,
 		)}
-		data-toast-close=""
+		toast-close=""
 		{...props}
 	>
 		<X className="h-4 w-4" />
@@ -90,32 +89,6 @@ const ToastDescription = React.forwardRef(({ className, ...props }, ref) => (
 	/>
 ));
 ToastDescription.displayName = ToastPrimitives.Description.displayName;
-
-// PropTypes pour la validation des props
-ToastViewport.propTypes = {
-	className: PropTypes.string,
-};
-
-Toast.propTypes = {
-	className: PropTypes.string,
-	variant: PropTypes.oneOf(['default', 'destructive']),
-};
-
-ToastAction.propTypes = {
-	className: PropTypes.string,
-};
-
-ToastClose.propTypes = {
-	className: PropTypes.string,
-};
-
-ToastTitle.propTypes = {
-	className: PropTypes.string,
-};
-
-ToastDescription.propTypes = {
-	className: PropTypes.string,
-};
 
 export {
 	Toast,

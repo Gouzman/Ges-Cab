@@ -1,5 +1,4 @@
 import React from 'react';
-import PropTypes from 'prop-types';
 import { motion } from 'framer-motion';
 import { 
   User, 
@@ -23,14 +22,14 @@ const ClientCard = ({ client, index, onEdit, onDelete }) => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
-      className="cabinet-card rounded-xl p-6 hover:scale-105 transition-all duration-200 shadow-sm hover:shadow-primary/20 print:bg-white print:border-slate-200 print:shadow-md print:hover:scale-100"
+      className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl p-6 hover:scale-105 transition-all duration-200 print:bg-white print:border-slate-200 print:shadow-md print:hover:scale-100"
     >
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
           <div className={`p-3 rounded-lg print:hidden ${
             client.type === 'company' 
-              ? 'bg-client-entreprise/20 text-client-entreprise' 
-              : 'bg-client-particulier/20 text-client-particulier'
+              ? 'bg-blue-500/20 text-blue-400' 
+              : 'bg-purple-500/20 text-purple-400'
           }`}>
             {client.type === 'company' ? (
               <Building className="w-6 h-6" />
@@ -39,11 +38,11 @@ const ClientCard = ({ client, index, onEdit, onDelete }) => {
             )}
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-cabinet-text print:text-black">
-              {client.first_name || client.firstName} {client.last_name || client.lastName}
+            <h3 className="text-lg font-semibold text-white print:text-black">
+              {client.firstName} {client.lastName}
             </h3>
             {client.company && (
-              <p className="text-muted text-sm print:text-slate-600">{client.company}</p>
+              <p className="text-slate-400 text-sm print:text-slate-600">{client.company}</p>
             )}
           </div>
         </div>
@@ -71,13 +70,13 @@ const ClientCard = ({ client, index, onEdit, onDelete }) => {
 
       <div className="space-y-3">
         <div className="flex items-center gap-3 text-sm">
-          <Mail className="w-4 h-4 text-muted print:text-slate-500" />
-          <span className="text-cabinet-text print:text-slate-700">{client.email}</span>
+          <Mail className="w-4 h-4 text-slate-400 print:text-slate-500" />
+          <span className="text-slate-300 print:text-slate-700">{client.email}</span>
         </div>
         
         <div className="flex items-center gap-3 text-sm">
-          <Phone className="w-4 h-4 text-muted print:text-slate-500" />
-          <span className="text-cabinet-text print:text-slate-700">{client.phone}</span>
+          <Phone className="w-4 h-4 text-slate-400 print:text-slate-500" />
+          <span className="text-slate-300 print:text-slate-700">{client.phone}</span>
         </div>
         
         {(client.address || client.city) && (
@@ -87,7 +86,7 @@ const ClientCard = ({ client, index, onEdit, onDelete }) => {
               {client.address && <div>{client.address}</div>}
               {client.city && (
                 <div>
-                  {client.postal_code || client.postalCode} {client.city}
+                  {client.postalCode} {client.city}
                   {client.country && client.country !== 'France' && `, ${client.country}`}
                 </div>
               )}
@@ -120,30 +119,6 @@ const ClientCard = ({ client, index, onEdit, onDelete }) => {
       </div>
     </motion.div>
   );
-};
-
-ClientCard.propTypes = {
-  client: PropTypes.shape({
-    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
-    type: PropTypes.oneOf(['company', 'individual']).isRequired,
-    first_name: PropTypes.string,
-    firstName: PropTypes.string,
-    last_name: PropTypes.string,
-    lastName: PropTypes.string,
-    company: PropTypes.string,
-    email: PropTypes.string,
-    phone: PropTypes.string,
-    address: PropTypes.string,
-    city: PropTypes.string,
-    postal_code: PropTypes.string,
-    postalCode: PropTypes.string,
-    country: PropTypes.string,
-    notes: PropTypes.string,
-    createdAt: PropTypes.string
-  }).isRequired,
-  index: PropTypes.number.isRequired,
-  onEdit: PropTypes.func.isRequired,
-  onDelete: PropTypes.func.isRequired
 };
 
 export default ClientCard;

@@ -1,14 +1,11 @@
-import { useState, useEffect } from 'react';
-import PropTypes from 'prop-types';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Calendar, ListTodo, FilePlus } from 'lucide-react';
+import { Plus, Search, Filter, Calendar, AlertTriangle, CheckCircle, Clock, MessageSquare, Eye, ListTodo, FilePlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import TaskForm from '@/components/TaskForm';
 import TaskCard from '@/components/TaskCard';
-
 import { supabase } from '@/lib/customSupabaseClient';
-import { usePermissions } from '@/hooks/usePermissions';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,116 +29,57 @@ const TaskManager = ({ currentUser }) => {
   const [taskToComment, setTaskToComment] = useState(null);
   const [completionComment, setCompletionComment] = useState('');
 
-
-  // Utilisation du nouveau système de permissions
-  const { 
-    hasModuleAccess, 
-    userIsAdmin 
-  } = usePermissions();
-
-  const isAdmin = userIsAdmin();
+  const isGerantOrAssocie = currentUser && (currentUser.function === 'Gerant' || currentUser.function === 'Associe Emerite');
+  const isAdmin = isGerantOrAssocie || (currentUser.role && currentUser.role.toLowerCase() === 'admin');
+  const permissions = currentUser?.permissions?.tasks || { visible: true, create: true, edit: true, delete: true };
 
   useEffect(() => {
-    const fetchTasks = async () => {
-      // Récupérer d'abord les tâches
-      let query = supabase.from('tasks').select('*');
-      
-      if (filterStatus && filterStatus !== 'all') {
-        query = query.eq('status', filterStatus);
-      }
-      
-      if (!isAdmin && currentUser?.id) {
-        query = query.eq('assigned_to_id', currentUser.id);
-      }
-      
-      const { data: tasksData, error: tasksError } = await query.order('created_at', { ascending: false });
-      if (tasksError) {
-        toast({ variant: "destructive", title: "Erreur", description: "Impossible de charger les tâches." });
-        return;
-      }
-
-      // Récupérer les profils pour enrichir les données
-      const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, name');
-
-      if (profilesError) {
-        console.warn('Impossible de charger les profils:', profilesError);
-        setTasks(tasksData || []);
-        return;
-      }
-
-      // Fonction utilitaire pour éviter les ternaires imbriqués
-      const getCreatedByName = (task, profilesMap) => {
-        if (task.created_by_id) {
-          return profilesMap.get(task.created_by_id) || task.created_by_name || 'Utilisateur introuvable';
-        }
-        if (task.created_by) {
-          return profilesMap.get(task.created_by) || 'Utilisateur introuvable';
-        }
-        return 'Créateur inconnu';
-      };
-
-      // Enrichir les tâches avec les noms actuels depuis les profils
-      const profilesMap = new Map(profilesData.map(p => [p.id, p.name]));
-      const enrichedTasks = (tasksData || []).map(task => ({
-        ...task,
-        assigned_to_name: task.assigned_to_id ? (profilesMap.get(task.assigned_to_id) || task.assigned_to_name || 'Utilisateur introuvable') : 'Non assigné',
-        created_by_name: getCreatedByName(task, profilesMap)
-      }));
-      
-      setTasks(enrichedTasks);
-    };
-
-    const fetchTeamMembers = async () => {
-      const { data: allProfiles, error } = await supabase
-        .from('profiles')
-        .select('id, name, role, function');
-      if (error) {
-        toast({ variant: "destructive", title: "Erreur", description: "Impossible de charger les collaborateurs." });
-      } else {
-        // Filtrer côté client pour exclure les Admin
-        const filteredMembers = (allProfiles || []).filter(user => 
-          user.role !== 'Admin' && user.function !== 'Admin'
-        );
-        setTeamMembers(filteredMembers);
-      }
-    };
-
-    const fetchCases = async () => {
-      const { data, error } = await supabase.from('cases').select('id, title');
-      if (error) {
-        toast({ variant: "destructive", title: "Erreur", description: "Impossible de charger les dossiers." });
-      } else {
-        setCases(data);
-      }
-    };
-
     fetchTasks();
     fetchTeamMembers();
-    fetchCases();
-  }, [currentUser?.id, isAdmin]);
+    if (isAdmin) {
+      fetchCases();
+    }
+  }, [isAdmin, currentUser]);
+
+  const fetchTasks = async () => {
+    let query = supabase.from('tasks').select('*');
+    if (!isAdmin && currentUser?.id) {
+      query = query.eq('assigned_to_id', currentUser.id);
+    }
+    const { data, error } = await query.order('created_at', { ascending: false });
+    if (error) {
+      toast({ variant: "destructive", title: "Erreur", description: "Impossible de charger les tâches." });
+    } else {
+      setTasks(data);
+    }
+  };
+
+  const fetchTeamMembers = async () => {
+    const { data, error } = await supabase.from('profiles').select('id, name');
+    if (error) {
+      toast({ variant: "destructive", title: "Erreur", description: "Impossible de charger les collaborateurs." });
+    } else {
+      setTeamMembers(data);
+    }
+  };
+
+  const fetchCases = async () => {
+    const { data, error } = await supabase.from('cases').select('id, title');
+    if (error) {
+      toast({ variant: "destructive", title: "Erreur", description: "Impossible de charger les dossiers." });
+    } else {
+      setCases(data);
+    }
+  };
 
   const handleFileUpload = async (file, taskId) => {
     const filePath = `${currentUser.id}/${taskId}/${file.name}`;
-    // Upload du fichier sur Supabase Storage
-    try {
-      const { error } = await supabase.storage
-        .from('task-attachments')
-        .upload(filePath, file, { upsert: true });
-      if (error) {
-        toast({ variant: "destructive", title: "Erreur d'upload", description: error.message });
-        return null;
-      }
-      // Récupérer l'URL publique du fichier
-      const { publicURL } = supabase.storage
-        .from('task-attachments')
-        .getPublicUrl(filePath);
-      return publicURL;
-    } catch (err) {
-      toast({ variant: "destructive", title: "Erreur d'upload", description: err.message });
+    const { error } = await supabase.storage.from('attachments').upload(filePath, file);
+    if (error) {
+      toast({ variant: "destructive", title: "Erreur d'upload", description: error.message });
       return null;
     }
+    return filePath;
   };
 
   const processTaskData = (taskData) => {
@@ -158,12 +96,11 @@ const TaskManager = ({ currentUser }) => {
     
     const { data, error } = await supabase.from('tasks').insert([{ 
       ...dataToInsert, 
-      assigned_to_name: assignedMember ? assignedMember.name : 'Non assigné',
+      assigned_to_name: assignedMember ? assignedMember.name : null,
       attachments: [],
       assigned_at: dataToInsert.assigned_to_id ? new Date().toISOString() : null,
       created_by_id: currentUser.id,
-      created_by_name: currentUser.name || currentUser.email || 'Utilisateur',
-      created_by: currentUser.id  // Assure la compatibilité avec le schéma original
+      created_by_name: currentUser.name
     }]).select().single();
     
     if (error) {
@@ -198,10 +135,9 @@ const TaskManager = ({ currentUser }) => {
     toast({ title: "✅ Tâche créée", description: "La nouvelle tâche a été ajoutée." });
   };
 
-
-
   const handleEditTask = async (taskData) => {
     const { filesToUpload, data: dataToUpdate } = processTaskData(taskData);
+    const assignedMember = teamMembers.find(m => m.id === dataToUpdate.assigned_to_id);
 
     const uploadedAttachmentPaths = [...(editingTask.attachments || [])];
     for (const file of filesToUpload || []) {
@@ -209,37 +145,21 @@ const TaskManager = ({ currentUser }) => {
       if (path) uploadedAttachmentPaths.push(path);
     }
 
-    // Récupérer le nom de l'assigné mis à jour
-    const assignedMember = teamMembers.find(m => m.id === dataToUpdate.assigned_to_id);
-    
     if (editingTask.assigned_to_id !== dataToUpdate.assigned_to_id) {
       dataToUpdate.assigned_at = new Date().toISOString();
       dataToUpdate.seen_at = null;
     }
 
-    dataToUpdate.attachments = uploadedAttachmentPaths;
-
-    const { data, error } = await supabase
-      .from('tasks')
-      .update({
-        title: dataToUpdate.title,
-        description: dataToUpdate.description,
-        case_id: dataToUpdate.case_id,
-        priority: dataToUpdate.priority,
-        deadline: dataToUpdate.deadline,
-        attachments: uploadedAttachmentPaths,
-        assigned_to_id: dataToUpdate.assigned_to_id,
-        assigned_to_name: assignedMember ? assignedMember.name : null,
-        assigned_at: dataToUpdate.assigned_at,
-        seen_at: dataToUpdate.seen_at
-      })
-      .eq('id', editingTask.id)
-      .select();
+    const { data, error } = await supabase.from('tasks').update({ 
+      ...dataToUpdate, 
+      assigned_to_name: assignedMember ? assignedMember.name : null,
+      attachments: uploadedAttachmentPaths
+    }).eq('id', editingTask.id).select().single();
     
     if (error) {
       toast({ variant: "destructive", title: "Erreur", description: `Impossible de modifier la tâche: ${error.message}` });
     } else {
-      setTasks(tasks.map(t => t.id === editingTask.id ? data[0] : t));
+      setTasks(tasks.map(t => t.id === editingTask.id ? data : t));
       setEditingTask(null);
       setActiveTab('suivi');
       toast({ title: "✅ Tâche modifiée", description: "La tâche a été mise à jour." });
@@ -292,7 +212,7 @@ const TaskManager = ({ currentUser }) => {
 
   const filteredTasks = tasks.filter(task => {
     const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         task.description?.toLowerCase().includes(searchTerm.toLowerCase()) || false;
+                         (task.description && task.description.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesStatus = filterStatus === 'all' || task.status === filterStatus;
     const matchesPriority = filterPriority === 'all' || task.priority === filterPriority;
     
@@ -311,20 +231,6 @@ const TaskManager = ({ currentUser }) => {
     setEditingTask(task);
     setActiveTab('nouvelle');
   };
-
-  // Vérification d'accès au module
-  if (!hasModuleAccess('tasks')) {
-    return (
-      <div className="text-center py-20">
-        <div className="w-16 h-16 bg-slate-600 rounded-full flex items-center justify-center mx-auto mb-4">
-          <ListTodo className="w-8 h-8 text-slate-400" />
-        </div>
-        <h1 className="text-2xl font-bold text-white">Accès non autorisé</h1>
-        <p className="text-slate-400">Vous n'avez pas les permissions pour accéder aux tâches.</p>
-        <p className="text-slate-500 text-sm mt-2">Contactez votre administrateur pour obtenir les droits nécessaires.</p>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
@@ -381,17 +287,17 @@ const TaskManager = ({ currentUser }) => {
             ))}
           </div>
 
-          <div className="bg-cabinet-surface/20 backdrop-blur-sm border border-cabinet-border rounded-xl p-6 mb-6">
+          <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl p-6 mb-6">
             <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-primary w-4 h-4" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
                   <input
                     type="text"
                     placeholder="Rechercher une tâche..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 bg-cabinet-surface border-2 border-cabinet-border rounded-lg text-cabinet-text placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                    className="w-full pl-10 pr-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               </div>
@@ -466,24 +372,6 @@ const TaskManager = ({ currentUser }) => {
       </AlertDialog>
     </div>
   );
-}
-
-TaskManager.propTypes = {
-  currentUser: PropTypes.shape({
-    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
-    name: PropTypes.string.isRequired,
-    email: PropTypes.string,
-    function: PropTypes.string,
-    role: PropTypes.string,
-    permissions: PropTypes.shape({
-      tasks: PropTypes.shape({
-        visible: PropTypes.bool,
-        create: PropTypes.bool,
-        edit: PropTypes.bool,
-        delete: PropTypes.bool
-      })
-    })
-  }).isRequired
 };
 
 export default TaskManager;
