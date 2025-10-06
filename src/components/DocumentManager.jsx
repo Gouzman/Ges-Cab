@@ -22,7 +22,7 @@ import React, { useState, useEffect } from 'react';
 
       useEffect(() => {
         const fetchDocuments = async () => {
-          let query = supabase.from('tasks').select('id, title, updated_at, time_spent, attachments');
+          let query = supabase.from('tasks').select('id, title, updated_at, attachments');
           if (!isAdmin) {
             query = query.eq('assigned_to_id', currentUser.id);
           }
@@ -41,7 +41,7 @@ import React, { useState, useEffect } from 'react';
               taskTitle: task.title,
               taskId: task.id,
               date: task.updated_at,
-              timeSpent: task.time_spent || 0,
+              timeSpent: 0, // time_spent géré comme propriété locale
             }))
           );
           setDocuments(allDocs);

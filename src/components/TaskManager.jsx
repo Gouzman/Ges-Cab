@@ -42,7 +42,11 @@ const TaskManager = ({ currentUser }) => {
   }, [isAdmin, currentUser]);
 
   const fetchTasks = async () => {
-    let query = supabase.from('tasks').select('*');
+    let query = supabase.from('tasks').select(`
+      id, title, description, priority, status, deadline, assigned_to_id, case_id, 
+      attachments, assigned_to_name, assigned_at, created_by_id, 
+      created_by_name, created_at, updated_at
+    `);
     if (!isAdmin && currentUser?.id) {
       query = query.eq('assigned_to_id', currentUser.id);
     }
@@ -83,11 +87,12 @@ const TaskManager = ({ currentUser }) => {
   };
 
   const processTaskData = (taskData) => {
-    const { filesToUpload, ...data } = taskData;
+    const { filesToUpload, associated_tasks, main_category, ...data } = taskData;
     if (data.case_id === '') {
       data.case_id = null;
     }
-    return { filesToUpload, data };
+    // associated_tasks et main_category sont gérés localement, pas en base de données
+    return { filesToUpload, data, associated_tasks, main_category };
   };
 
   const handleAddTask = async (taskData) => {
@@ -147,7 +152,7 @@ const TaskManager = ({ currentUser }) => {
 
     if (editingTask.assigned_to_id !== dataToUpdate.assigned_to_id) {
       dataToUpdate.assigned_at = new Date().toISOString();
-      dataToUpdate.seen_at = null;
+      // seen_at géré comme propriété locale uniquement
     }
 
     const { data, error } = await supabase.from('tasks').update({ 
@@ -182,9 +187,7 @@ const TaskManager = ({ currentUser }) => {
       setTaskToComment(taskId);
     } else {
       let updatePayload = { status: newStatus };
-      if (task && task.status === 'pending' && newStatus === 'seen' && !task.seen_at) {
-        updatePayload.seen_at = new Date().toISOString();
-      }
+      // seen_at géré comme propriété locale - pas persisté en base
       updateTaskStatus(taskId, updatePayload);
     }
   };

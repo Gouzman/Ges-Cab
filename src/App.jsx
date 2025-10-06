@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-    import { Helmet } from 'react-helmet';
+import React, { useState, useEffect } from 'react';
     import { motion } from 'framer-motion';
     import { Toaster } from '@/components/ui/toaster';
     import Sidebar from '@/components/Sidebar';
@@ -72,13 +71,17 @@ import React, { useState } from 'react';
         );
       }
 
+      // ✨ Définir le titre de la page avec l'API native (remplacement de react-helmet)
+      useEffect(() => {
+        document.title = 'LegalTask Pro - Cabinet d\'Avocat';
+        const metaDescription = document.querySelector('meta[name="description"]');
+        if (metaDescription) {
+          metaDescription.setAttribute('content', 'Plateforme de gestion des tâches professionnelle pour cabinets d\'avocats. Gérez vos dossiers, clients et échéances efficacement.');
+        }
+      }, []);
+
       return (
         <>
-          <Helmet>
-            <title>LegalTask Pro - Cabinet d'Avocat</title>
-            <meta name="description" content="Plateforme de gestion des tâches professionnelle pour cabinets d'avocats. Gérez vos dossiers, clients et échéances efficacement." />
-          </Helmet>
-          
           <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 print:bg-white">
             <div className="flex">
               <Sidebar 
