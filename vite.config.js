@@ -209,6 +209,7 @@ export default defineConfig({
 		addTransformIndexHtml
 	],
 	server: {
+		port: 5174,
 		cors: true,
 		headers: {
 			'Cross-Origin-Embedder-Policy': 'credentialless',
@@ -222,13 +223,31 @@ export default defineConfig({
 		},
 	},
 	build: {
+		target: 'esnext',
+		minify: 'terser',
+		terserOptions: {
+			compress: {
+				drop_console: true,
+				drop_debugger: true,
+			},
+		},
 		rollupOptions: {
 			external: [
 				'@babel/parser',
 				'@babel/traverse',
 				'@babel/generator',
 				'@babel/types'
-			]
+			],
+			output: {
+				manualChunks: {
+					'react-vendor': ['react', 'react-dom'],
+					'ui-vendor': ['lucide-react', 'framer-motion'],
+					'supabase-vendor': ['@supabase/supabase-js']
+				}
+			}
 		}
+	},
+	optimizeDeps: {
+		include: ['react', 'react-dom', 'lucide-react', 'framer-motion']
 	}
 });

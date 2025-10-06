@@ -1,28 +1,16 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { 
-  Calendar, 
-  User, 
   FileText, 
-  Edit, 
-  Trash2, 
-  CheckCircle, 
-  Clock, 
+  Clock,
   AlertTriangle,
-  Play,
-  Paperclip,
-  MessageSquare,
-  Download,
-  Eye,
-  RefreshCw,
-  Printer,
-  UserCheck
+  Trash2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/customSupabaseClient';
 import { toast } from '@/components/ui/use-toast';
 
-const TaskCard = ({ task, index, onEdit, onDelete, onStatusChange, currentUser }) => {
+const TaskCard = ({ task, index, onEdit, onDelete, onStatusChange, currentUser, onTaskUpdate, onViewDetails }) => {
   const getPriorityColor = (priority) => {
     switch (priority) {
       case 'urgent': return 'border-red-500 bg-red-500/10';
@@ -103,7 +91,13 @@ const TaskCard = ({ task, index, onEdit, onDelete, onStatusChange, currentUser }
   const isGerantOrAdmin = currentUser.function === 'Gerant' || currentUser.function === 'Associe Emerite' || currentUser.role === 'admin';
 
   return (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.1 }} className={`${getPriorityColor(task.priority)} backdrop-blur-sm border rounded-xl p-6 hover:scale-105 transition-all duration-200 flex flex-col`}>
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }} 
+      animate={{ opacity: 1, y: 0 }} 
+      transition={{ delay: index * 0.1 }} 
+      className={`${getPriorityColor(task.priority)} backdrop-blur-sm border rounded-xl p-6 hover:scale-105 transition-all duration-200 flex flex-col cursor-pointer`}
+      onClick={() => onViewDetails && onViewDetails(task)}
+    >
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-2">
           {getStatusIcon(task.status)}
@@ -111,10 +105,10 @@ const TaskCard = ({ task, index, onEdit, onDelete, onStatusChange, currentUser }
         </div>
         <div className="flex items-center gap-1">
           {isAssignedToCurrentUser && task.status !== 'completed' && (
-            <Button variant="ghost" size="icon" onClick={() => onStatusChange(task.id, nextStatus[task.status])} className="w-8 h-8 text-slate-400 hover:text-white" title={statusLabels[task.status]}>{statusIcons[task.status]}</Button>
+            <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); onStatusChange(task.id, nextStatus[task.status]); }} className="w-8 h-8 text-slate-400 hover:text-white" title={statusLabels[task.status]}>{statusIcons[task.status]}</Button>
           )}
-          {(isAssignedToCurrentUser || isGerantOrAdmin) && <Button variant="ghost" size="icon" onClick={() => onEdit(task)} className="w-8 h-8 text-slate-400 hover:text-white" title="Modifier/Réassigner"><RefreshCw className="w-4 h-4" /></Button>}
-          {onDelete && <Button variant="ghost" size="icon" onClick={() => onDelete(task.id)} className="w-8 h-8 text-slate-400 hover:text-red-400" title="Supprimer"><Trash2 className="w-4 h-4" /></Button>}
+          {(isAssignedToCurrentUser || isGerantOrAdmin) && <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); onEdit(task); }} className="w-8 h-8 text-slate-400 hover:text-white" title="Modifier/Réassigner"><RefreshCw className="w-4 h-4" /></Button>}
+          {onDelete && <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); onDelete(task.id); }} className="w-8 h-8 text-slate-400 hover:text-red-400" title="Supprimer"><Trash2 className="w-4 h-4" /></Button>}
         </div>
       </div>
       <div className="mb-4 flex-grow">
@@ -129,8 +123,8 @@ const TaskCard = ({ task, index, onEdit, onDelete, onStatusChange, currentUser }
       )}
       <div className="space-y-3 mb-4">
         {task.deadline && <div className="flex items-center gap-2 text-sm"><Calendar className="w-4 h-4 text-slate-400" /><span className={`${isOverdue(task.deadline) ? 'text-red-400' : 'text-slate-300'}`}>{formatDate(task.deadline)}{isOverdue(task.deadline) && ' (En retard)'}</span></div>}
-        {task.assigned_to_name && <div className="flex items-center gap-2 text-sm"><User className="w-4 h-4 text-slate-400" /><span className="text-slate-300">{task.assigned_to_name}</span></div>}
-        {task.created_by_name && <div className="flex items-center gap-2 text-sm"><UserCheck className="w-4 h-4 text-slate-400" /><span className="text-slate-300">Par: {task.created_by_name}</span></div>}
+        {task.created_by_name && <div className="flex items-center gap-2 text-sm"><UserCheck className="w-4 h-4 text-slate-400" /><span className="text-slate-300">Créé par: {task.created_by_name}</span></div>}
+        {task.assigned_to_name && <div className="flex items-center gap-2 text-sm"><User className="w-4 h-4 text-slate-400" /><span className="text-slate-300">Assigné à: {task.assigned_to_name}</span></div>}
         {task.assigned_at && <div className="flex items-center gap-2 text-xs"><Clock className="w-3 h-3 text-slate-500" /><span className="text-slate-400">Assignée le: {formatDate(task.assigned_at)}</span></div>}
         {task.seen_at && <div className="flex items-center gap-2 text-xs"><Eye className="w-3 h-3 text-purple-400" /><span className="text-purple-300">Vue le: {formatDate(task.seen_at)}</span></div>}
         {task.case_id && <div className="flex items-center gap-2 text-sm"><FileText className="w-4 h-4 text-slate-400" /><span className="text-slate-300">Dossier: {task.case_id}</span></div>}

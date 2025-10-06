@@ -2,41 +2,55 @@
 @tailwind components;
 @tailwind utilities;
 
+/* 📘 CHARTE GRAPHIQUE "TÂCHE CABINET" - Variables CSS Globales */
 :root {
-  /* Charte graphique Bordeaux & Blanc Cassé */
-  --background: 0 0% 98%;                /* Blanc cassé pour le fond */
-  --foreground: 351 50% 10%;             /* Bordeaux très sombre pour le texte */
-  --card: 0 0% 100%;                     /* Blanc pur pour les cartes */
-  --card-foreground: 351 50% 10%;        /* Bordeaux sombre pour le texte des cartes */
-  --popover: 0 0% 100%;                  /* Blanc pour les popovers */
-  --popover-foreground: 351 50% 10%;     /* Bordeaux sombre pour le texte des popovers */
-  --primary: 351 91% 22%;                /* Rouge bordeaux principal #6D071A */
-  --primary-foreground: 0 0% 100%;       /* Blanc pour le texte sur bordeaux */
-  --secondary: 351 20% 90%;              /* Bordeaux très clair pour secondaire */
-  --secondary-foreground: 351 50% 15%;   /* Bordeaux sombre pour le texte secondaire */
-  --muted: 351 10% 95%;                  /* Bordeaux très pâle pour muted */
-  --muted-foreground: 351 20% 45%;       /* Bordeaux moyen pour le texte muted */
-  --accent: 351 30% 88%;                 /* Bordeaux accent très clair */
-  --accent-foreground: 351 50% 15%;      /* Bordeaux sombre pour le texte accent */
-  --destructive: 0 84% 60%;              /* Rouge pour les erreurs */
-  --destructive-foreground: 0 0% 100%;   /* Blanc pour le texte d'erreur */
-  --border: 351 20% 85%;                 /* Bordeaux très clair pour les bordures */
-  --input: 0 0% 97%;                     /* Blanc cassé pour les inputs */
-  --ring: 351 91% 50%;                   /* Bordeaux clair pour focus ring */
+  /* Variables Principales de la Charte */
+  --cabinet-bg: 222.2 84% 4.9%;           /* Arrière-plan principal sombre */
+  --cabinet-text: 210 40% 98%;            /* Texte blanc cassé */
+  --cabinet-border: 217.2 32.6% 17.5%;    /* Bordures gris bleu sombre */
+  
+  /* Variables Compatibilité shadcn/ui */
+  --background: 222.2 84% 4.9%;           
+  --foreground: 210 40% 98%;              
+  --card: 222.2 84% 4.9%;                 
+  --card-foreground: 210 40% 98%;         
+  --popover: 222.2 84% 4.9%;              
+  --popover-foreground: 210 40% 98%;      
+  --primary: 217.2 91.2% 59.8%;           /* Bleu vif principal */
+  --primary-foreground: 210 40% 98%;      
+  --secondary: 217.2 32.6% 17.5%;         /* Gris bleu foncé */
+  --secondary-foreground: 210 40% 98%;    
+  --muted: 215 20.2% 65.1%;               
+  --muted-foreground: 215.4 16.3% 46.9%; 
+  --accent: 217.2 32.6% 17.5%;            
+  --accent-foreground: 210 40% 98%;       
+  --destructive: 0 62.8% 30.6%;           /* Rouge sombre pour erreurs */
+  --destructive-foreground: 210 40% 98%;  
+  --border: 217.2 32.6% 17.5%;            
+  --input: 217.2 32.6% 17.5%;             
+  --ring: 217.2 91.2% 59.8%;              
   --radius: 0.5rem;
 }
 
+/* 🎨 Body - Fond Principal avec Dégradé de la Charte */
 body {
-  /* Fond blanc cassé élégant avec subtils accents bordeaux */
-  background: linear-gradient(135deg, #FEFEFE 0%, #F9F7F7 25%, #F5F3F3 50%, #F1EFEF 75%, #EEECEC 100%);
-  color: #2D1B1E; /* Texte bordeaux très sombre pour la lisibilité */
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  background: linear-gradient(135deg, 
+    hsl(215 25% 27%) 0%,      /* Slate foncé */
+    hsl(217 33% 17%) 25%,     /* Gris bleu */  
+    hsl(222 47% 11%) 50%,     /* Bleu indigo */
+    hsl(222 84% 5%) 100%      /* Bleu très sombre */
+  );
+  color: hsl(210 40% 98%);    /* Texte blanc cassé */
+  font-family: 'Inter', 'Roboto', 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
+/* 🧩 Utilitaires CSS pour la Charte Cabinet */
 .line-clamp-2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -44,47 +58,82 @@ body {
 .line-clamp-3 {
   display: -webkit-box;
   -webkit-line-clamp: 3;
+  line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
-/* Custom scrollbar bordeaux sur fond blanc */
+/* 📏 Scrollbar Cabinet - Selon Charte Graphique */
 ::-webkit-scrollbar {
   width: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(109, 7, 26, 0.05);
+  background: rgba(51, 65, 85, 0.3);    /* Track selon charte */
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(109, 7, 26, 0.3);
+  background: rgba(100, 116, 139, 0.5); /* Thumb selon charte */
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(109, 7, 26, 0.5);
+  background: rgba(100, 116, 139, 0.7); /* Hover selon charte */
 }
 
-/* Smooth transitions */
+/* ✨ Transitions Globales Cabinet */
 * {
-  transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+  transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-/* Focus styles bordeaux */
+/* 🎯 Focus Styles Cabinet - Selon Charte */
 input:focus,
 textarea:focus,
 select:focus {
   outline: none;
-  box-shadow: 0 0 0 2px rgba(109, 7, 26, 0.5);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5); /* Bleu vif de la charte */
 }
 
-/* Button hover effects */
+/* 🎭 États des Boutons Cabinet */
 button:hover {
-  transform: translateY(-1px);
+  transform: translateY(-1px);           /* Hover selon charte */
 }
 
 button:active {
-  transform: translateY(0);
+  transform: translateY(0);              /* Active selon charte */
+}
+
+/* 🎨 Classes Utilitaires Cabinet */
+.cabinet-card {
+  background: rgba(222.2, 84%, 4.9%, 0.95);
+  border: 1px solid hsl(217.2 32.6% 17.5%);
+  backdrop-filter: blur(10px);
+  border-radius: 0.5rem;
+}
+
+.cabinet-text-primary {
+  color: hsl(210 40% 98%);
+}
+
+.cabinet-text-secondary {
+  color: hsl(215.4 16.3% 46.9%);
+}
+
+.cabinet-border {
+  border-color: hsl(217.2 32.6% 17.5%);
+}
+
+/* 🏛️ Styles spéciaux pour l'identité juridique */
+.cabinet-logo {
+  background: linear-gradient(to right, hsl(217 91% 60%), hsl(231 76% 60%));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.cabinet-subtitle {
+  color: hsl(215.4 16.3% 46.9%);
+  font-weight: 500;
+  letter-spacing: 0.05em;
 }

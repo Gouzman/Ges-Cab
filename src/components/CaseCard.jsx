@@ -25,13 +25,13 @@ const CaseCard = ({ case: caseData, index, onEdit, onDelete }) => {
     switch (status) {
       case 'active':
       case 'Open':
-        return 'bg-bordeaux-500/20 text-bordeaux-400';
+        return 'bg-green-500/20 text-green-600';
       case 'pending':
-        return 'bg-bordeaux-300/20 text-bordeaux-300';
+        return 'bg-yellow-500/20 text-yellow-600';
       case 'closed':
-        return 'bg-bordeaux-700/20 text-bordeaux-700';
+        return 'bg-slate-500/20 text-slate-600';
       default:
-        return 'bg-bordeaux-200/20 text-bordeaux-200';
+        return 'bg-gray-200/20 text-gray-500';
     }
   };
 
@@ -52,16 +52,16 @@ const CaseCard = ({ case: caseData, index, onEdit, onDelete }) => {
     switch (priority) {
       case 'high':
       case 'Haute':
-        return 'border-bordeaux-500 bg-bordeaux-500/10';
+        return 'border-red-500 bg-red-500/10';
       case 'medium':
       case 'Medium':
       case 'Moyenne':
-        return 'border-bordeaux-400 bg-bordeaux-400/10';
+        return 'border-orange-400 bg-orange-400/10';
       case 'low':
       case 'Basse':
-        return 'border-bordeaux-300 bg-bordeaux-300/10';
+        return 'border-blue-400 bg-blue-400/10';
       default:
-        return 'border-bordeaux-600 bg-bordeaux-900/30';
+        return 'border-slate-400 bg-slate-500/20';
     }
   };
 
@@ -89,7 +89,7 @@ const CaseCard = ({ case: caseData, index, onEdit, onDelete }) => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
-      className={`${getPriorityColor(caseData.priority || 'Moyenne')} backdrop-blur-sm border rounded-xl p-6 hover:scale-105 transition-all duration-200 flex flex-col`}
+      className={`${getPriorityBorderColor(caseData.priority || 'Moyenne')} cabinet-card rounded-xl p-6 hover:scale-105 transition-all duration-200 flex flex-col hover:shadow-primary/20`}
     >
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-2">
@@ -107,7 +107,7 @@ const CaseCard = ({ case: caseData, index, onEdit, onDelete }) => {
             variant="ghost"
             size="icon"
             onClick={() => onEdit(caseData)}
-            className="w-8 h-8 text-slate-400 hover:text-white"
+            className="w-8 h-8 text-muted hover:text-cabinet-text"
           >
             <Edit className="w-4 h-4" />
           </Button>
@@ -116,7 +116,7 @@ const CaseCard = ({ case: caseData, index, onEdit, onDelete }) => {
             variant="ghost"
             size="icon"
             onClick={() => onDelete(caseData.id)}
-            className="w-8 h-8 text-slate-400 hover:text-red-400"
+            className="w-8 h-8 text-muted hover:text-destructive"
           >
             <Trash2 className="w-4 h-4" />
           </Button>
@@ -125,14 +125,14 @@ const CaseCard = ({ case: caseData, index, onEdit, onDelete }) => {
 
       <div className="mb-4 flex-grow">
         <div className="flex items-center gap-2 mb-2">
-          <FileText className="w-4 h-4 text-slate-400" />
-          <span className="text-xs text-slate-400 font-mono">{caseData.id || 'ID non défini'}</span>
+          <FileText className="w-4 h-4 text-muted" />
+          <span className="text-xs text-muted font-mono">{caseData.id || 'ID non défini'}</span>
         </div>
-        <h3 className="text-lg font-semibold text-white mb-2 line-clamp-2">
+        <h3 className="text-lg font-semibold text-cabinet-text mb-2 line-clamp-2">
           {caseData.title || 'Titre non défini'}
         </h3>
         {caseData.description && (
-          <p className="text-slate-400 text-sm line-clamp-3">
+          <p className="text-muted text-sm line-clamp-3">
             {caseData.description}
           </p>
         )}

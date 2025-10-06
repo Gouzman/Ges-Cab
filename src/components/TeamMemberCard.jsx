@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { User, Mail, ShieldCheck, Edit, Trash2, Award, Briefcase } from 'lucide-react';
+import { Mail, ShieldCheck, Edit, Trash2, Award, Briefcase } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const TeamMemberCard = ({ member, index, onEdit, onDelete, isCurrentUser }) => {

@@ -9,6 +9,7 @@ const EventForm = ({ currentUser, onCancel, onEventCreated }) => {
   const [formData, setFormData] = useState({
     title: '',
     startTime: '',
+    endTime: '',
     description: '',
     attendees: [],
   });
@@ -107,32 +108,52 @@ const EventForm = ({ currentUser, onCancel, onEventCreated }) => {
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              <Calendar className="w-4 h-4 inline mr-2" />
-              Date et heure de début *
-            </label>
-            <input
-              type="datetime-local"
-              name="startTime"
-              value={formData.startTime}
-              onChange={handleChange}
-              required
-              className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="startTime" className="block text-sm font-medium text-slate-300 mb-2">
+                <Calendar className="w-4 h-4 inline mr-2" />
+                Date et heure de début *
+              </label>
+              <input
+                id="startTime"
+                type="datetime-local"
+                name="startTime"
+                value={formData.startTime}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="endTime" className="block text-sm font-medium text-slate-300 mb-2">
+                <Calendar className="w-4 h-4 inline mr-2" />
+                Heure de fin (optionnelle)
+              </label>
+              <input
+                id="endTime"
+                type="datetime-local"
+                name="endTime"
+                value={formData.endTime}
+                onChange={handleChange}
+                min={formData.startTime} // L'heure de fin ne peut pas être antérieure au début
+                className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
+            <label htmlFor="description" className="block text-sm font-medium text-slate-300 mb-2">
               Description
             </label>
             <textarea
+              id="description"
               name="description"
               value={formData.description}
               onChange={handleChange}
               rows={3}
               className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Ordre du jour, détails..."
+              placeholder="Description de l'événement, détails..."
             />
           </div>
 

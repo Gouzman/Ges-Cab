@@ -2,12 +2,13 @@ import { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
-import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay, parseISO, addWeeks, subWeeks, eachDayOfInterval, setHours } from 'date-fns';
+import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/customSupabaseClient';
 import { toast } from '@/components/ui/use-toast';
 import EventForm from '@/components/EventForm';
+import { filterItemsForDay } from '@/utils/calendarUtils';
 
     const getPriorityClass = (priority, darker = false) => {
   const opacity = darker ? '80' : '70';
@@ -25,7 +26,6 @@ import EventForm from '@/components/EventForm';
 
 const Calendar = ({ currentUser }) => {
       const [currentDate, setCurrentDate] = useState(new Date());
-      const [view, setView] = useState('week'); // 'month' or 'week'
       const [events, setEvents] = useState([]);
       const [tasks, setTasks] = useState([]);
       const [showEventForm, setShowEventForm] = useState(false);
@@ -66,6 +66,7 @@ const Calendar = ({ currentUser }) => {
           
           return userVisibleEvents.map(e => ({ ...e, type: 'event' }));
         } catch (error) {
+          console.error('Erreur lors du chargement des événements:', error);
           toast({ variant: "destructive", title: "Erreur", description: "Impossible de charger les événements." });
           return [];
         }
@@ -87,14 +88,14 @@ const Calendar = ({ currentUser }) => {
         const dateFormat = "MMMM yyyy";
         return (
           <div className="flex items-center justify-between mb-6">
-            <Button variant="ghost" size="icon" onClick={() => view === 'month' ? setCurrentDate(subMonths(currentDate, 1)) : setCurrentDate(subWeeks(currentDate, 1))}>
-              <ChevronLeft className="w-6 h-6 text-slate-300" />
+            <Button variant="ghost" size="icon" onClick={() => setCurrentDate(subMonths(currentDate, 1))}>
+              <ChevronLeft className="w-6 h-6 text-primary" />
             </Button>
-            <span className="text-2xl font-bold text-white capitalize">
+            <span className="text-2xl font-bold text-cabinet-text capitalize">
               {format(currentDate, dateFormat, { locale: fr })}
             </span>
-            <Button variant="ghost" size="icon" onClick={() => view === 'month' ? setCurrentDate(addMonths(currentDate, 1)) : setCurrentDate(addWeeks(currentDate, 1))}>
-              <ChevronRight className="w-6 h-6 text-slate-300" />
+            <Button variant="ghost" size="icon" onClick={() => setCurrentDate(addMonths(currentDate, 1))}>
+              <ChevronRight className="w-6 h-6 text-primary" />
             </Button>
           </div>
         );
@@ -106,7 +107,7 @@ const Calendar = ({ currentUser }) => {
         const startDate = startOfWeek(currentDate, { locale: fr });
         for (let i = 0; i < 7; i++) {
           days.push(
-            <div className="text-center text-sm font-medium text-slate-400 capitalize" key={i}>
+            <div className="text-center text-sm font-medium text-muted-foreground capitalize" key={i}>
               {format(addDays(startDate, i), dateFormat, { locale: fr })}
             </div>
           );
@@ -127,16 +128,16 @@ const Calendar = ({ currentUser }) => {
         while (day <= endDate) {
           for (let i = 0; i < 7; i++) {
             const cloneDay = day;
-            const dayItems = [...tasks, ...events].filter(item => isSameDay(parseISO(item.deadline), cloneDay));
+            const dayItems = filterItemsForDay(tasks, events, cloneDay);
 
             days.push(
               <div
-                className={`p-2 h-32 border border-slate-700/50 rounded-lg flex flex-col overflow-hidden transition-colors duration-200 ${
-                  !isSameMonth(day, monthStart) ? "bg-slate-800/30" : "bg-slate-800/60 hover:bg-slate-700/50"
-                } ${isSameDay(day, new Date()) ? "border-blue-500" : ""}`}
+                className={`p-2 h-32 border border-cabinet-border rounded-lg flex flex-col overflow-hidden transition-colors duration-200 ${
+                  !isSameMonth(day, monthStart) ? "bg-cabinet-surface/30" : "bg-cabinet-surface/60 hover:bg-cabinet-surface/80"
+                } ${isSameDay(day, new Date()) ? "border-primary" : ""}`}
                 key={day.toString()}
               >
-                <span className={`font-semibold ${!isSameMonth(day, monthStart) ? "text-slate-600" : "text-slate-300"}`}>
+                <span className={`font-semibold ${!isSameMonth(day, monthStart) ? "text-muted-foreground/50" : "text-cabinet-text"}`}>
                   {format(day, "d")}
                 </span>
                 <div className="flex-grow overflow-y-auto mt-1 space-y-1 pr-1">
@@ -160,61 +161,7 @@ const Calendar = ({ currentUser }) => {
         return <div className="space-y-2">{rows}</div>;
       };
 
-      const renderWeekView = () => {
-        const weekDays = eachDayOfInterval({
-          start: startOfWeek(currentDate, { locale: fr }),
-          end: endOfWeek(currentDate, { locale: fr }),
-        });
-        const hours = Array.from({ length: 24 }, (_, i) => i); // 00h to 23h
 
-        return (
-          <div className="flex">
-            <div className="flex flex-col">
-              <div className="h-16"></div>
-              {hours.map(hour => (
-                <div key={hour} className="h-16 flex items-center justify-center text-xs text-slate-400 pr-2">
-                  {format(setHours(new Date(), hour), 'HH:mm')}
-                </div>
-              ))}
-            </div>
-            <div className="flex-1 grid grid-cols-7">
-              {weekDays.map(day => (
-                <div key={day.toString()} className="flex flex-col border-l border-slate-700/50">
-                  <div className={`h-16 text-center p-2 ${isSameDay(day, new Date()) ? 'text-blue-400' : 'text-slate-300'}`}>
-                    <p className="font-semibold text-lg">{format(day, 'd')}</p>
-                    <p className="text-xs capitalize">{format(day, 'EEE', { locale: fr })}</p>
-                  </div>
-                  <div className="relative flex-1">
-                    {hours.map(hour => (
-                      <div key={hour} className="h-16 border-t border-slate-700/50"></div>
-                    ))}
-                    {[...tasks, ...events]
-                      .filter(item => isSameDay(parseISO(item.deadline), day))
-                      .map(item => {
-                        const itemDate = parseISO(item.deadline);
-                        const top = (itemDate.getHours() + itemDate.getMinutes() / 60) * 4; // 4rem (h-16) per hour
-                        
-                        return (
-                          <div
-                            key={`${item.type}-${item.id}`}
-                            className={`absolute w-full p-1 text-xs rounded-md truncate z-10 ${
-                              item.type === 'task' ? 
-                                getPriorityClass(item.priority, true) :
-                                'bg-purple-500/80 text-white'
-                            }`}
-                            style={{ top: `${top}rem` }}
-                          >
-                            {item.title}
-                          </div>
-                        );
-                      })}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-      };
 
       return (
         <>
@@ -225,14 +172,10 @@ const Calendar = ({ currentUser }) => {
           >
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-3xl font-bold text-white mb-2">Agenda</h1>
-                <p className="text-slate-400">Visualisez vos échéances et événements</p>
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent mb-2">Agenda</h1>
+                <p className="text-muted-foreground">Visualisez vos échéances et événements</p>
               </div>
               <div className="flex items-center gap-2">
-                <div className="bg-slate-700/50 p-1 rounded-lg flex gap-1">
-                  <Button size="sm" variant={view === 'week' ? 'secondary' : 'ghost'} onClick={() => setView('week')}>Semaine</Button>
-                  <Button size="sm" variant={view === 'month' ? 'secondary' : 'ghost'} onClick={() => setView('month')}>Mois</Button>
-                </div>
                 <Button 
                   onClick={() => setShowEventForm(true)}
                   className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700"
@@ -242,11 +185,11 @@ const Calendar = ({ currentUser }) => {
                 </Button>
               </div>
             </div>
-            <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl p-6">
+            <div className="cabinet-card rounded-xl p-6">
               {renderHeader()}
-              {view === 'month' && renderDays()}
+              {renderDays()}
               <div className="mt-2">
-                {view === 'month' ? renderMonthCells() : renderWeekView()}
+                {renderMonthCells()}
               </div>
             </div>
           </motion.div>

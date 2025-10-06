@@ -210,12 +210,12 @@ const Dashboard = ({ currentUser, setActiveView }) => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-bordeaux-900 mb-2">Tableau de Bord</h1>
-          <p className="text-bordeaux-600">Bonjour {currentUser.name || currentUser.email}, voici la vue d'ensemble de votre activité.</p>
+          <h1 className="text-3xl font-bold text-cabinet-text mb-2 bg-gradient-to-r from-primary to-blue-400 bg-clip-text text-transparent">Tableau de Bord</h1>
+          <p className="text-muted">Bonjour {currentUser.name || currentUser.email}, voici la vue d'ensemble de votre activité.</p>
         </div>
         <div className="text-right">
-          <p className="text-bordeaux-600">Aujourd'hui</p>
-          <p className="text-bordeaux-900 font-semibold">{new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+          <p className="text-muted">Aujourd'hui</p>
+          <p className="text-cabinet-text font-semibold">{new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
         </div>
       </div>
 
@@ -229,15 +229,15 @@ const Dashboard = ({ currentUser, setActiveView }) => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
               onClick={() => setActiveView(card.view)}
-              className={`${card.bgColor} border-2 ${card.borderColor} rounded-2xl p-6 hover:scale-[1.02] hover:shadow-lg hover:shadow-${card.borderColor.replace('border-', '')}/20 transition-all duration-300 cursor-pointer bg-white/80 backdrop-blur-sm`}
+              className={`cabinet-card border-2 ${card.borderColor} rounded-2xl p-6 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/20 transition-all duration-300 cursor-pointer backdrop-blur-sm`}
             >
               <div className="flex items-center justify-between mb-4">
                 <div className={`p-3 bg-gradient-to-br ${card.color} rounded-xl shadow-sm`}>
                   <Icon className="w-6 h-6 text-white" />
                 </div>
-                <p className={`text-3xl font-bold ${card.textColor}`}>{card.value}</p>
+                <p className="text-3xl font-bold text-cabinet-text">{card.value}</p>
               </div>
-              <h3 className="text-gray-600 font-medium text-sm">{card.title}</h3>
+              <h3 className="text-muted font-medium text-sm">{card.title}</h3>
             </motion.div>
           );
         })}
@@ -248,13 +248,13 @@ const Dashboard = ({ currentUser, setActiveView }) => {
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.6 }}
-          className="lg:col-span-2 bg-white/90 backdrop-blur-sm border border-rose-100 rounded-2xl p-6 shadow-sm"
+          className="lg:col-span-2 cabinet-card rounded-2xl p-6 shadow-sm border border-destructive/20"
         >
           <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-rose-100 rounded-lg">
-              <UserX className="w-5 h-5 text-rose-500" />
+            <div className="p-2 bg-destructive/20 rounded-lg">
+              <UserX className="w-5 h-5 text-destructive" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-800">Tâches en Retard ({overdueTasks.length})</h3>
+            <h3 className="text-lg font-semibold text-cabinet-text">Tâches en Retard ({overdueTasks.length})</h3>
           </div>
           {overdueTasks.length > 0 ? (
             <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
@@ -282,16 +282,16 @@ const Dashboard = ({ currentUser, setActiveView }) => {
         </motion.div>
 
         <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.7 }}
-          className="bg-white/90 backdrop-blur-sm border border-amber-100 rounded-2xl p-6 shadow-sm"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
+          className="cabinet-card rounded-2xl p-6 shadow-sm border border-status-pending/20"
         >
           <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-amber-100 rounded-lg">
-              <Megaphone className="w-5 h-5 text-amber-500" />
+            <div className="p-2 bg-status-pending/20 rounded-lg">
+              <Megaphone className="w-5 h-5 text-status-pending" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-800">Alertes Récentes</h3>
+            <h3 className="text-lg font-semibold text-cabinet-text">Alertes Récentes</h3>
           </div>
           {isAdmin && (
             <div className="flex gap-2 mb-4">
@@ -300,22 +300,22 @@ const Dashboard = ({ currentUser, setActiveView }) => {
                 value={newAlert}
                 onChange={(e) => setNewAlert(e.target.value)}
                 placeholder="Écrire une nouvelle alerte..."
-                className="flex-grow px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+                className="flex-grow px-4 py-2 bg-cabinet-surface border border-cabinet-border rounded-xl text-cabinet-text placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-status-pending focus:border-transparent"
               />
-              <Button size="icon" onClick={handlePostAlert} className="bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 rounded-xl">
+              <Button size="icon" onClick={handlePostAlert} className="bg-gradient-to-r from-status-pending to-status-pending/80 hover:from-status-pending/90 hover:to-status-pending rounded-xl">
                 <Send className="w-4 h-4" />
               </Button>
             </div>
           )}
           <div className="space-y-3 max-h-48 overflow-y-auto pr-2">
             {alerts.length > 0 ? alerts.map(alert => (
-              <div key={alert.id} className="p-4 bg-amber-50 border border-amber-100 rounded-xl">
-                <p className="text-gray-800 text-sm font-medium">{alert.text}</p>
-                <p className="text-xs text-gray-500 mt-2">
+              <div key={alert.id} className="p-4 bg-status-pending/10 border border-status-pending/20 rounded-xl">
+                <p className="text-cabinet-text text-sm font-medium">{alert.text}</p>
+                <p className="text-xs text-muted-foreground mt-2">
                   Par {alert.author_name} - {new Date(alert.created_at).toLocaleDateString('fr-FR')}
                 </p>
               </div>
-            )) : <p className="text-gray-500 text-center text-sm py-4">Aucune alerte pour le moment.</p>}
+            )) : <p className="text-muted-foreground text-center text-sm py-4">Aucune alerte pour le moment.</p>}
           </div>
         </motion.div>
       </div>
@@ -325,37 +325,37 @@ const Dashboard = ({ currentUser, setActiveView }) => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.8 }}
-          className="bg-white/90 backdrop-blur-sm border border-violet-100 rounded-2xl p-6 shadow-sm"
+          className="cabinet-card rounded-2xl p-6 shadow-sm border border-status-viewed/20"
         >
           <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-violet-100 rounded-lg">
-              <Users className="w-5 h-5 text-violet-500" />
+            <div className="p-2 bg-status-viewed/20 rounded-lg">
+              <Users className="w-5 h-5 text-status-viewed" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-800">Performance de l'Équipe</h3>
+            <h3 className="text-lg font-semibold text-cabinet-text">Performance de l'Équipe</h3>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="p-4 text-gray-600 font-semibold text-sm">Collaborateur</th>
-                  <th className="p-4 text-gray-600 font-semibold text-sm text-center">Tâches Assignées</th>
-                  <th className="p-4 text-gray-600 font-semibold text-sm text-center">Tâches Terminées</th>
-                  <th className="p-4 text-gray-600 font-semibold text-sm text-center">En Retard</th>
-                  <th className="p-4 text-gray-600 font-semibold text-sm text-center">Taux de Complétion</th>
+                <tr className="border-b border-cabinet-border">
+                  <th className="p-4 text-cabinet-text font-semibold text-sm">Collaborateur</th>
+                  <th className="p-4 text-cabinet-text font-semibold text-sm text-center">Tâches Assignées</th>
+                  <th className="p-4 text-cabinet-text font-semibold text-sm text-center">Tâches Terminées</th>
+                  <th className="p-4 text-cabinet-text font-semibold text-sm text-center">En Retard</th>
+                  <th className="p-4 text-cabinet-text font-semibold text-sm text-center">Taux de Complétion</th>
                 </tr>
               </thead>
               <tbody>
                 {teamPerformance.map(member => (
-                  <tr key={member.name} className="border-b border-gray-100 hover:bg-gray-50/80 transition-colors">
-                    <td className="p-4 text-gray-800 font-medium">{member.name}</td>
-                    <td className="p-4 text-gray-700 text-center">{member.total}</td>
-                    <td className="p-4 text-emerald-600 text-center font-semibold">{member.completed}</td>
-                    <td className="p-4 text-rose-600 text-center font-semibold">{member.overdue}</td>
-                    <td className="p-4 text-gray-700 text-center">
+                  <tr key={member.name} className="border-b border-cabinet-border/50 hover:bg-cabinet-surface/30 transition-colors">
+                    <td className="p-4 text-cabinet-text font-medium">{member.name}</td>
+                    <td className="p-4 text-cabinet-text text-center">{member.total}</td>
+                    <td className="p-4 text-status-completed text-center font-semibold">{member.completed}</td>
+                    <td className="p-4 text-destructive text-center font-semibold">{member.overdue}</td>
+                    <td className="p-4 text-cabinet-text text-center">
                       <div className="flex items-center justify-center gap-3">
-                        <span className="font-semibold text-violet-600">{member.completionRate}%</span>
-                        <div className="w-24 bg-gray-200 rounded-full h-2">
-                          <div className="bg-gradient-to-r from-violet-400 to-violet-500 h-2 rounded-full transition-all duration-300" style={{ width: `${member.completionRate}%` }}></div>
+                        <span className="font-semibold text-status-viewed">{member.completionRate}%</span>
+                        <div className="w-24 bg-cabinet-border rounded-full h-2">
+                          <div className="bg-gradient-to-r from-status-viewed/80 to-status-viewed h-2 rounded-full transition-all duration-300" style={{ width: `${member.completionRate}%` }}></div>
                         </div>
                       </div>
                     </td>
@@ -363,6 +363,52 @@ const Dashboard = ({ currentUser, setActiveView }) => {
                 ))}
               </tbody>
             </table>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Section de test temporaire pour le système de logs */}
+      {isAdmin && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.8 }}
+          className="mt-6 space-y-6"
+        >
+          
+          {/* Test d'affichage des tâches corrigé */}
+          <div className="cabinet-card p-6 rounded-lg shadow-lg">
+            <h3 className="text-lg font-semibold text-cabinet-text mb-4">
+              ✅ Bug Correction - Affichage Tâches (Créateur vs Assigné)
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+                <h4 className="font-semibold text-destructive mb-2">❌ AVANT (incorrect)</h4>
+                <div className="text-sm text-destructive/80 space-y-1">
+                  <div>👤 Assigné: John Doe</div>
+                  <div className="text-xs text-destructive/60">Le nom de l'assigné s'affichait à la place du créateur</div>
+                </div>
+              </div>
+              <div className="bg-status-completed/10 border border-status-completed/20 rounded-lg p-4">
+                <h4 className="font-semibold text-status-completed mb-2">✅ APRÈS (correct)</h4>
+                <div className="text-sm text-status-completed/80 space-y-1">
+                  <div>👨‍💼 Créé par: Marie Martin</div>
+                  <div>👤 Assigné à: John Doe</div>
+                  <div className="text-xs text-status-completed/60">Affichage dans le bon ordre avec labels clairs</div>
+                </div>
+              </div>
+            </div>
+            <div className="mt-4 p-3 bg-primary/10 border border-primary/20 rounded">
+              <p className="text-primary text-sm">
+                <strong>Corrections appliquées :</strong>
+              </p>
+              <ul className="text-primary/80 text-sm mt-2 space-y-1">
+                <li>• Inversé l'ordre d'affichage : créateur d'abord, assigné ensuite</li>
+                <li>• Labels explicites : "Créé par:" et "Assigné à:"</li>
+                <li>• Enrichissement automatique des noms depuis la table profiles</li>
+                <li>• Trigger SQL pour maintenir la cohérence des données</li>
+              </ul>
+            </div>
           </div>
         </motion.div>
       )}

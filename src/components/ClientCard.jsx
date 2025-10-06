@@ -22,14 +22,14 @@ const ClientCard = ({ client, index, onEdit, onDelete }) => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
-      className="bg-white backdrop-blur-sm border border-bordeaux-200 rounded-xl p-6 hover:scale-105 transition-all duration-200 shadow-sm hover:shadow-md print:bg-white print:border-slate-200 print:shadow-md print:hover:scale-100"
+      className="cabinet-card rounded-xl p-6 hover:scale-105 transition-all duration-200 shadow-sm hover:shadow-primary/20 print:bg-white print:border-slate-200 print:shadow-md print:hover:scale-100"
     >
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
           <div className={`p-3 rounded-lg print:hidden ${
             client.type === 'company' 
-              ? 'bg-bordeaux-500/20 text-bordeaux-400' 
-              : 'bg-bordeaux-300/20 text-bordeaux-300'
+              ? 'bg-client-entreprise/20 text-client-entreprise' 
+              : 'bg-client-particulier/20 text-client-particulier'
           }`}>
             {client.type === 'company' ? (
               <Building className="w-6 h-6" />
@@ -38,11 +38,11 @@ const ClientCard = ({ client, index, onEdit, onDelete }) => {
             )}
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-bordeaux-900 print:text-black">
+            <h3 className="text-lg font-semibold text-cabinet-text print:text-black">
               {client.first_name || client.firstName} {client.last_name || client.lastName}
             </h3>
             {client.company && (
-              <p className="text-bordeaux-600 text-sm print:text-slate-600">{client.company}</p>
+              <p className="text-muted text-sm print:text-slate-600">{client.company}</p>
             )}
           </div>
         </div>
@@ -70,13 +70,13 @@ const ClientCard = ({ client, index, onEdit, onDelete }) => {
 
       <div className="space-y-3">
         <div className="flex items-center gap-3 text-sm">
-          <Mail className="w-4 h-4 text-slate-400 print:text-slate-500" />
-          <span className="text-bordeaux-700 print:text-slate-700">{client.email}</span>
+          <Mail className="w-4 h-4 text-muted print:text-slate-500" />
+          <span className="text-cabinet-text print:text-slate-700">{client.email}</span>
         </div>
         
         <div className="flex items-center gap-3 text-sm">
-          <Phone className="w-4 h-4 text-slate-400 print:text-slate-500" />
-          <span className="text-bordeaux-700 print:text-slate-700">{client.phone}</span>
+          <Phone className="w-4 h-4 text-muted print:text-slate-500" />
+          <span className="text-cabinet-text print:text-slate-700">{client.phone}</span>
         </div>
         
         {(client.address || client.city) && (

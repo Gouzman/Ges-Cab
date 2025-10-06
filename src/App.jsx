@@ -1,20 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense, lazy } from 'react';
     import { Helmet } from 'react-helmet';
     import { motion } from 'framer-motion';
     import { Toaster } from '@/components/ui/toaster';
     import Sidebar from '@/components/Sidebar';
-    import Dashboard from '@/components/Dashboard';
-    import TaskManager from '@/components/TaskManager';
-    import ClientManager from '@/components/ClientManager';
-    import CaseManager from '@/components/CaseManager';
-    import Calendar from '@/components/Calendar';
-    import Reports from '@/components/Reports';
-    import TeamManager from '@/components/TeamManager';
     import NewLoginScreen from '@/components/NewLoginScreen';
-    import DocumentManager from '@/components/DocumentManager';
-    import Settings from '@/components/Settings';
     import { useAuth } from '@/contexts/SupabaseAuthContext';
     import { Loader2 } from 'lucide-react';
+
+    // Lazy loading des composants principaux pour réduire le bundle initial
+    const Dashboard = lazy(() => import('@/components/Dashboard'));
+    const TaskManager = lazy(() => import('@/components/TaskManager'));
+    const ClientManager = lazy(() => import('@/components/ClientManager'));
+    const CaseManager = lazy(() => import('@/components/CaseManager'));
+    const Calendar = lazy(() => import('@/components/Calendar'));
+    const Reports = lazy(() => import('@/components/Reports'));
+    const TeamManager = lazy(() => import('@/components/TeamManager'));
+    const DocumentManager = lazy(() => import('@/components/DocumentManager'));
+    const BillingManager = lazy(() => import('@/components/BillingManagerMock'));
+    const Settings = lazy(() => import('@/components/Settings'));
 
     function App() {
       const [activeView, setActiveView] = useState('dashboard');
@@ -26,28 +29,42 @@ import React, { useState } from 'react';
       };
 
       const renderActiveView = () => {
-        switch (activeView) {
-          case 'dashboard':
-            return <Dashboard currentUser={user} setActiveView={setActiveView} />;
-          case 'tasks':
-            return <TaskManager currentUser={user} />;
-          case 'clients':
-            return <ClientManager currentUser={user} />;
-          case 'cases':
-            return <CaseManager currentUser={user} />;
-          case 'calendar':
-            return <Calendar currentUser={user} />;
-          case 'team':
-            return <TeamManager currentUser={user} />;
-          case 'reports':
-            return <Reports currentUser={user} />;
-          case 'documents':
-            return <DocumentManager currentUser={user} />;
-          case 'settings':
-            return <Settings currentUser={user} />;
-          default:
-            return <Dashboard currentUser={user} setActiveView={setActiveView} />;
-        }
+        const loadingFallback = (
+          <div className="flex items-center justify-center min-h-[400px]">
+            <Loader2 className="w-8 h-8 text-primary animate-spin" />
+          </div>
+        );
+
+        return (
+          <Suspense fallback={loadingFallback}>
+            {(() => {
+              switch (activeView) {
+                case 'dashboard':
+                  return <Dashboard currentUser={user} setActiveView={setActiveView} />;
+                case 'tasks':
+                  return <TaskManager currentUser={user} />;
+                case 'clients':
+                  return <ClientManager currentUser={user} />;
+                case 'cases':
+                  return <CaseManager currentUser={user} />;
+                case 'calendar':
+                  return <Calendar currentUser={user} />;
+                case 'team':
+                  return <TeamManager currentUser={user} />;
+                case 'reports':
+                  return <Reports currentUser={user} />;
+                case 'documents':
+                  return <DocumentManager currentUser={user} />;
+                case 'billing':
+                  return <BillingManager currentUser={user} />;
+                case 'settings':
+                  return <Settings currentUser={user} />;
+                default:
+                  return <Dashboard currentUser={user} setActiveView={setActiveView} />;
+              }
+            })()}
+          </Suspense>
+        );
       };
 
       if (loading) {
@@ -69,7 +86,7 @@ import React, { useState } from 'react';
             <meta name="description" content="Plateforme de gestion des tâches professionnelle pour cabinets d'avocats. Gérez vos dossiers, clients et échéances efficacement." />
           </Helmet>
           
-          <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 print:bg-white">
+          <div className="min-h-screen bg-cabinet-main print:bg-white">
             <div className="flex">
               <Sidebar 
                 activeView={activeView} 
@@ -84,7 +101,7 @@ import React, { useState } from 'react';
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.3 }}
-                  className="min-h-screen bg-gradient-to-br from-white via-gray-50 to-gray-100 p-6 print:p-0"
+                  className="min-h-screen bg-transparent p-6 print:p-0 print:bg-white"
                 >
                   {renderActiveView()}
                 </motion.div>

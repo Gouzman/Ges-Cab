@@ -178,14 +178,14 @@ const CaseManager = ({ currentUser }) => {
 
       <div className="flex gap-4 mb-6">
         <div className="flex-grow">
-          <div className="relative bg-gradient-to-r from-red-50 to-rose-50 border border-red-200 rounded-lg p-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-red-500" />
+          <div className="relative bg-cabinet-surface/20 border border-cabinet-border rounded-lg p-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-primary" />
             <input
               type="text"
               placeholder="Rechercher un dossier..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-gradient-to-r from-red-100/50 to-rose-100/50 border-2 border-red-300 rounded-lg text-red-900 placeholder-red-500 focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-red-400"
+              className="w-full pl-10 pr-4 py-2 bg-cabinet-surface border-2 border-cabinet-border rounded-lg text-cabinet-text placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
             />
           </div>
         </div>

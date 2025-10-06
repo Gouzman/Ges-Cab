@@ -104,6 +104,16 @@ export const AuthProvider = ({ children }) => {
       password,
     });
 
+    // Logger la tentative de connexion
+    try {
+      await supabase.rpc('log_user_signin', {
+        p_user_email: email,
+        p_success: !error
+      });
+    } catch (logError) {
+      console.error('Erreur lors du logging de la connexion:', logError);
+    }
+
     if (error) {
       let description = "Vérifiez votre e-mail et mot de passe.";
       if (error.message.includes("Email not confirmed")) {
@@ -145,6 +155,16 @@ export const AuthProvider = ({ children }) => {
       email,
       password,
     });
+
+    // Logger la tentative de connexion (version silencieuse)
+    try {
+      await supabase.rpc('log_user_signin', {
+        p_user_email: email,
+        p_success: !error
+      });
+    } catch (logError) {
+      console.error('Erreur lors du logging de la tentative de connexion:', logError);
+    }
 
     return { error };
   }, []);
@@ -218,6 +238,8 @@ export const AuthProvider = ({ children }) => {
       const { data, error } = await supabase
         .from('profiles')
         .select('id, name, email, role, function, created_at')
+        .neq('role', 'Admin')
+        .neq('function', 'Admin')
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -269,6 +291,76 @@ export const AuthProvider = ({ children }) => {
     }
   }, [session?.user, fetchUserProfileAndPermissions]);
 
+  const getCollaborators = useCallback(async () => {
+    try {
+      // Récupérer tous les profiles d'abord
+      const { data: allData, error } = await supabase
+        .from('profiles')
+        .select('id, name, email, role, function, created_at')
+        .order('name');
+      
+      if (error) throw error;
+      
+      // Filtrer côté client pour exclure les Admin
+      const filteredData = (allData || []).filter(user => 
+        user.role !== 'Admin' && user.function !== 'Admin'
+      );
+
+      return { data: filteredData, error: null };
+    } catch (error) {
+      console.error("Network error fetching collaborators:", error);
+      toast({
+        variant: "destructive",
+        title: "Erreur réseau",
+        description: "Impossible de récupérer les collaborateurs."
+      });
+      return { data: [], error };
+    }
+  }, [toast]);
+
+  const resetUserPassword = useCallback(async (userEmail) => {
+    try {
+      // Envoyer l'email de réinitialisation
+      const { error } = await supabase.auth.resetPasswordForEmail(userEmail, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+
+      if (error) {
+        toast({
+          variant: "destructive",
+          title: "Erreur de réinitialisation",
+          description: error.message || "Impossible d'envoyer l'email de réinitialisation."
+        });
+        return { error };
+      }
+
+      // Logger l'action de réinitialisation
+      try {
+        await supabase.rpc('log_password_reset', {
+          p_user_email: userEmail,
+          p_initiated_by: user?.id || null
+        });
+      } catch (logError) {
+        console.error('Erreur lors du logging de la réinitialisation:', logError);
+      }
+
+      toast({
+        title: "Email envoyé",
+        description: `Un email de réinitialisation a été envoyé à ${userEmail}.`
+      });
+
+      return { error: null };
+    } catch (error) {
+      console.error('Erreur lors de la réinitialisation:', error);
+      toast({
+        variant: "destructive",
+        title: "Erreur réseau",
+        description: "Impossible d'envoyer l'email de réinitialisation."
+      });
+      return { error };
+    }
+  }, [user, toast]);
+
   const value = useMemo(() => ({
     user,
     session,
@@ -280,9 +372,11 @@ export const AuthProvider = ({ children }) => {
     checkUserExists,
     updateUserPermissions,
     getAllUsers,
+    getCollaborators,
     getUserPermissions,
     refreshCurrentUser,
-  }), [user, session, loading, signUp, signIn, signOut, trySignIn, checkUserExists, updateUserPermissions, getAllUsers, getUserPermissions, refreshCurrentUser]);
+    resetUserPassword,
+  }), [user, session, loading, signUp, signIn, signOut, trySignIn, checkUserExists, updateUserPermissions, getAllUsers, getCollaborators, getUserPermissions, refreshCurrentUser, resetUserPassword]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

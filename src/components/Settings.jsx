@@ -32,7 +32,7 @@ const defaultPermissions = modules.reduce((acc, mod) => {
 }, {});
 
 const Settings = () => {
-  const { user, getAllUsers, getUserPermissions, updateUserPermissions, refreshCurrentUser } = useAuth();
+  const { user, getAllUsers, getCollaborators, getUserPermissions, updateUserPermissions, refreshCurrentUser } = useAuth();
   const [taskCategories, setTaskCategories] = useState([]);
   const [newCategory, setNewCategory] = useState('');
   const [collaborators, setCollaborators] = useState([]);
@@ -66,7 +66,7 @@ const Settings = () => {
 
     const fetchCollaborators = async () => {
       try {
-        const { data, error } = await getAllUsers();
+        const { data, error } = await getCollaborators();
         if (!error && data) {
           // Exclure l'utilisateur actuel de la liste
           const filteredUsers = data.filter(u => u.id !== user?.id);

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import TaskForm from '@/components/TaskForm';
 import TaskCard from '@/components/TaskCard';
+
 import { supabase } from '@/lib/customSupabaseClient';
 import { usePermissions } from '@/hooks/usePermissions';
 import {
@@ -31,6 +32,7 @@ const TaskManager = ({ currentUser }) => {
   const [taskToComment, setTaskToComment] = useState(null);
   const [completionComment, setCompletionComment] = useState('');
 
+
   // Utilisation du nouveau système de permissions
   const { 
     hasModuleAccess, 
@@ -41,6 +43,7 @@ const TaskManager = ({ currentUser }) => {
 
   useEffect(() => {
     const fetchTasks = async () => {
+      // Récupérer d'abord les tâches
       let query = supabase.from('tasks').select('*');
       
       if (filterStatus && filterStatus !== 'all') {
@@ -51,20 +54,46 @@ const TaskManager = ({ currentUser }) => {
         query = query.eq('assigned_to_id', currentUser.id);
       }
       
-      const { data, error } = await query.order('created_at', { ascending: false });
-      if (error) {
+      const { data: tasksData, error: tasksError } = await query.order('created_at', { ascending: false });
+      if (tasksError) {
         toast({ variant: "destructive", title: "Erreur", description: "Impossible de charger les tâches." });
-      } else {
-        setTasks(data);
+        return;
       }
+
+      // Récupérer les profils pour enrichir les données
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, name');
+
+      if (profilesError) {
+        console.warn('Impossible de charger les profils:', profilesError);
+        setTasks(tasksData || []);
+        return;
+      }
+
+      // Enrichir les tâches avec les noms actuels depuis les profils
+      const profilesMap = new Map(profilesData.map(p => [p.id, p.name]));
+      const enrichedTasks = (tasksData || []).map(task => ({
+        ...task,
+        assigned_to_name: task.assigned_to_id ? (profilesMap.get(task.assigned_to_id) || task.assigned_to_name || 'Utilisateur introuvable') : 'Non assigné',
+        created_by_name: task.created_by_id ? (profilesMap.get(task.created_by_id) || task.created_by_name || 'Utilisateur introuvable') : (task.created_by ? (profilesMap.get(task.created_by) || 'Utilisateur introuvable') : 'Créateur inconnu')
+      }));
+      
+      setTasks(enrichedTasks);
     };
 
     const fetchTeamMembers = async () => {
-      const { data, error } = await supabase.from('profiles').select('id, name');
+      const { data: allProfiles, error } = await supabase
+        .from('profiles')
+        .select('id, name, role, function');
       if (error) {
         toast({ variant: "destructive", title: "Erreur", description: "Impossible de charger les collaborateurs." });
       } else {
-        setTeamMembers(data);
+        // Filtrer côté client pour exclure les Admin
+        const filteredMembers = (allProfiles || []).filter(user => 
+          user.role !== 'Admin' && user.function !== 'Admin'
+        );
+        setTeamMembers(filteredMembers);
       }
     };
 
@@ -118,11 +147,12 @@ const TaskManager = ({ currentUser }) => {
     
     const { data, error } = await supabase.from('tasks').insert([{ 
       ...dataToInsert, 
-      assigned_to_name: assignedMember ? assignedMember.name : null,
+      assigned_to_name: assignedMember ? assignedMember.name : 'Non assigné',
       attachments: [],
       assigned_at: dataToInsert.assigned_to_id ? new Date().toISOString() : null,
       created_by_id: currentUser.id,
-      created_by_name: currentUser.name
+      created_by_name: currentUser.name || currentUser.email || 'Utilisateur',
+      created_by: currentUser.id  // Assure la compatibilité avec le schéma original
     }]).select().single();
     
     if (error) {
@@ -157,6 +187,59 @@ const TaskManager = ({ currentUser }) => {
     toast({ title: "✅ Tâche créée", description: "La nouvelle tâche a été ajoutée." });
   };
 
+  const handleViewDetails = async (task) => {
+    // Marquer immédiatement la tâche comme vue si l'utilisateur est l'assigné
+    if (task.assigned_to_id === currentUser?.id && task.status === 'pending') {
+      try {
+        const { data, error } = await supabase
+          .from('tasks')
+          .update({
+            status: 'seen',
+            seen_at: new Date().toISOString(),
+            last_viewed_at: new Date().toISOString()
+          })
+          .eq('id', task.id)
+          .select()
+          .single();
+
+        if (!error && data) {
+          // Mettre à jour immédiatement la liste des tâches
+          setTasks(prevTasks => 
+            prevTasks.map(t => 
+              t.id === task.id ? { ...t, ...data } : t
+            )
+          );
+          
+          // Utiliser la tâche mise à jour pour la modal
+          setSelectedTask(data);
+          return;
+        }
+      } catch (err) {
+        console.error('Erreur lors du marquage automatique:', err);
+      }
+    }
+    
+    setSelectedTask(task);
+  };
+
+  const handleCloseDetails = () => {
+    setSelectedTask(null);
+  };
+
+  const handleTaskUpdate = (updatedTask) => {
+    setTasks(prevTasks => 
+      prevTasks.map(task => 
+        task.id === updatedTask.id ? { ...task, ...updatedTask } : task
+      )
+    );
+  };
+
+  const handleEditFromModal = (task) => {
+    setSelectedTask(null);
+    setEditingTask(task);
+    setActiveTab('nouvelle');
+  };
+
   const handleEditTask = async (taskData) => {
     const { filesToUpload, data: dataToUpdate } = processTaskData(taskData);
 
@@ -166,6 +249,9 @@ const TaskManager = ({ currentUser }) => {
       if (path) uploadedAttachmentPaths.push(path);
     }
 
+    // Récupérer le nom de l'assigné mis à jour
+    const assignedMember = teamMembers.find(m => m.id === dataToUpdate.assigned_to_id);
+    
     if (editingTask.assigned_to_id !== dataToUpdate.assigned_to_id) {
       dataToUpdate.assigned_at = new Date().toISOString();
       dataToUpdate.seen_at = null;
@@ -183,6 +269,7 @@ const TaskManager = ({ currentUser }) => {
         deadline: dataToUpdate.deadline,
         attachments: uploadedAttachmentPaths,
         assigned_to_id: dataToUpdate.assigned_to_id,
+        assigned_to_name: assignedMember ? assignedMember.name : null,
         assigned_at: dataToUpdate.assigned_at,
         seen_at: dataToUpdate.seen_at
       })
@@ -334,17 +421,17 @@ const TaskManager = ({ currentUser }) => {
             ))}
           </div>
 
-          <div className="bg-gradient-to-r from-red-50 to-rose-50 backdrop-blur-sm border border-red-200 rounded-xl p-6 mb-6">
+          <div className="bg-cabinet-surface/20 backdrop-blur-sm border border-cabinet-border rounded-xl p-6 mb-6">
             <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-red-500 w-4 h-4" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-primary w-4 h-4" />
                   <input
                     type="text"
                     placeholder="Rechercher une tâche..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 bg-gradient-to-r from-red-100/50 to-rose-100/50 border-2 border-red-300 rounded-lg text-red-900 placeholder-red-500 focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-red-400"
+                    className="w-full pl-10 pr-4 py-2 bg-cabinet-surface border-2 border-cabinet-border rounded-lg text-cabinet-text placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
                   />
                 </div>
               </div>

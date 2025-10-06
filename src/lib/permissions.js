@@ -87,7 +87,7 @@ export const getDefaultPermissionsByRole = (role) => {
       });
       return adminPerms;
 
-    case 'avocat':
+    case 'avocat': {
       // Accès avocat standard
       const lawyerPerms = { ...basePermissions };
       lawyerPerms.tasks.actions = { create: true, edit: true, delete: false, reassign: false };
@@ -95,18 +95,24 @@ export const getDefaultPermissionsByRole = (role) => {
       lawyerPerms.cases.actions = { create: true, edit: true, delete: false };
       lawyerPerms.calendar.actions = { create: true, edit: true, delete: false };
       lawyerPerms.documents.actions = { upload: true, delete: false };
+      lawyerPerms.billing.visible = true;
+      lawyerPerms.billing.actions = { create: true, edit: true, delete: false };
       return lawyerPerms;
+    }
 
-    case 'secretaire':
+    case 'secretaire': {
       // Accès secrétaire
       const secretaryPerms = { ...basePermissions };
       secretaryPerms.tasks.actions = { create: true, edit: false, delete: false, reassign: false };
       secretaryPerms.clients.actions = { create: true, edit: true, delete: false };
       secretaryPerms.calendar.actions = { create: true, edit: true, delete: false };
       secretaryPerms.documents.actions = { upload: true, delete: false };
+      secretaryPerms.billing.visible = true;
+      secretaryPerms.billing.actions = { create: true, edit: true, delete: false };
       return secretaryPerms;
+    }
 
-    case 'stagiaire':
+    case 'stagiaire': {
       // Accès stagiaire limité
       const internPerms = { ...basePermissions };
       internPerms.tasks.actions = { create: false, edit: false, delete: false, reassign: false };
@@ -114,7 +120,10 @@ export const getDefaultPermissionsByRole = (role) => {
       internPerms.cases.actions = { create: false, edit: false, delete: false };
       internPerms.calendar.actions = { create: false, edit: false, delete: false };
       internPerms.documents.actions = { upload: false, delete: false };
+      internPerms.billing.visible = false;
+      internPerms.billing.actions = { create: false, edit: false, delete: false };
       return internPerms;
+    }
 
     default:
       return basePermissions;
