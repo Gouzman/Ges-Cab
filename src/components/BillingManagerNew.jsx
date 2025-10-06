@@ -1,9 +1,303 @@
 import React, { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import { motion } from 'framer-motion';
 import { Plus, Search, Edit3, Trash2, Eye, Calendar, User, FileText, Check, X, Receipt } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/customSupabaseClient';
 import { checkPermission, getDefaultPermissionsByRole } from '@/lib/permissions';
+
+// PropType pour les objets Invoice
+const InvoicePropType = PropTypes.shape({
+  id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+  client_id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  title: PropTypes.string,
+  description: PropTypes.string,
+  amount: PropTypes.number,
+  status: PropTypes.string,
+  issue_date: PropTypes.string,
+  due_date: PropTypes.string,
+  invoice_number: PropTypes.string,
+  client_info: PropTypes.string
+});
+
+// Composant d'édition inline pour le montant (sortie du composant parent)
+const EditableAmount = ({ invoice, onUpdate, canEdit }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [amount, setAmount] = useState(invoice.amount || 0);
+  const [loading, setLoading] = useState(false);
+
+  const handleSave = async () => {
+    if (!canEdit) {
+      toast({ variant: "destructive", title: "Permissions insuffisantes", description: "Vous n'avez pas les permissions pour modifier cette facture" });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('invoices')
+        .update({ 
+          amount: parseFloat(amount),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', invoice.id);
+
+      if (error) throw error;
+
+      toast({ title: "✅ Montant mis à jour", description: "Le montant a été mis à jour avec succès" });
+      setIsEditing(false);
+      onUpdate();
+    } catch (error) {
+      console.error('Erreur:', error);
+      toast({ variant: "destructive", title: "Erreur", description: "Erreur lors de la mise à jour" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setAmount(invoice.amount || 0);
+    setIsEditing(false);
+  };
+
+  return (
+    <div className="flex items-center gap-2">
+      {isEditing ? (
+        <>
+          <input
+            type="number"
+            step="0.01"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            className="w-20 px-2 py-1 text-sm border rounded"
+            disabled={loading}
+          />
+          <button
+            onClick={handleSave}
+            disabled={loading}
+            className="p-1 text-green-600 hover:bg-green-100 rounded"
+          >
+            <Check className="w-4 h-4" />
+          </button>
+          <button
+            onClick={handleCancel}
+            disabled={loading}
+            className="p-1 text-red-600 hover:bg-red-100 rounded"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </>
+      ) : (
+        <>
+          <span className="font-medium">{invoice.amount?.toFixed(2) || '0.00'} €</span>
+          {canEdit && (
+            <button
+              onClick={() => setIsEditing(true)}
+              className="p-1 text-gray-500 hover:text-blue-600 rounded"
+            >
+              <Edit className="w-3 h-3" />
+            </button>
+          )}
+        </>
+      )}
+    </div>
+  );
+};
+
+// PropTypes pour EditableAmount
+EditableAmount.propTypes = {
+  invoice: InvoicePropType.isRequired,
+  onUpdate: PropTypes.func.isRequired,
+  canEdit: PropTypes.bool.isRequired
+};
+
+// Formulaire de création/édition (sortie du composant parent)
+const InvoiceForm = ({ invoice, onClose, onSave, clients, currentUser }) => {
+  const [formData, setFormData] = useState({
+    client_id: invoice?.client_id || '',
+    title: invoice?.title || '',
+    description: invoice?.description || '',
+    amount: invoice?.amount || 0,
+    status: invoice?.status || 'draft',
+    issue_date: invoice?.issue_date || new Date().toISOString().split('T')[0],
+    due_date: invoice?.due_date || new Date(Date.now() + 30*24*60*60*1000).toISOString().split('T')[0]
+  });
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    try {
+      const dataToSave = {
+        ...formData,
+        amount: parseFloat(formData.amount),
+        created_by: currentUser.id
+      };
+
+      let result;
+      if (invoice) {
+        // Mise à jour
+        result = await supabase
+          .from('invoices')
+          .update(dataToSave)
+          .eq('id', invoice.id);
+      } else {
+        // Création
+        result = await supabase
+          .from('invoices')
+          .insert([dataToSave]);
+      }
+
+      if (result.error) throw result.error;
+
+      toast({ title: invoice ? "✅ Facture mise à jour" : "✅ Facture créée", description: invoice ? "La facture a été mise à jour" : "La facture a été créée avec succès" });
+      onSave();
+      onClose();
+    } catch (error) {
+      console.error('Erreur:', error);
+      toast({ variant: "destructive", title: "Erreur", description: "Erreur lors de la sauvegarde" });
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+    >
+      <motion.div
+        initial={{ scale: 0.9, y: 20 }}
+        animate={{ scale: 1, y: 0 }}
+        className="cabinet-card rounded-lg p-6 w-full max-w-md m-4"
+      >
+        <h3 className="text-lg font-semibold mb-4">
+          {invoice ? 'Modifier la facture' : 'Nouvelle facture'}
+        </h3>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label htmlFor="client_id" className="block text-sm font-medium mb-1">Client</label>
+            <select
+              id="client_id"
+              value={formData.client_id}
+              onChange={(e) => setFormData({...formData, client_id: e.target.value})}
+              className="w-full p-2 border rounded-lg"
+              required
+            >
+              <option value="">Sélectionner un client</option>
+              {clients.map(client => (
+                <option key={client.id} value={client.id}>
+                  {client.company || client.name || 'Client sans nom'}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label htmlFor="title" className="block text-sm font-medium mb-1">Titre</label>
+            <input
+              id="title"
+              type="text"
+              value={formData.title}
+              onChange={(e) => setFormData({...formData, title: e.target.value})}
+              className="w-full p-2 border rounded-lg"
+              required
+            />
+          </div>
+
+          <div>
+            <label htmlFor="description" className="block text-sm font-medium mb-1">Description</label>
+            <textarea
+              id="description"
+              value={formData.description}
+              onChange={(e) => setFormData({...formData, description: e.target.value})}
+              className="w-full p-2 border rounded-lg"
+              rows="3"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="amount" className="block text-sm font-medium mb-1">Montant (€)</label>
+            <input
+              id="amount"
+              type="number"
+              step="0.01"
+              value={formData.amount}
+              onChange={(e) => setFormData({...formData, amount: e.target.value})}
+              className="w-full p-2 border rounded-lg"
+              required
+            />
+          </div>
+
+          <div>
+            <label htmlFor="status" className="block text-sm font-medium mb-1">Statut</label>
+            <select
+              id="status"
+              value={formData.status}
+              onChange={(e) => setFormData({...formData, status: e.target.value})}
+              className="w-full p-2 border rounded-lg"
+            >
+              <option value="draft">Brouillon</option>
+              <option value="sent">Envoyée</option>
+              <option value="paid">Payée</option>
+              <option value="overdue">En retard</option>
+              <option value="cancelled">Annulée</option>
+            </select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="issue_date" className="block text-sm font-medium mb-1">Date d'émission</label>
+              <input
+                id="issue_date"
+                type="date"
+                value={formData.issue_date}
+                onChange={(e) => setFormData({...formData, issue_date: e.target.value})}
+                className="w-full p-2 border rounded-lg"
+              />
+            </div>
+            <div>
+              <label htmlFor="due_date" className="block text-sm font-medium mb-1">Date d'échéance</label>
+              <input
+                id="due_date"
+                type="date"
+                value={formData.due_date}
+                onChange={(e) => setFormData({...formData, due_date: e.target.value})}
+                className="w-full p-2 border rounded-lg"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-4 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+            >
+              Annuler
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg"
+            >
+              {invoice ? 'Mettre à jour' : 'Créer'}
+            </button>
+          </div>
+        </form>
+      </motion.div>
+    </motion.div>
+  );
+};
+
+// PropTypes pour InvoiceForm
+InvoiceForm.propTypes = {
+  invoice: InvoicePropType,
+  onClose: PropTypes.func.isRequired,
+  onSave: PropTypes.func.isRequired,
+  clients: PropTypes.arrayOf(PropTypes.object).isRequired,
+  currentUser: PropTypes.shape({
+    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired
+  }).isRequired
+};
 
 const BillingManager = ({ currentUser }) => {
   const [invoices, setInvoices] = useState([]);
@@ -60,267 +354,11 @@ const BillingManager = ({ currentUser }) => {
     }
   };
 
-  // Composant d'édition inline pour le montant
-  const EditableAmount = ({ invoice, onUpdate }) => {
-    const [isEditing, setIsEditing] = useState(false);
-    const [amount, setAmount] = useState(invoice.amount || 0);
-    const [loading, setLoading] = useState(false);
 
-    const handleSave = async () => {
-      if (!canEdit) {
-        toast({ variant: "destructive", title: "Permissions insuffisantes", description: "Vous n'avez pas les permissions pour modifier cette facture" });
-        return;
-      }
 
-      setLoading(true);
-      try {
-        const { error } = await supabase
-          .from('invoices')
-          .update({ 
-            amount: parseFloat(amount),
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', invoice.id);
 
-        if (error) throw error;
 
-        toast({ title: "✅ Montant mis à jour", description: "Le montant a été mis à jour avec succès" });
-        setIsEditing(false);
-        onUpdate();
-      } catch (error) {
-        console.error('Erreur:', error);
-        toast({ variant: "destructive", title: "Erreur", description: "Erreur lors de la mise à jour" });
-      } finally {
-        setLoading(false);
-      }
-    };
 
-    const handleCancel = () => {
-      setAmount(invoice.amount || 0);
-      setIsEditing(false);
-    };
-
-    if (!canEdit) {
-      return (
-        <span className="text-2xl font-bold text-green-600">
-          {parseFloat(invoice.amount || 0).toFixed(2)} €
-        </span>
-      );
-    }
-
-    return (
-      <div className="flex items-center space-x-2">
-        {isEditing ? (
-          <>
-            <input
-              type="number"
-              step="0.01"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              className="w-24 px-2 py-1 border rounded text-sm"
-              disabled={loading}
-            />
-            <button
-              onClick={handleSave}
-              disabled={loading}
-              className="p-1 text-green-600 hover:bg-green-100 rounded"
-            >
-              <Check className="w-4 h-4" />
-            </button>
-            <button
-              onClick={handleCancel}
-              disabled={loading}
-              className="p-1 text-red-600 hover:bg-red-100 rounded"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </>
-        ) : (
-          <>
-            <span className="text-2xl font-bold text-green-600">
-              {parseFloat(invoice.amount || 0).toFixed(2)} €
-            </span>
-            <button
-              onClick={() => setIsEditing(true)}
-              className="p-1 text-blue-600 hover:bg-blue-100 rounded"
-            >
-              <Edit3 className="w-4 h-4" />
-            </button>
-          </>
-        )}
-      </div>
-    );
-  };
-
-  // Formulaire de création/édition
-  const InvoiceForm = ({ invoice, onClose, onSave }) => {
-    const [formData, setFormData] = useState({
-      client_id: invoice?.client_id || '',
-      title: invoice?.title || '',
-      description: invoice?.description || '',
-      amount: invoice?.amount || 0,
-      status: invoice?.status || 'draft',
-      issue_date: invoice?.issue_date || new Date().toISOString().split('T')[0],
-      due_date: invoice?.due_date || new Date(Date.now() + 30*24*60*60*1000).toISOString().split('T')[0]
-    });
-
-    const handleSubmit = async (e) => {
-      e.preventDefault();
-      
-      try {
-        const dataToSave = {
-          ...formData,
-          amount: parseFloat(formData.amount),
-          created_by: currentUser.id
-        };
-
-        let result;
-        if (invoice) {
-          // Mise à jour
-          result = await supabase
-            .from('invoices')
-            .update(dataToSave)
-            .eq('id', invoice.id);
-        } else {
-          // Création
-          result = await supabase
-            .from('invoices')
-            .insert([dataToSave]);
-        }
-
-        if (result.error) throw result.error;
-
-        toast({ title: invoice ? "✅ Facture mise à jour" : "✅ Facture créée", description: invoice ? "La facture a été mise à jour" : "La facture a été créée avec succès" });
-        onSave();
-        onClose();
-      } catch (error) {
-        console.error('Erreur:', error);
-        toast({ variant: "destructive", title: "Erreur", description: "Erreur lors de la sauvegarde" });
-      }
-    };
-
-    return (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-      >
-        <motion.div
-          initial={{ scale: 0.9, y: 20 }}
-          animate={{ scale: 1, y: 0 }}
-          className="cabinet-card rounded-lg p-6 w-full max-w-md m-4"
-        >
-          <h3 className="text-lg font-semibold mb-4">
-            {invoice ? 'Modifier la facture' : 'Nouvelle facture'}
-          </h3>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Client</label>
-              <select
-                value={formData.client_id}
-                onChange={(e) => setFormData({...formData, client_id: e.target.value})}
-                className="w-full p-2 border rounded-lg"
-                required
-              >
-                <option value="">Sélectionner un client</option>
-                {clients.map(client => (
-                  <option key={client.id} value={client.id}>
-                    {client.company || client.name || 'Client sans nom'}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">Titre</label>
-              <input
-                type="text"
-                value={formData.title}
-                onChange={(e) => setFormData({...formData, title: e.target.value})}
-                className="w-full p-2 border rounded-lg"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">Description</label>
-              <textarea
-                value={formData.description}
-                onChange={(e) => setFormData({...formData, description: e.target.value})}
-                className="w-full p-2 border rounded-lg"
-                rows="3"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">Montant (€)</label>
-              <input
-                type="number"
-                step="0.01"
-                value={formData.amount}
-                onChange={(e) => setFormData({...formData, amount: e.target.value})}
-                className="w-full p-2 border rounded-lg"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">Statut</label>
-              <select
-                value={formData.status}
-                onChange={(e) => setFormData({...formData, status: e.target.value})}
-                className="w-full p-2 border rounded-lg"
-              >
-                <option value="draft">Brouillon</option>
-                <option value="sent">Envoyée</option>
-                <option value="paid">Payée</option>
-                <option value="overdue">En retard</option>
-                <option value="cancelled">Annulée</option>
-              </select>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Date d'émission</label>
-                <input
-                  type="date"
-                  value={formData.issue_date}
-                  onChange={(e) => setFormData({...formData, issue_date: e.target.value})}
-                  className="w-full p-2 border rounded-lg"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Date d'échéance</label>
-                <input
-                  type="date"
-                  value={formData.due_date}
-                  onChange={(e) => setFormData({...formData, due_date: e.target.value})}
-                  className="w-full p-2 border rounded-lg"
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end space-x-2 pt-4">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 text-cabinet-text hover:bg-cabinet-surface rounded-lg"
-              >
-                Annuler
-              </button>
-              <button
-                type="submit"
-                className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg"
-              >
-                {invoice ? 'Mettre à jour' : 'Créer'}
-              </button>
-            </div>
-          </form>
-        </motion.div>
-      </motion.div>
-    );
-  };
 
   const getStatusBadge = (status) => {
     const configs = {
@@ -342,17 +380,17 @@ const BillingManager = ({ currentUser }) => {
 
   // Filtrer les factures
   const filteredInvoices = invoices.filter(invoice => {
+    // eslint-disable-next-line react/prop-types -- invoice comes from state, not props
     const matchesSearch = !searchTerm || 
       invoice.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       invoice.invoice_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       invoice.client_info?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = statusFilter === 'all' || invoice.status === statusFilter;
-    
-    return matchesSearch && matchesStatus;
-  });
 
-  if (!canView) {
+    // eslint-disable-next-line react/prop-types -- invoice comes from state, not props
+    const matchesStatus = statusFilter === 'all' || invoice.status === statusFilter;
+
+    return matchesSearch && matchesStatus;
+  });  if (!canView) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
@@ -445,6 +483,7 @@ const BillingManager = ({ currentUser }) => {
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center space-x-3 mb-2">
+                    {/* eslint-disable-next-line react/prop-types -- invoice comes from state, not props */}
                     <h3 className="text-lg font-semibold">{invoice.title}</h3>
                     {getStatusBadge(invoice.status)}
                   </div>
@@ -452,6 +491,7 @@ const BillingManager = ({ currentUser }) => {
                   <div className="text-sm text-gray-600 space-y-1">
                     <div className="flex items-center space-x-2">
                       <User className="w-4 h-4" />
+                      {/* eslint-disable-next-line react/prop-types -- invoice comes from state, not props */}
                       <span>{invoice.client_info || 'Client non défini'}</span>
                     </div>
                     <div className="flex items-center space-x-2">
@@ -517,10 +557,20 @@ const BillingManager = ({ currentUser }) => {
             setEditingInvoice(null);
           }}
           onSave={fetchInvoices}
+          clients={clients}
+          currentUser={currentUser}
         />
       )}
     </div>
   );
+};
+
+BillingManager.propTypes = {
+  currentUser: PropTypes.shape({
+    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+    role: PropTypes.string,
+    function: PropTypes.string
+  }).isRequired
 };
 
 export default BillingManager;

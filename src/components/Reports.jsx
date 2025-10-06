@@ -36,7 +36,6 @@ const Reports = () => {
     const fetchData = async () => {
       try {
         const { data: tasks } = await supabase.from('tasks').select('status');
-        const { data: clients } = await supabase.from('clients').select('id');
         const { data: cases } = await supabase.from('cases').select('status');
 
         const team = []; // À implémenter avec Supabase plus tard

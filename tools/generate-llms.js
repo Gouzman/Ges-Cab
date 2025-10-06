@@ -4,7 +4,7 @@ import fs from 'fs';
 import path from 'path';
 
 const CLEAN_CONTENT_REGEX = {
-  comments: /\/\*[\s\S]*?\*\/|\/\/.*$/gm,
+  comments: /(\/\*[\s\S]*?\*\/)|(^\/\/.*$)/gm,
   templateLiterals: /`[\s\S]*?`/g,
   strings: /'[^']*'|"[^"]*"/g,
   jsxExpressions: /\{.*?\}/g,
@@ -77,6 +77,7 @@ function extractRoutes(appJsxPath) {
 
     return routes;
   } catch (error) {
+    console.warn(`Warning: Could not parse routes from ${appJsxPath}:`, error.message);
     return new Map();
   }
 }
@@ -103,7 +104,7 @@ function extractHelmetData(content, filePath, routes) {
   const description = cleanText(descMatch?.[1]);
   
   const fileName = path.basename(filePath, path.extname(filePath));
-  const url = routes.length && routes.has(fileName) 
+  const url = routes?.has?.(fileName) 
     ? routes.get(fileName) 
     : generateFallbackUrl(fileName);
   
@@ -120,7 +121,7 @@ function generateFallbackUrl(fileName) {
 }
 
 function generateLlmsTxt(pages) {
-  const validPages = pages.filter(page => page && page.title && page.url);
+  const validPages = pages.filter(page => page?.title && page?.url);
   const sortedPages = validPages.sort((a, b) => a.title.localeCompare(b.title));
   const pageEntries = sortedPages.map(page => 
     `- [${page.title}](${page.url}): ${page.description || 'No description'}`

@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import { motion } from 'framer-motion';
 import { Mail, ShieldCheck, Edit, Trash2, Award, Briefcase } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -68,6 +69,23 @@ const TeamMemberCard = ({ member, index, onEdit, onDelete, isCurrentUser }) => {
       </div>
     </motion.div>
   );
+};
+
+// PropTypes pour la validation des props
+TeamMemberCard.propTypes = {
+  member: PropTypes.shape({
+    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+    name: PropTypes.string,
+    role: PropTypes.string,
+    title: PropTypes.string,
+    function: PropTypes.string,
+    email: PropTypes.string,
+    created_at: PropTypes.string
+  }),
+  index: PropTypes.number.isRequired,
+  onEdit: PropTypes.func.isRequired,
+  onDelete: PropTypes.func.isRequired,
+  isCurrentUser: PropTypes.bool.isRequired
 };
 
 export default TeamMemberCard;

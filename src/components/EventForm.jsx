@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import { motion } from 'framer-motion';
 import { X, Calendar, Users, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -193,6 +194,15 @@ const EventForm = ({ currentUser, onCancel, onEventCreated }) => {
       </motion.div>
     </motion.div>
   );
+};
+
+// PropTypes pour la validation des props
+EventForm.propTypes = {
+  currentUser: PropTypes.shape({
+    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired
+  }).isRequired,
+  onCancel: PropTypes.func.isRequired,
+  onEventCreated: PropTypes.func.isRequired
 };
 
 export default EventForm;

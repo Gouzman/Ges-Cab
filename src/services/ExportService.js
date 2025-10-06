@@ -163,6 +163,141 @@ export class ExportService {
   }
 
   /**
+   * Utilitaire pour créer un titre avec période
+   */
+  static formatTitleWithPeriod(baseTitle, period) {
+    return period ? baseTitle + ' - ' + period : baseTitle;
+  }
+
+  /**
+   * Utilitaire pour formater la période d'analyse
+   */
+  static formatPeriodInfo(dateRange) {
+    return dateRange ? dateRange.start + ' → ' + dateRange.end : 'Toutes les données';
+  }
+
+  /**
+   * Formate les statistiques des tâches
+   */
+  static formatTasksReport(tasks, dateRange, period) {
+    return {
+      title: this.formatTitleWithPeriod('Rapport des Tâches', period),
+      data: [
+        ['Métrique', 'Valeur'],
+        ['Période', this.formatPeriodInfo(dateRange)],
+        ['Total des tâches', tasks.total],
+        ['Tâches en attente', tasks.byStatus.pending || 0],
+        ['Tâches vues', tasks.byStatus.seen || 0],
+        ['Tâches en cours', tasks.byStatus['in-progress'] || 0],
+        ['Tâches terminées', tasks.byStatus.completed || 0],
+        ['Taux de completion (%)', tasks.completionRate + '%'],
+        ['Tâches en retard', tasks.overdueCount],
+        ['', ''], // Ligne vide
+        ['Répartition par priorité', ''],
+        ['Priorité faible', tasks.byPriority.low || 0],
+        ['Priorité moyenne', tasks.byPriority.medium || 0],
+        ['Priorité élevée', tasks.byPriority.high || 0],
+        ['Priorité urgente', tasks.byPriority.urgent || 0]
+      ]
+    };
+  }
+
+  /**
+   * Formate les statistiques des dossiers
+   */
+  static formatCasesReport(cases, dateRange, period) {
+    return {
+      title: this.formatTitleWithPeriod('Rapport des Dossiers', period),
+      data: [
+        ['Métrique', 'Valeur'],
+        ['Période', this.formatPeriodInfo(dateRange)],
+        ['Total des dossiers', cases.total],
+        ['Dossiers actifs', cases.active],
+        ['Dossiers fermés', cases.closed],
+        ['', ''], // Ligne vide
+        ['Répartition par statut', ''],
+        ...Object.entries(cases.byStatus).map(([status, count]) => [
+          'Statut: ' + status, count
+        ])
+      ]
+    };
+  }
+
+  /**
+   * Formate le rapport d'activité
+   */
+  static formatActivityReport(activities, period) {
+    return {
+      title: this.formatTitleWithPeriod('Rapport d\'Activité', period),
+      data: [
+        ['Utilisateur', 'Fonction', 'Total Activités', 'Tâches Créées', 'Tâches Terminées', 'Score (%)', 'Dossiers Créés'],
+        ...activities.userStats.map(user => [
+          user.userName,
+          user.userFunction,
+          user.totalActivities,
+          user.tasksCreated,
+          user.tasksCompleted,
+          user.productivityScore + '%',
+          user.casesCreated || 0
+        ])
+      ]
+    };
+  }
+
+  /**
+   * Formate la synthèse globale
+   */
+  static formatSummaryReport(statistics) {
+    const { tasks, cases, activities, summary, period, dateRange } = statistics;
+    const overduePct = ((tasks.overdueCount / tasks.total) * 100).toFixed(1);
+    const activePct = ((cases.active / cases.total) * 100).toFixed(1);
+    const closedPct = ((cases.closed / cases.total) * 100).toFixed(1);
+    
+    return {
+      title: this.formatTitleWithPeriod('Synthèse Globale', period),
+      data: [
+        ['Indicateur', 'Valeur', 'Détails'],
+        ['Période d\'analyse', this.formatPeriodInfo(dateRange), ''],
+        ['', '', ''], // Ligne vide
+        ['📊 TÂCHES', '', ''],
+        ['Total des tâches', summary.totalTasks, tasks.completionRate + '% terminées'],
+        ['Tâches en retard', tasks.overdueCount, overduePct + '% du total'],
+        ['Tâche priorité urgente', tasks.byPriority.urgent || 0, ''],
+        ['', '', ''], // Ligne vide
+        ['📁 DOSSIERS', '', ''],
+        ['Total des dossiers', summary.totalCases, ''],
+        ['Dossiers actifs', cases.active, activePct + '% du total'],
+        ['Dossiers fermés', cases.closed, closedPct + '% du total'],
+        ['', '', ''], // Ligne vide
+        ['👥 ACTIVITÉ ÉQUIPE', '', ''],
+        ['Utilisateurs actifs', summary.activeUsers, ''],
+        ['Total activités', summary.totalActivities, ''],
+        ['Utilisateur le plus actif', activities.mostActiveUser?.userName || 'N/A', 
+         (activities.mostActiveUser?.totalActivities || 0) + ' activités']
+      ]
+    };
+  }
+
+  /**
+   * Formate la vue d'ensemble
+   */
+  static formatOverviewReport(summary, tasks, period, dateRange) {
+    return {
+      title: this.formatTitleWithPeriod('Vue d\'Ensemble', period),
+      data: [
+        ['Métrique', 'Valeur'],
+        ['Période', this.formatPeriodInfo(dateRange)],
+        ['Total des tâches', summary.totalTasks],
+        ['Total des dossiers', summary.totalCases],
+        ['Total des activités', summary.totalActivities],
+        ['Utilisateurs actifs', summary.activeUsers],
+        ['Taux de completion (%)', summary.completionRate + '%'],
+        ['Tâches en retard', tasks.overdueCount]
+      ]
+    };
+  }
+
+  /**
    * Formate les données statistiques pour l'export
    */
   static formatStatisticsForExport(statistics, reportType = 'overview') {
@@ -170,101 +305,20 @@ export class ExportService {
     
     switch (reportType) {
       case 'tasks':
-        return {
-          title: `Rapport des Tâches${period ? ` - ${period}` : ''}`,
-          data: [
-            ['Métrique', 'Valeur'],
-            ['Période', dateRange ? `${dateRange.start} → ${dateRange.end}` : 'Toutes les données'],
-            ['Total des tâches', tasks.total],
-            ['Tâches en attente', tasks.byStatus.pending || 0],
-            ['Tâches vues', tasks.byStatus.seen || 0],
-            ['Tâches en cours', tasks.byStatus['in-progress'] || 0],
-            ['Tâches terminées', tasks.byStatus.completed || 0],
-            ['Taux de completion (%)', `${tasks.completionRate}%`],
-            ['Tâches en retard', tasks.overdueCount],
-            ['', ''], // Ligne vide
-            ['Répartition par priorité', ''],
-            ['Priorité faible', tasks.byPriority.low || 0],
-            ['Priorité moyenne', tasks.byPriority.medium || 0],
-            ['Priorité élevée', tasks.byPriority.high || 0],
-            ['Priorité urgente', tasks.byPriority.urgent || 0]
-          ]
-        };
-
+        return this.formatTasksReport(tasks, dateRange, period);
+      
       case 'cases':
-        return {
-          title: `Rapport des Dossiers${period ? ` - ${period}` : ''}`,
-          data: [
-            ['Métrique', 'Valeur'],
-            ['Période', dateRange ? `${dateRange.start} → ${dateRange.end}` : 'Toutes les données'],
-            ['Total des dossiers', cases.total],
-            ['Dossiers actifs', cases.active],
-            ['Dossiers fermés', cases.closed],
-            ['', ''], // Ligne vide
-            ['Répartition par statut', ''],
-            ...Object.entries(cases.byStatus).map(([status, count]) => [
-              `Statut: ${status}`, count
-            ])
-          ]
-        };
-
+        return this.formatCasesReport(cases, dateRange, period);
+      
       case 'activity':
-        return {
-          title: `Rapport d'Activité${period ? ` - ${period}` : ''}`,
-          data: [
-            ['Utilisateur', 'Fonction', 'Total Activités', 'Tâches Créées', 'Tâches Terminées', 'Score (%)', 'Dossiers Créés'],
-            ...activities.userStats.map(user => [
-              user.userName,
-              user.userFunction,
-              user.totalActivities,
-              user.tasksCreated,
-              user.tasksCompleted,
-              `${user.productivityScore}%`,
-              user.casesCreated || 0
-            ])
-          ]
-        };
-
+        return this.formatActivityReport(activities, period);
+      
       case 'summary':
-        return {
-          title: `Synthèse Globale${period ? ` - ${period}` : ''}`,
-          data: [
-            ['Indicateur', 'Valeur', 'Détails'],
-            ['Période d\'analyse', dateRange ? `${dateRange.start} → ${dateRange.end}` : 'Toutes les données', ''],
-            ['', '', ''], // Ligne vide
-            ['📊 TÂCHES', '', ''],
-            ['Total des tâches', summary.totalTasks, `${tasks.completionRate}% terminées`],
-            ['Tâches en retard', tasks.overdueCount, `${((tasks.overdueCount / tasks.total) * 100).toFixed(1)}% du total`],
-            ['Tâche priorité urgente', tasks.byPriority.urgent || 0, ''],
-            ['', '', ''], // Ligne vide
-            ['📁 DOSSIERS', '', ''],
-            ['Total des dossiers', summary.totalCases, ''],
-            ['Dossiers actifs', cases.active, `${((cases.active / cases.total) * 100).toFixed(1)}% du total`],
-            ['Dossiers fermés', cases.closed, `${((cases.closed / cases.total) * 100).toFixed(1)}% du total`],
-            ['', '', ''], // Ligne vide
-            ['👥 ACTIVITÉ ÉQUIPE', '', ''],
-            ['Utilisateurs actifs', summary.activeUsers, ''],
-            ['Total activités', summary.totalActivities, ''],
-            ['Utilisateur le plus actif', activities.mostActiveUser?.userName || 'N/A', 
-             `${activities.mostActiveUser?.totalActivities || 0} activités`]
-          ]
-        };
-
+        return this.formatSummaryReport(statistics);
+      
       case 'overview':
       default:
-        return {
-          title: `Vue d'Ensemble${period ? ` - ${period}` : ''}`,
-          data: [
-            ['Métrique', 'Valeur'],
-            ['Période', dateRange ? `${dateRange.start} → ${dateRange.end}` : 'Toutes les données'],
-            ['Total des tâches', summary.totalTasks],
-            ['Total des dossiers', summary.totalCases],
-            ['Total des activités', summary.totalActivities],
-            ['Utilisateurs actifs', summary.activeUsers],
-            ['Taux de completion (%)', `${summary.completionRate}%`],
-            ['Tâches en retard', tasks.overdueCount]
-          ]
-        };
+        return this.formatOverviewReport(summary, tasks, period, dateRange);
     }
   }
 
@@ -273,7 +327,8 @@ export class ExportService {
    */
   static quickExport(statistics, reportType, format) {
     const formattedData = this.formatStatisticsForExport(statistics, reportType);
-    const baseFilename = `rapport_${reportType}_${statistics.period || 'complet'}`;
+    const period = statistics.period || 'complet';
+    const baseFilename = 'rapport_' + reportType + '_' + period;
     
     return this.export(formattedData.data, format, formattedData.title, baseFilename);
   }

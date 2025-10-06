@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import { motion } from 'framer-motion';
 import { 
   User, 
@@ -119,6 +120,30 @@ const ClientCard = ({ client, index, onEdit, onDelete }) => {
       </div>
     </motion.div>
   );
+};
+
+ClientCard.propTypes = {
+  client: PropTypes.shape({
+    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+    type: PropTypes.oneOf(['company', 'individual']).isRequired,
+    first_name: PropTypes.string,
+    firstName: PropTypes.string,
+    last_name: PropTypes.string,
+    lastName: PropTypes.string,
+    company: PropTypes.string,
+    email: PropTypes.string,
+    phone: PropTypes.string,
+    address: PropTypes.string,
+    city: PropTypes.string,
+    postal_code: PropTypes.string,
+    postalCode: PropTypes.string,
+    country: PropTypes.string,
+    notes: PropTypes.string,
+    createdAt: PropTypes.string
+  }).isRequired,
+  index: PropTypes.number.isRequired,
+  onEdit: PropTypes.func.isRequired,
+  onDelete: PropTypes.func.isRequired
 };
 
 export default ClientCard;

@@ -28,7 +28,12 @@ const ClientManager = () => {
       if (error) throw error;
       setClients(rows || []);
     } catch (error) {
-      toast({ variant: "destructive", title: "Erreur", description: "Impossible de charger les clients." });
+      console.error('Erreur lors du chargement des clients:', error);
+      toast({ 
+        variant: "destructive", 
+        title: "Erreur", 
+        description: `Impossible de charger les clients: ${error.message || 'Erreur inconnue'}` 
+      });
     }
   };
 

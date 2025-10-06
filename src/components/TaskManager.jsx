@@ -71,12 +71,23 @@ const TaskManager = ({ currentUser }) => {
         return;
       }
 
+      // Fonction utilitaire pour éviter les ternaires imbriqués
+      const getCreatedByName = (task, profilesMap) => {
+        if (task.created_by_id) {
+          return profilesMap.get(task.created_by_id) || task.created_by_name || 'Utilisateur introuvable';
+        }
+        if (task.created_by) {
+          return profilesMap.get(task.created_by) || 'Utilisateur introuvable';
+        }
+        return 'Créateur inconnu';
+      };
+
       // Enrichir les tâches avec les noms actuels depuis les profils
       const profilesMap = new Map(profilesData.map(p => [p.id, p.name]));
       const enrichedTasks = (tasksData || []).map(task => ({
         ...task,
         assigned_to_name: task.assigned_to_id ? (profilesMap.get(task.assigned_to_id) || task.assigned_to_name || 'Utilisateur introuvable') : 'Non assigné',
-        created_by_name: task.created_by_id ? (profilesMap.get(task.created_by_id) || task.created_by_name || 'Utilisateur introuvable') : (task.created_by ? (profilesMap.get(task.created_by) || 'Utilisateur introuvable') : 'Créateur inconnu')
+        created_by_name: getCreatedByName(task, profilesMap)
       }));
       
       setTasks(enrichedTasks);
@@ -187,58 +198,7 @@ const TaskManager = ({ currentUser }) => {
     toast({ title: "✅ Tâche créée", description: "La nouvelle tâche a été ajoutée." });
   };
 
-  const handleViewDetails = async (task) => {
-    // Marquer immédiatement la tâche comme vue si l'utilisateur est l'assigné
-    if (task.assigned_to_id === currentUser?.id && task.status === 'pending') {
-      try {
-        const { data, error } = await supabase
-          .from('tasks')
-          .update({
-            status: 'seen',
-            seen_at: new Date().toISOString(),
-            last_viewed_at: new Date().toISOString()
-          })
-          .eq('id', task.id)
-          .select()
-          .single();
 
-        if (!error && data) {
-          // Mettre à jour immédiatement la liste des tâches
-          setTasks(prevTasks => 
-            prevTasks.map(t => 
-              t.id === task.id ? { ...t, ...data } : t
-            )
-          );
-          
-          // Utiliser la tâche mise à jour pour la modal
-          setSelectedTask(data);
-          return;
-        }
-      } catch (err) {
-        console.error('Erreur lors du marquage automatique:', err);
-      }
-    }
-    
-    setSelectedTask(task);
-  };
-
-  const handleCloseDetails = () => {
-    setSelectedTask(null);
-  };
-
-  const handleTaskUpdate = (updatedTask) => {
-    setTasks(prevTasks => 
-      prevTasks.map(task => 
-        task.id === updatedTask.id ? { ...task, ...updatedTask } : task
-      )
-    );
-  };
-
-  const handleEditFromModal = (task) => {
-    setSelectedTask(null);
-    setEditingTask(task);
-    setActiveTab('nouvelle');
-  };
 
   const handleEditTask = async (taskData) => {
     const { filesToUpload, data: dataToUpdate } = processTaskData(taskData);
@@ -512,6 +472,7 @@ TaskManager.propTypes = {
   currentUser: PropTypes.shape({
     id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
     name: PropTypes.string.isRequired,
+    email: PropTypes.string,
     function: PropTypes.string,
     role: PropTypes.string,
     permissions: PropTypes.shape({

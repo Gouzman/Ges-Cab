@@ -1,6 +1,6 @@
 // Utilitaire pour vérifier les permissions utilisateur
 export const checkPermission = (userPermissions, module, action = null) => {
-  if (!userPermissions || !userPermissions[module]) {
+  if (!userPermissions?.[module]) {
     return false;
   }
 

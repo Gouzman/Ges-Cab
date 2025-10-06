@@ -1,14 +1,47 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import { motion } from 'framer-motion';
 import { 
   FileText, 
   Clock,
   AlertTriangle,
-  Trash2
+  Trash2,
+  CheckCircle,
+  Eye,
+  Play,
+  RefreshCw,
+  MessageSquare,
+  Calendar,
+  UserCheck,
+  User,
+  Paperclip,
+  Download,
+  Printer
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/customSupabaseClient';
 import { toast } from '@/components/ui/use-toast';
+
+// Fonctions utilitaires pour éviter les ternaires imbriqués
+const getPriorityDotColor = (priority) => {
+  switch (priority) {
+    case 'urgent': return 'bg-red-400';
+    case 'high': return 'bg-orange-400';
+    case 'medium': return 'bg-yellow-400';
+    case 'low': return 'bg-green-400';
+    default: return 'bg-green-400';
+  }
+};
+
+const getPriorityLabel = (priority) => {
+  switch (priority) {
+    case 'urgent': return 'Urgente';
+    case 'high': return 'Élevée';
+    case 'medium': return 'Moyenne';
+    case 'low': return 'Faible';
+    default: return 'Faible';
+  }
+};
 
 const TaskCard = ({ task, index, onEdit, onDelete, onStatusChange, currentUser, onTaskUpdate, onViewDetails }) => {
   const getPriorityColor = (priority) => {
@@ -53,7 +86,7 @@ const TaskCard = ({ task, index, onEdit, onDelete, onStatusChange, currentUser, 
     return new Date(dateString).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   };
 
-  const isOverdue = (deadline) => !deadline ? false : new Date(deadline) < new Date() && task.status !== 'completed';
+  const isOverdue = (deadline) => deadline && new Date(deadline) < new Date() && task.status !== 'completed';
 
   const nextStatus = { 'pending': 'seen', 'seen': 'in-progress', 'in-progress': 'completed', 'completed': 'pending' };
   const statusLabels = { 'pending': 'Marquer comme vu', 'seen': 'Commencer', 'in-progress': 'Terminer', 'completed': 'Réouvrir' };
@@ -133,7 +166,7 @@ const TaskCard = ({ task, index, onEdit, onDelete, onStatusChange, currentUser, 
             <div className="flex items-center gap-2 text-sm mb-2"><Paperclip className="w-4 h-4 text-slate-400" /><span className="text-slate-300">Pièces jointes</span></div>
             <div className="flex flex-col gap-1">
               {task.attachments.map((path, i) => (
-                <div key={i} className="flex items-center justify-between text-xs text-slate-400 bg-slate-700/30 p-1.5 rounded-md">
+                <div key={`${task.id}-attachment-${i}`} className="flex items-center justify-between text-xs text-slate-400 bg-slate-700/30 p-1.5 rounded-md">
                   <span className="truncate w-36">{path.split('/').pop()}</span>
                   <div className="flex">
                     <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleDownload(path)} title="Télécharger"><Download className="h-3 w-3" /></Button>
@@ -147,12 +180,45 @@ const TaskCard = ({ task, index, onEdit, onDelete, onStatusChange, currentUser, 
       </div>
       <div className="flex items-center justify-between mt-auto pt-4 border-t border-slate-700/50">
         <div className="flex items-center gap-2">
-          <div className={`w-2 h-2 rounded-full ${task.priority === 'urgent' ? 'bg-red-400' : task.priority === 'high' ? 'bg-orange-400' : task.priority === 'medium' ? 'bg-yellow-400' : 'bg-green-400'}`}></div>
-          <span className="text-xs text-slate-400 capitalize">{task.priority === 'urgent' ? 'Urgente' : task.priority === 'high' ? 'Élevée' : task.priority === 'medium' ? 'Moyenne' : 'Faible'}</span>
+          <div className={`w-2 h-2 rounded-full ${getPriorityDotColor(task.priority)}`}></div>
+          <span className="text-xs text-slate-400 capitalize">{getPriorityLabel(task.priority)}</span>
         </div>
       </div>
     </motion.div>
   );
+};
+
+// PropTypes pour la validation des props
+const TaskPropType = PropTypes.shape({
+  id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+  title: PropTypes.string,
+  description: PropTypes.string,
+  status: PropTypes.oneOf(['pending', 'seen', 'in-progress', 'completed']),
+  priority: PropTypes.oneOf(['low', 'medium', 'high', 'urgent']),
+  deadline: PropTypes.string,
+  assigned_to_id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  assigned_to_name: PropTypes.string,
+  created_by_name: PropTypes.string,
+  assigned_at: PropTypes.string,
+  seen_at: PropTypes.string,
+  case_id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  completion_comment: PropTypes.string,
+  attachments: PropTypes.arrayOf(PropTypes.string)
+});
+
+TaskCard.propTypes = {
+  task: TaskPropType.isRequired,
+  index: PropTypes.number.isRequired,
+  onEdit: PropTypes.func.isRequired,
+  onDelete: PropTypes.func,
+  onStatusChange: PropTypes.func.isRequired,
+  currentUser: PropTypes.shape({
+    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+    function: PropTypes.string,
+    role: PropTypes.string
+  }).isRequired,
+  onTaskUpdate: PropTypes.func,
+  onViewDetails: PropTypes.func
 };
 
 export default TaskCard;

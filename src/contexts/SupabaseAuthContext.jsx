@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
+import PropTypes from 'prop-types';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -379,6 +380,10 @@ export const AuthProvider = ({ children }) => {
   }), [user, session, loading, signUp, signIn, signOut, trySignIn, checkUserExists, updateUserPermissions, getAllUsers, getCollaborators, getUserPermissions, refreshCurrentUser, resetUserPassword]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};
+
+AuthProvider.propTypes = {
+  children: PropTypes.node.isRequired,
 };
 
 export const useAuth = () => {
