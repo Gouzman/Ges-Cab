@@ -21,9 +21,9 @@ const CreatePasswordScreen = ({ email, onCancel, onSuccess }) => {
   const { createAccount } = useAuth();
   const { toast } = useToast();
 
-  // Validation du mot de passe
+  // Validation du mot de passe avec nouveaux critères renforcés
   const passwordValidation = validatePassword(password);
-  const isPasswordValid = passwordValidation.isMinimumValid;
+  const isPasswordValid = passwordValidation.requiredMet; // ✅ Critères obligatoires
   const isPasswordMatch = password === confirmPassword;
 
   const handleSubmit = async (e) => {
@@ -40,10 +40,14 @@ const CreatePasswordScreen = ({ email, onCancel, onSuccess }) => {
     }
 
     if (!isPasswordValid) {
+      const failedRequired = passwordValidation.validations
+        .filter(v => v.required && !v.test)
+        .map(v => v.message);
+      
       toast({
         variant: "destructive",
-        title: "Mot de passe faible",
-        description: "Le mot de passe doit contenir au moins 6 caractères",
+        title: "Critères de sécurité non respectés",
+        description: `Requis: ${failedRequired.join(', ')}`,
       });
       return;
     }
@@ -135,8 +139,8 @@ const CreatePasswordScreen = ({ email, onCancel, onSuccess }) => {
                   </div>
                   
                   <div className="space-y-2">
-                    {passwordValidation.validations.map((validation, index) => (
-                      <div key={index} className="flex items-center gap-2 text-sm">
+                    {passwordValidation.validations.map((validation) => (
+                      <div key={validation.message} className="flex items-center gap-2 text-sm">
                         {validation.test ? (
                           <CheckCircle className="w-4 h-4 text-green-500" />
                         ) : (
