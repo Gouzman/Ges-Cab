@@ -36,7 +36,7 @@ npm run db:studio
 **URLs locales :**
 - API : `http://localhost:54321`
 - Studio : `http://localhost:54323`
-- Base de données : `postgresql://postgres:[password]@localhost:54322/postgres`
+- Base de données : `postgresql://[user]:[password]@localhost:54322/[database]`
 
 #### 2. Projet Distant (Production)
 
