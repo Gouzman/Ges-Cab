@@ -54,7 +54,7 @@ start_supabase() {
     echo "🌐 URLs locales :"
     echo "   API URL: http://localhost:54321"
     echo "   Studio: http://localhost:54323"
-    echo "   DB URL: postgresql://[user]:[password]@localhost:54322/[database]"
+    echo "   DB URL: postgresql://USER:PASSWORD@localhost:54322/DATABASE"
     echo ""
 }
 
