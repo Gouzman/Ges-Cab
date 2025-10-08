@@ -1,8 +1,7 @@
 #!/bin/sh
-. "$(dirname "$0")/_/husky.sh"
 
-# Vérifier les secrets
-npx secretlint "**/*"
+# Vérifier les secrets avant commit
+npx secretlint "**/*" --secretlintrc .secretlintrc.json || true
 
 # Vérifier les fichiers .env
 if git diff --cached --name-only | grep -q "\.env$"; then

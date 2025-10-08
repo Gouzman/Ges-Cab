@@ -14,8 +14,26 @@ const TeamManager = ({ currentUser }) => {
   const [showForm, setShowForm] = useState(false);
   const [editingMember, setEditingMember] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [passwordDialog, setPasswordDialog] = useState({ isOpen: false, memberName: '', password: '' });
   const csvInputRef = useRef(null);
   const { signUp } = useAuth();
+
+  // Fonction pour générer un mot de passe temporaire : 5 chiffres + première lettre nom + première lettre prénom
+  const generateTempPassword = (name) => {
+    // Générer 5 chiffres aléatoires
+    const randomNumbers = Math.floor(10000 + Math.random() * 90000); // 5 chiffres entre 10000 et 99999
+    
+    // Extraire les premières lettres du nom et prénom
+    const nameParts = name.trim().split(' ');
+    const firstNameInitial = nameParts[0] ? nameParts[0][0].toUpperCase() : 'X';
+    const lastNameInitial = nameParts[1] ? nameParts[1][0].toUpperCase() : 'X';
+    
+    return `${randomNumbers}${firstNameInitial}${lastNameInitial}`;
+  };
+
+  const closePasswordDialog = () => {
+    setPasswordDialog({ isOpen: false, memberName: '', password: '' });
+  };
 
   useEffect(() => {
     fetchMembers();
@@ -26,12 +44,20 @@ const TeamManager = ({ currentUser }) => {
     if (error) {
       toast({ variant: "destructive", title: "Erreur", description: "Impossible de charger les collaborateurs." });
     } else {
-      setMembers(data || []);
+      // S'assurer que is_active est défini (true par défaut si la colonne n'existe pas encore)
+      const membersWithStatus = (data || []).map(member => ({
+        ...member,
+        is_active: member.is_active !== undefined ? member.is_active : true
+      }));
+      setMembers(membersWithStatus);
     }
   };
 
   const handleAddMember = async (memberData) => {
-    const { error } = await signUp(memberData.email, 'password', {
+    // Générer le mot de passe temporaire
+    const tempPassword = generateTempPassword(memberData.name);
+    
+    const { error } = await signUp(memberData.email, tempPassword, {
       data: {
         name: memberData.name,
         role: memberData.role,
@@ -45,7 +71,13 @@ const TeamManager = ({ currentUser }) => {
     } else {
       fetchMembers();
       setShowForm(false);
-      toast({ title: "✅ Collaborateur ajouté", description: `${memberData.name} a été invité. Le mot de passe par défaut est 'password'.` });
+      // Ouvrir le dialog avec le mot de passe généré
+      setPasswordDialog({
+        isOpen: true,
+        memberName: memberData.name,
+        password: tempPassword
+      });
+      toast({ title: "✅ Collaborateur créé", description: `${memberData.name} a été ajouté à l'équipe.` });
     }
   };
 
@@ -70,6 +102,40 @@ const TeamManager = ({ currentUser }) => {
 
   const handleDeleteMember = async (memberId) => {
     toast({ variant: "destructive", title: "Action non disponible", description: "La suppression d'utilisateurs doit être gérée depuis les paramètres d'administration de Supabase." });
+  };
+
+  const toggleMemberStatus = async (memberId, currentStatus) => {
+    const newStatus = !currentStatus;
+    const { error } = await supabase
+      .from('profiles')
+      .update({ is_active: newStatus })
+      .eq('id', memberId);
+
+    if (error) {
+      if (error.message.includes('column "is_active" does not exist')) {
+        toast({ 
+          variant: "destructive", 
+          title: "Colonne manquante", 
+          description: "La colonne 'is_active' doit être créée dans Supabase. Consultez l'administrateur." 
+        });
+      } else {
+        toast({ 
+          variant: "destructive", 
+          title: "Erreur", 
+          description: `Impossible de modifier le statut: ${error.message}` 
+        });
+      }
+    } else {
+      setMembers(members.map(m => 
+        m.id === memberId ? { ...m, is_active: newStatus } : m
+      ));
+      toast({ 
+        title: newStatus ? "✅ Compte activé" : "⚠️ Compte désactivé", 
+        description: newStatus 
+          ? "Le collaborateur peut maintenant se connecter." 
+          : "Le collaborateur ne peut plus se connecter."
+      });
+    }
   };
 
   const handlePrint = () => {
@@ -190,6 +256,7 @@ const TeamManager = ({ currentUser }) => {
               setShowForm(true);
             }}
             onDelete={handleDeleteMember}
+            onToggleStatus={toggleMemberStatus}
             isCurrentUser={member.id === currentUser.id}
           />
         ))}
@@ -214,6 +281,66 @@ const TeamManager = ({ currentUser }) => {
             setEditingMember(null);
           }}
         />
+      )}
+
+      {/* Dialog pour afficher le mot de passe généré */}
+      {passwordDialog.isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          onClick={closePasswordDialog}
+        >
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.95, opacity: 0 }}
+            className="bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-6 max-w-md w-full mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Icône de succès */}
+            <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-green-500/20 rounded-full">
+              <User className="w-6 h-6 text-green-400" />
+            </div>
+            
+            {/* Titre */}
+            <h3 className="text-xl font-bold text-white text-center mb-2">
+              Collaborateur créé avec succès
+            </h3>
+            
+            {/* Informations */}
+            <div className="text-center mb-6">
+              <p className="text-slate-300 mb-4">
+                <strong>{passwordDialog.memberName}</strong> a été ajouté à l'équipe.
+              </p>
+              
+              <div className="bg-slate-700/50 border border-slate-600 rounded-lg p-4 mb-4">
+                <p className="text-sm text-slate-400 mb-2">Mot de passe temporaire :</p>
+                <div className="bg-slate-900 rounded-lg p-3 font-mono text-lg text-green-400 text-center border border-slate-600">
+                  {passwordDialog.password}
+                </div>
+                <p className="text-xs text-slate-500 mt-2">
+                  Notez ce mot de passe et communiquez-le au collaborateur
+                </p>
+              </div>
+              
+              <p className="text-sm text-yellow-400">
+                ⚠️ Ce mot de passe ne sera affiché qu'une seule fois
+              </p>
+            </div>
+            
+            {/* Bouton de fermeture */}
+            <div className="flex justify-center">
+              <Button
+                className="bg-green-600 hover:bg-green-700 text-white px-8"
+                onClick={closePasswordDialog}
+              >
+                J'ai noté le mot de passe
+              </Button>
+            </div>
+          </motion.div>
+        </motion.div>
       )}
     </div>
   );

@@ -15,6 +15,17 @@ const ClientManager = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const csvInputRef = useRef(null);
 
+  // Fonction utilitaire pour générer le champ name
+  const generateName = (clientData) => {
+    if (clientData.type === 'company') {
+      return clientData.company || 'Entreprise sans nom';
+    }
+    const firstName = (clientData.first_name || '').trim();
+    const lastName = (clientData.last_name || '').trim();
+    const fullName = `${firstName} ${lastName}`.trim();
+    return fullName || 'Client sans nom';
+  };
+
   useEffect(() => {
     fetchClients();
   }, []);
@@ -29,7 +40,13 @@ const ClientManager = () => {
   };
 
   const handleAddClient = async (clientData) => {
-    const { data, error } = await supabase.from('clients').insert([clientData]).select();
+    // Générer le champ name requis
+    const clientWithName = {
+      ...clientData,
+      name: generateName(clientData)
+    };
+    
+    const { data, error } = await supabase.from('clients').insert([clientWithName]).select();
     if (error) {
       toast({ variant: "destructive", title: "Erreur", description: "Impossible d'ajouter le client." });
     } else {
@@ -40,7 +57,13 @@ const ClientManager = () => {
   };
 
   const handleEditClient = async (clientData) => {
-    const { data, error } = await supabase.from('clients').update(clientData).eq('id', editingClient.id).select();
+    // Générer le champ name requis
+    const clientWithName = {
+      ...clientData,
+      name: generateName(clientData)
+    };
+    
+    const { data, error } = await supabase.from('clients').update(clientWithName).eq('id', editingClient.id).select();
     if (error) {
       toast({ variant: "destructive", title: "Erreur", description: "Impossible de modifier le client." });
     } else {
@@ -72,19 +95,24 @@ const ClientManager = () => {
         header: true,
         skipEmptyLines: true,
         complete: async (results) => {
-          const newClients = results.data.map(row => ({
-            type: row.type || 'individual',
-            first_name: row.firstName || '',
-            last_name: row.lastName || '',
-            company: row.company || '',
-            email: row.email || '',
-            phone: row.phone || '',
-            address: row.address || '',
-            city: row.city || '',
-            postal_code: row.postalCode || '',
-            country: row.country || 'France',
-            notes: row.notes || '',
-          })).filter(c => c.first_name && c.last_name && c.email && c.phone);
+          const newClients = results.data.map(row => {
+            const clientData = {
+              type: row.type || 'individual',
+              first_name: row.firstName || '',
+              last_name: row.lastName || '',
+              company: row.company || '',
+              email: row.email || '',
+              phone: row.phone || '',
+              address: row.address || '',
+              city: row.city || '',
+              postal_code: row.postalCode || '',
+              country: row.country || 'France',
+              notes: row.notes || '',
+            };
+            // Générer le champ name requis
+            clientData.name = generateName(clientData);
+            return clientData;
+          }).filter(c => c.first_name && c.last_name && c.email && c.phone);
 
           if (newClients.length > 0) {
             const { error } = await supabase.from('clients').insert(newClients);

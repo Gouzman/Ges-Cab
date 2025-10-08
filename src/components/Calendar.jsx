@@ -1,16 +1,44 @@
 import React, { useState, useEffect, useCallback } from 'react';
+    import PropTypes from 'prop-types';
     import { motion } from 'framer-motion';
-    import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, View } from 'lucide-react';
-    import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay, parseISO, addWeeks, subWeeks, eachDayOfInterval, setHours, setMinutes, getDay } from 'date-fns';
+    import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+    import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay, parseISO, addWeeks, subWeeks, eachDayOfInterval, setHours } from 'date-fns';
     import { fr } from 'date-fns/locale';
     import { Button } from '@/components/ui/button';
     import { supabase } from '@/lib/customSupabaseClient';
     import { toast } from '@/components/ui/use-toast';
     import EventForm from '@/components/EventForm';
 
+    // Fonctions utilitaires pour éviter les ternaires imbriqués
+    const getTaskPriorityStyle = (priority) => {
+      switch (priority) {
+        case 'urgent':
+          return 'bg-red-500/70 text-white';
+        case 'high':
+          return 'bg-orange-500/70 text-white';
+        case 'medium':
+          return 'bg-yellow-500/70 text-slate-900';
+        default:
+          return 'bg-green-500/70 text-white';
+      }
+    };
+
+    const getTaskPriorityStyleWeek = (priority) => {
+      switch (priority) {
+        case 'urgent':
+          return 'bg-red-500/80 text-white';
+        case 'high':
+          return 'bg-orange-500/80 text-white';
+        case 'medium':
+          return 'bg-yellow-500/80 text-slate-900';
+        default:
+          return 'bg-green-500/80 text-white';
+      }
+    };
+
     const Calendar = ({ currentUser }) => {
       const [currentDate, setCurrentDate] = useState(new Date());
-      const [view, setView] = useState('week'); // 'month' or 'week'
+      const [view, setView] = useState('month'); // 'month' or 'week'
       const [events, setEvents] = useState([]);
       const [tasks, setTasks] = useState([]);
       const [showEventForm, setShowEventForm] = useState(false);
@@ -33,7 +61,7 @@ import React, { useState, useEffect, useCallback } from 'react';
         };
 
         const fetchEvents = async () => {
-          let query = supabase.from('calendar_events').select('*');
+          let query = supabase.from('events').select('*');
           const { data, error } = await query;
           if (error) {
             toast({ variant: "destructive", title: "Erreur", description: "Impossible de charger les événements." });
@@ -43,10 +71,10 @@ import React, { useState, useEffect, useCallback } from 'react';
           const userVisibleEvents = data.filter(event => {
             if (isAdmin) return true;
             if (event.created_by === currentUser.id) return true;
-            return event.attendees && event.attendees.includes(currentUser.id);
+            return event.attendees?.includes(currentUser.id);
           });
 
-          return userVisibleEvents.map(e => ({ ...e, type: 'event', deadline: e.start_time }));
+          return userVisibleEvents.map(e => ({ ...e, type: 'event', deadline: e.start_date }));
         };
 
         const [taskData, eventData] = await Promise.all([fetchTasks(), fetchEvents()]);
@@ -64,7 +92,7 @@ import React, { useState, useEffect, useCallback } from 'react';
       };
 
       const renderHeader = () => {
-        const dateFormat = view === 'month' ? "MMMM yyyy" : "MMMM yyyy";
+        const dateFormat = "MMMM yyyy";
         return (
           <div className="flex items-center justify-between mb-6">
             <Button variant="ghost" size="icon" onClick={() => view === 'month' ? setCurrentDate(subMonths(currentDate, 1)) : setCurrentDate(subWeeks(currentDate, 1))}>
@@ -122,12 +150,7 @@ import React, { useState, useEffect, useCallback } from 'react';
                 <div className="flex-grow overflow-y-auto mt-1 space-y-1 pr-1">
                   {dayItems.map(item => (
                     <div key={`${item.type}-${item.id}`} className={`px-1.5 py-0.5 text-xs rounded-md truncate ${
-                      item.type === 'task' ? 
-                        (item.priority === 'urgent' ? 'bg-red-500/70 text-white' :
-                        item.priority === 'high' ? 'bg-orange-500/70 text-white' :
-                        item.priority === 'medium' ? 'bg-yellow-500/70 text-slate-900' :
-                        'bg-green-500/70 text-white') :
-                        'bg-purple-500/70 text-white'
+                      item.type === 'task' ? getTaskPriorityStyle(item.priority) : 'bg-purple-500/70 text-white'
                     }`}>
                       {item.title}
                     </div>
@@ -181,12 +204,7 @@ import React, { useState, useEffect, useCallback } from 'react';
                           <div
                             key={`${item.type}-${item.id}`}
                             className={`absolute w-full p-1 text-xs rounded-md truncate z-10 ${
-                              item.type === 'task' ? 
-                                (item.priority === 'urgent' ? 'bg-red-500/80 text-white' :
-                                item.priority === 'high' ? 'bg-orange-500/80 text-white' :
-                                item.priority === 'medium' ? 'bg-yellow-500/80 text-slate-900' :
-                                'bg-green-500/80 text-white') :
-                                'bg-purple-500/80 text-white'
+                              item.type === 'task' ? getTaskPriorityStyleWeek(item.priority) : 'bg-purple-500/80 text-white'
                             }`}
                             style={{ top: `${top}rem` }}
                           >
@@ -245,6 +263,14 @@ import React, { useState, useEffect, useCallback } from 'react';
           )}
         </>
       );
+    };
+
+    Calendar.propTypes = {
+      currentUser: PropTypes.shape({
+        id: PropTypes.string.isRequired,
+        function: PropTypes.string,
+        role: PropTypes.string
+      }).isRequired
     };
 
     export default Calendar;

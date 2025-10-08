@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import { motion } from 'framer-motion';
-import { Plus, Search, Filter, Calendar, AlertTriangle, CheckCircle, Clock, MessageSquare, Eye, ListTodo, FilePlus } from 'lucide-react';
+import { Search, Calendar, ListTodo, FilePlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import TaskForm from '@/components/TaskForm';
@@ -31,7 +32,6 @@ const TaskManager = ({ currentUser }) => {
 
   const isGerantOrAssocie = currentUser && (currentUser.function === 'Gerant' || currentUser.function === 'Associe Emerite');
   const isAdmin = isGerantOrAssocie || (currentUser.role && currentUser.role.toLowerCase() === 'admin');
-  const permissions = currentUser?.permissions?.tasks || { visible: true, create: true, edit: true, delete: true };
 
   useEffect(() => {
     fetchTasks();
@@ -90,6 +90,10 @@ const TaskManager = ({ currentUser }) => {
     const { filesToUpload, associated_tasks, main_category, ...data } = taskData;
     if (data.case_id === '') {
       data.case_id = null;
+    }
+    // Convertir les chaînes vides en null pour les champs timestamp
+    if (data.deadline === '') {
+      data.deadline = null;
     }
     // associated_tasks et main_category sont gérés localement, pas en base de données
     return { filesToUpload, data, associated_tasks, main_category };
@@ -182,7 +186,6 @@ const TaskManager = ({ currentUser }) => {
   };
 
   const handleStatusChange = async (taskId, newStatus) => {
-    const task = tasks.find(t => t.id === taskId);
     if (newStatus === 'completed') {
       setTaskToComment(taskId);
     } else {
@@ -215,7 +218,7 @@ const TaskManager = ({ currentUser }) => {
 
   const filteredTasks = tasks.filter(task => {
     const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (task.description && task.description.toLowerCase().includes(searchTerm.toLowerCase()));
+                         task.description?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === 'all' || task.status === filterStatus;
     const matchesPriority = filterPriority === 'all' || task.priority === filterPriority;
     
@@ -375,6 +378,23 @@ const TaskManager = ({ currentUser }) => {
       </AlertDialog>
     </div>
   );
+};
+
+TaskManager.propTypes = {
+  currentUser: PropTypes.shape({
+    id: PropTypes.string.isRequired,
+    name: PropTypes.string.isRequired,
+    function: PropTypes.string,
+    role: PropTypes.string,
+    permissions: PropTypes.shape({
+      tasks: PropTypes.shape({
+        visible: PropTypes.bool,
+        create: PropTypes.bool,
+        edit: PropTypes.bool,
+        delete: PropTypes.bool
+      })
+    })
+  }).isRequired
 };
 
 export default TaskManager;

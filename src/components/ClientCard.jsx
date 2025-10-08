@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import { motion } from 'framer-motion';
 import { 
   User, 
@@ -39,7 +40,7 @@ const ClientCard = ({ client, index, onEdit, onDelete }) => {
           </div>
           <div>
             <h3 className="text-lg font-semibold text-white print:text-black">
-              {client.firstName} {client.lastName}
+              {client.first_name} {client.last_name}
             </h3>
             {client.company && (
               <p className="text-slate-400 text-sm print:text-slate-600">{client.company}</p>
@@ -86,7 +87,7 @@ const ClientCard = ({ client, index, onEdit, onDelete }) => {
               {client.address && <div>{client.address}</div>}
               {client.city && (
                 <div>
-                  {client.postalCode} {client.city}
+                  {client.postal_code} {client.city}
                   {client.country && client.country !== 'France' && `, ${client.country}`}
                 </div>
               )}
@@ -119,6 +120,27 @@ const ClientCard = ({ client, index, onEdit, onDelete }) => {
       </div>
     </motion.div>
   );
+};
+
+ClientCard.propTypes = {
+  client: PropTypes.shape({
+    id: PropTypes.string.isRequired,
+    type: PropTypes.string.isRequired,
+    first_name: PropTypes.string.isRequired,
+    last_name: PropTypes.string.isRequired,
+    company: PropTypes.string,
+    email: PropTypes.string.isRequired,
+    phone: PropTypes.string.isRequired,
+    address: PropTypes.string,
+    city: PropTypes.string,
+    postal_code: PropTypes.string,
+    country: PropTypes.string,
+    notes: PropTypes.string,
+    createdAt: PropTypes.string.isRequired
+  }).isRequired,
+  index: PropTypes.number.isRequired,
+  onEdit: PropTypes.func.isRequired,
+  onDelete: PropTypes.func.isRequired
 };
 
 export default ClientCard;

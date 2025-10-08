@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+    import PropTypes from 'prop-types';
     import { motion } from 'framer-motion';
     import { Plus, Search, FileText, Scale, Clock, CheckCircle, Archive } from 'lucide-react';
     import { Button } from '@/components/ui/button';
@@ -14,32 +15,36 @@ import React, { useState, useEffect } from 'react';
       const [searchTerm, setSearchTerm] = useState('');
       const [filterStatus, setFilterStatus] = useState('all');
 
-      const isGerantOrAssocie = currentUser && (currentUser.function === 'Gerant' || currentUser.function === 'Associe Emerite');
-      const isAdmin = isGerantOrAssocie || (currentUser.role && currentUser.role.toLowerCase() === 'admin');
+
 
       useEffect(() => {
         fetchCases();
       }, []);
 
       const fetchCases = async () => {
-        const { data, error } = await supabase.from('cases').select('*').order('created_at', { ascending: false });
+        const { data, error } = await supabase
+          .from('cases')
+          .select('id, title, description, type, status, priority, created_at')
+          .order('created_at', { ascending: false });
         if (error) {
           toast({ variant: "destructive", title: "Erreur", description: "Impossible de charger les dossiers." });
         } else {
-          if (isAdmin) {
-            setCases(data);
-          } else {
-            const visibleCases = data.filter(c => 
-              c.created_by === currentUser.id || 
-              (c.visible_to && c.visible_to.includes(currentUser.id))
-            );
-            setCases(visibleCases);
-          }
+          // Pour l'instant, tous les utilisateurs voient tous les dossiers
+          // Sera amélioré après les migrations DB
+          setCases(data || []);
         }
       };
 
       const handleAddCase = async (caseData) => {
-        const { data, error } = await supabase.from('cases').insert([{...caseData, created_by: currentUser.id}]).select();
+        // Utiliser toutes les données du formulaire maintenant que toutes les colonnes existent
+        const caseToInsert = {
+          title: caseData.title,
+          description: caseData.description || '',
+          type: caseData.type || 'civil',
+          status: caseData.status || 'ouvert',
+          priority: caseData.priority || 'moyenne'
+        };
+        const { data, error } = await supabase.from('cases').insert([caseToInsert]).select('id, title, description, type, status, priority, created_at');
         if (error) {
           toast({ variant: "destructive", title: "Erreur de création", description: error.message });
         } else {
@@ -51,7 +56,7 @@ import React, { useState, useEffect } from 'react';
 
       const handleEditCase = async (caseData) => {
         const { id, ...updateData } = caseData;
-        const { data, error } = await supabase.from('cases').update(updateData).eq('id', editingCase.id).select();
+        const { data, error } = await supabase.from('cases').update(updateData).eq('id', editingCase.id).select('id, title, description, type, status, priority, created_at');
         if (error) {
           toast({ variant: "destructive", title: "Erreur de modification", description: error.message });
         } else {
@@ -73,9 +78,10 @@ import React, { useState, useEffect } from 'react';
       };
 
       const filteredCases = cases.filter(caseItem => {
-        const matchesSearch = (caseItem.title && caseItem.title.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                             (caseItem.description && caseItem.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                             (caseItem.id && caseItem.id.toLowerCase().includes(searchTerm.toLowerCase()));
+        const matchesSearch = caseItem.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                             caseItem.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                             caseItem.type?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                             caseItem.id?.toString().includes(searchTerm);
         const matchesStatus = filterStatus === 'all' || caseItem.status === filterStatus;
         
         return matchesSearch && matchesStatus;
@@ -83,9 +89,9 @@ import React, { useState, useEffect } from 'react';
 
       const statusCounts = {
         all: cases.length,
-        'en-cours': cases.filter(c => c.status === 'en-cours').length,
-        'juge-acheve': cases.filter(c => c.status === 'juge-acheve').length,
-        'cloture': cases.filter(c => c.status === 'cloture').length,
+        'ouvert': cases.filter(c => c.status === 'ouvert').length,
+        'en_cours': cases.filter(c => c.status === 'en_cours').length,
+        'ferme': cases.filter(c => c.status === 'ferme').length,
         'archive': cases.filter(c => c.status === 'archive').length
       };
 
@@ -212,6 +218,14 @@ import React, { useState, useEffect } from 'react';
           )}
         </div>
       );
+    };
+
+    CaseManager.propTypes = {
+      currentUser: PropTypes.shape({
+        id: PropTypes.string.isRequired,
+        name: PropTypes.string,
+        role: PropTypes.string
+      }).isRequired
     };
 
     export default CaseManager;

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import PropTypes from 'prop-types';
 import { motion } from 'framer-motion';
 import { Plus, Search, Receipt, Printer, Edit, Trash2, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -29,6 +30,7 @@ const BillingManager = ({ currentUser }) => {
   const [editingInvoice, setEditingInvoice] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [deleteDialog, setDeleteDialog] = useState({ isOpen: false, invoice: null });
 
   useEffect(() => {
     fetchInvoices();
@@ -78,45 +80,153 @@ const BillingManager = ({ currentUser }) => {
   };
 
   const handleAddInvoice = async (invoiceData) => {
-    toast({
-      variant: "destructive",
-      title: "Fonctionnalité non disponible",
-      description: "La création de factures nécessite l'intégration de Supabase. Veuillez compléter l'intégration.",
-    });
+    try {
+      // Générer un ID unique pour la nouvelle facture
+      const newId = Math.max(...invoices.map(inv => inv.id || 0), 0) + 1;
+      
+      // Créer la nouvelle facture avec un statut calculé
+      const newInvoice = {
+        ...invoiceData,
+        id: newId,
+        status: getInvoiceStatus(invoiceData),
+        date: invoiceData.date || new Date().toISOString().split('T')[0]
+      };
+      
+      // Ajouter à la liste des factures
+      setInvoices(prevInvoices => [...prevInvoices, newInvoice]);
+      
+      toast({
+        title: "Facture créée",
+        description: `La facture ${invoiceData.invoiceNumber || `#${newId}`} a été créée avec succès.`,
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Erreur de création",
+        description: "Impossible de créer la facture. Veuillez réessayer.",
+      });
+    }
     setShowForm(false);
   };
 
   const handleEditInvoice = async (invoiceData) => {
-     toast({
-      variant: "destructive",
-      title: "Fonctionnalité non disponible",
-      description: "La modification de factures nécessite l'intégration de Supabase. Veuillez compléter l'intégration.",
-    });
+    try {
+      // Mettre à jour la facture dans la liste locale (données de démo)
+      setInvoices(prevInvoices =>
+        prevInvoices.map(invoice =>
+          invoice.id === editingInvoice.id
+            ? { ...invoice, ...invoiceData, id: editingInvoice.id }
+            : invoice
+        )
+      );
+      
+      toast({
+        title: "Facture mise à jour",
+        description: `La facture ${invoiceData.invoiceNumber || editingInvoice.invoiceNumber} a été mise à jour avec succès.`,
+      });
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour de la facture:', error);
+      toast({
+        variant: "destructive",
+        title: "Erreur de mise à jour",
+        description: "Impossible de mettre à jour la facture. Veuillez réessayer.",
+      });
+      throw error;
+    }
     setEditingInvoice(null);
     setShowForm(false);
   };
 
-  const handleDeleteInvoice = async (invoiceId) => {
-    toast({
-      variant: "destructive",
-      title: "Fonctionnalité non disponible",
-      description: "La suppression de factures nécessite l'intégration de Supabase. Veuillez compléter l'intégration.",
-    });
+  const handleDeleteInvoice = (invoice) => {
+    setDeleteDialog({ isOpen: true, invoice });
+  };
+
+  const confirmDeleteInvoice = async () => {
+    const { invoice } = deleteDialog;
+    
+    try {
+      // Supprimer de la liste locale (données de démo)
+      setInvoices(prevInvoices => prevInvoices.filter(inv => inv.id !== invoice.id));
+      
+      toast({
+        title: "Facture supprimée",
+        description: `La facture ${invoice.invoiceNumber} a été supprimée avec succès.`,
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Erreur de suppression",
+        description: "Impossible de supprimer la facture. Veuillez réessayer.",
+      });
+    }
+    
+    setDeleteDialog({ isOpen: false, invoice: null });
+  };
+
+  const cancelDeleteInvoice = () => {
+    setDeleteDialog({ isOpen: false, invoice: null });
   };
 
   const handlePrint = () => {
     toast({
       title: "Impression en cours...",
-      description: "Préparation de la facture pour l'impression.",
+      description: "Préparation de toutes les factures pour l'impression.",
     });
-    window.print();
+    
+    // Petit délai pour permettre au toast de s'afficher avant l'impression
+    setTimeout(() => {
+      window.print();
+    }, 500);
+  };
+  
+  const handlePrintInvoice = (invoice) => {
+    toast({
+      title: "Impression de la facture",
+      description: `Impression de ${invoice.invoiceNumber} en cours...`,
+    });
+    
+    // Créer une nouvelle fenêtre pour imprimer juste cette facture
+    const printWindow = window.open('', '_blank');
+    const htmlContent = `
+      <html>
+        <head>
+          <title>Facture ${invoice.invoiceNumber}</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            .header { text-align: center; margin-bottom: 30px; }
+            .invoice-details { margin-bottom: 20px; }
+            .amount { font-weight: bold; font-size: 1.2em; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>FACTURE</h1>
+            <h2>${invoice.invoiceNumber}</h2>
+          </div>
+          <div class="invoice-details">
+            <p><strong>Client:</strong> ${invoice.clientName}</p>
+            <p><strong>Dossier:</strong> ${invoice.caseId}</p>
+            <p><strong>Date:</strong> ${invoice.date}</p>
+            <p class="amount"><strong>Montant TTC:</strong> ${formatCurrency(invoice.totalTTC)} FCFA</p>
+          </div>
+        </body>
+      </html>
+    `;
+    printWindow.document.open();
+    printWindow.document.documentElement.innerHTML = htmlContent;
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 250);
   };
 
   const filteredInvoices = useMemo(() => {
     return invoices
       .filter(invoice => {
-        const searchMatch = (invoice.clientName && invoice.clientName.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                            (invoice.invoiceNumber && invoice.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase()));
+        const searchMatch = invoice.clientName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            invoice.invoiceNumber?.toLowerCase().includes(searchTerm.toLowerCase());
         return searchMatch;
       })
       .filter(invoice => {
@@ -212,18 +322,13 @@ const BillingManager = ({ currentUser }) => {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="ghost" size="icon" onClick={() => {
-                  toast({
-                    title: "🚧 Fonctionnalité non implémentée",
-                    description: "L'impression individuelle sera bientôt disponible.",
-                  });
-                }}>
+                <Button variant="ghost" size="icon" onClick={() => handlePrintInvoice(invoice)}>
                   <Printer className="w-4 h-4 text-slate-400" />
                 </Button>
                 <Button variant="ghost" size="icon" onClick={() => { setEditingInvoice(invoice); setShowForm(true); }}>
                   <Edit className="w-4 h-4 text-slate-400" />
                 </Button>
-                <Button variant="ghost" size="icon" onClick={() => handleDeleteInvoice(invoice.id)}>
+                <Button variant="ghost" size="icon" onClick={() => handleDeleteInvoice(invoice)}>
                   <Trash2 className="w-4 h-4 text-red-500" />
                 </Button>
               </div>
@@ -252,10 +357,89 @@ const BillingManager = ({ currentUser }) => {
           }}
           onPrint={handlePrint}
           currentUser={currentUser}
+          existingInvoices={invoices}
         />
+      )}
+
+      {/* Dialog personnalisé de confirmation de suppression */}
+      {deleteDialog.isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          onClick={cancelDeleteInvoice}
+        >
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.95, opacity: 0 }}
+            className="bg-slate-800 border border-slate-700 rounded-xl shadow-2xl p-6 max-w-md w-full mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Icône d'alerte */}
+            <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 bg-red-500/20 rounded-full">
+              <Trash2 className="w-6 h-6 text-red-400" />
+            </div>
+            
+            {/* Titre */}
+            <h3 className="text-xl font-bold text-white text-center mb-2">
+              Supprimer la facture
+            </h3>
+            
+            {/* Message de confirmation */}
+            <div className="text-center mb-6">
+              <p className="text-slate-300 mb-3">
+                Êtes-vous sûr de vouloir supprimer cette facture ?
+              </p>
+              {deleteDialog.invoice && (
+                <div className="bg-slate-700/50 border border-slate-600 rounded-lg p-3">
+                  <p className="font-semibold text-white">
+                    {deleteDialog.invoice.invoiceNumber}
+                  </p>
+                  <p className="text-sm text-slate-400">
+                    {deleteDialog.invoice.clientName}
+                  </p>
+                  <p className="text-sm font-medium text-red-400 mt-1">
+                    {formatCurrency(deleteDialog.invoice.totalTTC)} FCFA
+                  </p>
+                </div>
+              )}
+              <p className="text-sm text-red-400 mt-3 font-medium">
+                ⚠️ Cette action est irréversible
+              </p>
+            </div>
+            
+            {/* Boutons d'action */}
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                className="flex-1 border-slate-600 text-slate-300 bg-transparent"
+                onClick={cancelDeleteInvoice}
+              >
+                Annuler
+              </Button>
+              <Button
+                variant="destructive"
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                onClick={confirmDeleteInvoice}
+              >
+                Supprimer
+              </Button>
+            </div>
+          </motion.div>
+        </motion.div>
       )}
     </div>
   );
+};
+
+BillingManager.propTypes = {
+  currentUser: PropTypes.shape({
+    id: PropTypes.string.isRequired,
+    name: PropTypes.string,
+    role: PropTypes.string
+  }).isRequired
 };
 
 export default BillingManager;

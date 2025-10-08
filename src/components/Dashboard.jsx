@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import { motion } from 'framer-motion';
 import { 
   CheckSquare, 
@@ -32,10 +33,30 @@ const Dashboard = ({ currentUser, setActiveView }) => {
   const isGerantOrAssocie = currentUser && (currentUser.function === 'Gerant' || currentUser.function === 'Associe Emerite');
   const isAdmin = isGerantOrAssocie || (currentUser.role && currentUser.role.toLowerCase() === 'admin');
 
+  const calculateTeamPerformance = (membersData, allTasksData, now) => {
+    return (membersData || []).map(member => {
+      const memberTasks = (allTasksData || []).filter(t => t.assigned_to_id === member.id);
+      const completed = memberTasks.filter(t => t.status === 'completed').length;
+      const overduePerf = memberTasks.filter(t => 
+        t.deadline && new Date(t.deadline) < now && t.status !== 'completed'
+      ).length;
+      return {
+        name: member.name,
+        total: memberTasks.length,
+        completed,
+        overdue: overduePerf,
+        completionRate: memberTasks.length > 0 ? Math.round((completed / memberTasks.length) * 100) : 0
+      };
+    });
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       // Fetch all data for admins/managers
-      let tasksQuery = supabase.from('tasks').select('*');
+      let tasksQuery = supabase.from('tasks').select(`
+        id, title, priority, status, deadline, assigned_to_id, case_id, 
+        created_at, updated_at
+      `);
       let clientsQuery = supabase.from('clients').select('id', { count: 'exact' });
       let casesQuery = supabase.from('cases').select('status');
       
@@ -92,18 +113,7 @@ const Dashboard = ({ currentUser, setActiveView }) => {
         const { data: membersData } = await supabase.from('profiles').select('*');
         const { data: allTasksData } = await supabase.from('tasks').select('assigned_to_id, status, deadline');
         
-        const performance = (membersData || []).map(member => {
-          const memberTasks = (allTasksData || []).filter(t => t.assigned_to_id === member.id);
-          const completed = memberTasks.filter(t => t.status === 'completed').length;
-          const overduePerf = memberTasks.filter(t => t.deadline && new Date(t.deadline) < now && t.status !== 'completed').length;
-          return {
-            name: member.name,
-            total: memberTasks.length,
-            completed,
-            overdue: overduePerf,
-            completionRate: memberTasks.length > 0 ? Math.round((completed / memberTasks.length) * 100) : 0
-          };
-        });
+        const performance = calculateTeamPerformance(membersData, allTasksData, now);
         setTeamPerformance(performance);
       }
     };
@@ -295,6 +305,17 @@ const Dashboard = ({ currentUser, setActiveView }) => {
       )}
     </div>
   );
+};
+
+Dashboard.propTypes = {
+  currentUser: PropTypes.shape({
+    id: PropTypes.string.isRequired,
+    name: PropTypes.string,
+    email: PropTypes.string,
+    function: PropTypes.string,
+    role: PropTypes.string
+  }).isRequired,
+  setActiveView: PropTypes.func.isRequired
 };
 
 export default Dashboard;

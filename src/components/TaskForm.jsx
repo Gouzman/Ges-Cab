@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import { motion } from 'framer-motion';
-import { X, Calendar, FileText, User, Paperclip, RefreshCw, Download, ScanLine, CheckSquare, Trash2 } from 'lucide-react';
+import { X, Calendar, FileText, User, Paperclip, RefreshCw, Download, ScanLine } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/customSupabaseClient';
@@ -35,15 +36,12 @@ const TaskForm = ({ task, onSubmit, onCancel, teamMembers, cases, currentUser })
         deadline: task.deadline ? new Date(task.deadline).toISOString().substring(0, 16) : '',
         assigned_to_id: task.assigned_to_id || '',
         case_id: task.case_id || '',
-        main_category: task.main_category || '',
-        associated_tasks: task.associated_tasks || [],
+        main_category: '', // ✅ Toujours vide - fonctionnalité locale uniquement
+        associated_tasks: [], // ✅ Toujours initialisé vide - fonctionnalité locale
         attachments: task.attachments || [],
         filesToUpload: []
       });
-      if (task.main_category) {
-        const category = taskCategoriesData.find(c => c.name === task.main_category);
-        setAvailableSubTasks(category ? category.tasks : []);
-      }
+      // ✅ main_category géré localement - pas de données depuis la base
     }
   }, [task]);
 
@@ -146,10 +144,11 @@ const TaskForm = ({ task, onSubmit, onCancel, teamMembers, cases, currentUser })
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
+            <label htmlFor="task-title" className="block text-sm font-medium text-slate-300 mb-2">
               Titre de la tâche *
             </label>
             <input
+              id="task-title"
               type="text"
               name="title"
               value={formData.title}
@@ -161,10 +160,11 @@ const TaskForm = ({ task, onSubmit, onCancel, teamMembers, cases, currentUser })
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
+            <label htmlFor="task-description" className="block text-sm font-medium text-slate-300 mb-2">
               Description
             </label>
             <textarea
+              id="task-description"
               name="description"
               value={formData.description}
               onChange={handleChange}
@@ -176,10 +176,11 @@ const TaskForm = ({ task, onSubmit, onCancel, teamMembers, cases, currentUser })
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+              <label htmlFor="task-main-category" className="block text-sm font-medium text-slate-300 mb-2">
                 Catégorie Principale
               </label>
               <select
+                id="task-main-category"
                 name="main_category"
                 value={formData.main_category}
                 onChange={handleChange}
@@ -192,7 +193,7 @@ const TaskForm = ({ task, onSubmit, onCancel, teamMembers, cases, currentUser })
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+              <label htmlFor="task-associated-tasks" className="block text-sm font-medium text-slate-300 mb-2">
                 Tâches Associées
               </label>
               <div className="p-3 bg-slate-700/50 border border-slate-600 rounded-lg max-h-40 overflow-y-auto">
@@ -216,10 +217,11 @@ const TaskForm = ({ task, onSubmit, onCancel, teamMembers, cases, currentUser })
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+              <label htmlFor="task-priority" className="block text-sm font-medium text-slate-300 mb-2">
                 Priorité
               </label>
               <select
+                id="task-priority"
                 name="priority"
                 value={formData.priority}
                 onChange={handleChange}
@@ -233,10 +235,11 @@ const TaskForm = ({ task, onSubmit, onCancel, teamMembers, cases, currentUser })
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+              <label htmlFor="task-status" className="block text-sm font-medium text-slate-300 mb-2">
                 Statut
               </label>
               <select
+                id="task-status"
                 name="status"
                 value={formData.status}
                 onChange={handleChange}
@@ -252,11 +255,12 @@ const TaskForm = ({ task, onSubmit, onCancel, teamMembers, cases, currentUser })
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+              <label htmlFor="task-deadline" className="block text-sm font-medium text-slate-300 mb-2">
                 <Calendar className="w-4 h-4 inline mr-2" />
                 Échéance
               </label>
               <input
+                id="task-deadline"
                 type="datetime-local"
                 name="deadline"
                 value={formData.deadline}
@@ -265,18 +269,19 @@ const TaskForm = ({ task, onSubmit, onCancel, teamMembers, cases, currentUser })
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
+              <label htmlFor="task-case" className="block text-sm font-medium text-slate-300 mb-2">
                 <FileText className="w-4 h-4 inline mr-2" />
                 Dossier
               </label>
               <select
+                id="task-case"
                 name="case_id"
                 value={formData.case_id}
                 onChange={handleChange}
                 className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Aucun dossier</option>
-                {cases && cases.map(c => (
+                {cases?.map(c => (
                   <option key={c.id} value={c.id}>{c.title}</option>
                 ))}
               </select>
@@ -284,11 +289,12 @@ const TaskForm = ({ task, onSubmit, onCancel, teamMembers, cases, currentUser })
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
+            <label htmlFor="task-assigned-to" className="block text-sm font-medium text-slate-300 mb-2">
               <User className="w-4 h-4 inline mr-2" />
               Assigné à
             </label>
             <select
+              id="task-assigned-to"
               name="assigned_to_id"
               value={formData.assigned_to_id}
               onChange={handleChange}
@@ -296,7 +302,7 @@ const TaskForm = ({ task, onSubmit, onCancel, teamMembers, cases, currentUser })
               disabled={!isAdmin && !showReassign && task && task.assigned_to_id !== currentUser.id}
             >
               <option value="">Non assigné</option>
-              {teamMembers && teamMembers.map(member => (
+              {teamMembers?.map(member => (
                 <option key={member.id} value={member.id}>{member.name}</option>
               ))}
             </select>
@@ -325,7 +331,7 @@ const TaskForm = ({ task, onSubmit, onCancel, teamMembers, cases, currentUser })
             </div>
             <div className="mt-2 space-y-2">
               {formData.attachments.map((path, index) => (
-                <div key={index} className="flex items-center justify-between text-sm text-slate-400 bg-slate-700/30 p-2 rounded-md">
+                <div key={`attachment-${path}-${index}`} className="flex items-center justify-between text-sm text-slate-400 bg-slate-700/30 p-2 rounded-md">
                   <span>{path.split('/').pop()}</span>
                   <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleDownload(path)}>
                     <Download className="h-4 w-4" />
@@ -333,7 +339,7 @@ const TaskForm = ({ task, onSubmit, onCancel, teamMembers, cases, currentUser })
                 </div>
               ))}
               {formData.filesToUpload.map((file, index) => (
-                <div key={index} className="text-sm text-green-400 bg-green-900/30 p-2 rounded-md">{file.name} (nouveau)</div>
+                <div key={`file-${file.name}-${index}`} className="text-sm text-green-400 bg-green-900/30 p-2 rounded-md">{file.name} (nouveau)</div>
               ))}
             </div>
           </div>
@@ -358,6 +364,37 @@ const TaskForm = ({ task, onSubmit, onCancel, teamMembers, cases, currentUser })
       </motion.div>
     </motion.div>
   );
+};
+
+TaskForm.propTypes = {
+  task: PropTypes.shape({
+    id: PropTypes.string,
+    title: PropTypes.string,
+    description: PropTypes.string,
+    priority: PropTypes.string,
+    status: PropTypes.string,
+    deadline: PropTypes.string,
+    assigned_to_id: PropTypes.string,
+    case_id: PropTypes.string,
+    attachments: PropTypes.arrayOf(PropTypes.string)
+  }),
+  onSubmit: PropTypes.func.isRequired,
+  onCancel: PropTypes.func.isRequired,
+  teamMembers: PropTypes.arrayOf(PropTypes.shape({
+    id: PropTypes.string.isRequired,
+    name: PropTypes.string.isRequired,
+    map: PropTypes.func
+  })),
+  cases: PropTypes.arrayOf(PropTypes.shape({
+    id: PropTypes.string.isRequired,
+    title: PropTypes.string.isRequired,
+    map: PropTypes.func
+  })),
+  currentUser: PropTypes.shape({
+    id: PropTypes.string.isRequired,
+    function: PropTypes.string,
+    role: PropTypes.string
+  }).isRequired
 };
 
 export default TaskForm;

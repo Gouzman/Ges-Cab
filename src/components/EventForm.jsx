@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import { motion } from 'framer-motion';
 import { X, Calendar, Users, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -47,10 +48,10 @@ const EventForm = ({ currentUser, onCancel, onEventCreated }) => {
       return;
     }
 
-    const { error } = await supabase.from('calendar_events').insert([
+    const { error } = await supabase.from('events').insert([
       {
         title: formData.title,
-        start_time: formData.startTime,
+        start_date: formData.startTime,
         description: formData.description,
         created_by: currentUser.id,
         attendees: formData.attendees,
@@ -118,10 +119,11 @@ const EventForm = ({ currentUser, onCancel, onEventCreated }) => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
+            <label htmlFor="description" className="block text-sm font-medium text-slate-300 mb-2">
               Description
             </label>
             <textarea
+              id="description"
               name="description"
               value={formData.description}
               onChange={handleChange}
@@ -167,6 +169,16 @@ const EventForm = ({ currentUser, onCancel, onEventCreated }) => {
       </motion.div>
     </motion.div>
   );
+};
+
+EventForm.propTypes = {
+  currentUser: PropTypes.shape({
+    id: PropTypes.string.isRequired,
+    name: PropTypes.string,
+    role: PropTypes.string
+  }).isRequired,
+  onCancel: PropTypes.func.isRequired,
+  onEventCreated: PropTypes.func.isRequired
 };
 
 export default EventForm;

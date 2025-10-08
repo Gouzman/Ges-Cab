@@ -9,6 +9,7 @@ import iframeRouteRestorationPlugin from './plugins/vite-plugin-iframe-route-res
 // Chargement des variables d'environnement
 dotenv.config({ path: '.env.local' });
 dotenv.config({ path: '.env' });
+dotenv.config({ path: '.env.production' });
 
 const isDev = process.env.NODE_ENV !== 'production';
 
@@ -227,13 +228,39 @@ export default defineConfig({
 		},
 	},
 	build: {
+		// Optimisations de production
+		target: 'es2015',
+		minify: 'terser',
+		cssMinify: true,
+		
+		// Configuration des chunks pour optimiser le cache
 		rollupOptions: {
 			external: [
 				'@babel/parser',
 				'@babel/traverse',
 				'@babel/generator',
 				'@babel/types'
-			]
-		}
+			],
+			output: {
+				// Séparation des chunks pour un meilleur cache
+				manualChunks: {
+					vendor: ['react', 'react-dom'],
+					ui: ['@radix-ui/react-alert-dialog', '@radix-ui/react-button', '@radix-ui/react-checkbox', '@radix-ui/react-label'],
+					utils: ['framer-motion', 'lucide-react', 'date-fns'],
+					supabase: ['@supabase/supabase-js']
+				},
+				// Noms de fichiers avec hash pour le cache
+				chunkFileNames: 'assets/js/[name]-[hash].js',
+				entryFileNames: 'assets/js/[name]-[hash].js',
+				assetFileNames: 'assets/[ext]/[name]-[hash].[ext]'
+			}
+		},
+		
+		// Optimisations supplémentaires
+		sourcemap: false, // Désactiver en production pour la sécurité
+		reportCompressedSize: true,
+		
+		// Limite de taille des chunks
+		chunkSizeWarningLimit: 1000
 	}
 });

@@ -85,3 +85,66 @@ button:hover {
 button:active {
   transform: translateY(0);
 }
+
+/* Styles spécifiques pour l'impression des factures */
+@media print {
+  @page {
+    size: A4;
+    margin: 1cm;
+  }
+  
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 12pt;
+    line-height: 1.4;
+  }
+  
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+  
+  /* Tables pour factures */
+  .invoice-table {
+    page-break-inside: avoid;
+    border-collapse: collapse;
+    width: 100%;
+    margin-bottom: 1rem;
+  }
+  
+  .invoice-table th,
+  .invoice-table td {
+    border: 1px solid #333;
+    padding: 8px;
+    text-align: left;
+    font-size: 11pt;
+  }
+  
+  .invoice-table th {
+    background-color: #f5f5f5 !important;
+    font-weight: bold;
+  }
+  
+  /* En-tête de facture */
+  .invoice-header {
+    margin-bottom: 2rem;
+    page-break-inside: avoid;
+  }
+  
+  /* Éviter les coupures de page dans les sections importantes */
+  .invoice-totals,
+  .invoice-signature {
+    page-break-inside: avoid;
+  }
+  
+  /* Forcer une nouvelle page si nécessaire */
+  .page-break {
+    page-break-before: always;
+  }
+  
+  /* Masquer les éléments d'interface */
+  .no-print {
+    display: none !important;
+  }
+}
