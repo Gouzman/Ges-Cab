@@ -245,7 +245,7 @@ export default defineConfig({
 				// Séparation des chunks pour un meilleur cache
 				manualChunks: {
 					vendor: ['react', 'react-dom'],
-					ui: ['@radix-ui/react-alert-dialog', '@radix-ui/react-button', '@radix-ui/react-checkbox', '@radix-ui/react-label'],
+					ui: ['@radix-ui/react-alert-dialog', '@radix-ui/react-checkbox', '@radix-ui/react-label', '@radix-ui/react-slot', '@radix-ui/react-toast'],
 					utils: ['framer-motion', 'lucide-react', 'date-fns'],
 					supabase: ['@supabase/supabase-js']
 				},
