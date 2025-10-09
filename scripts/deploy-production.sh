@@ -47,6 +47,32 @@ VPS_CONNECTION=$2
 VPS_USER=$(echo $VPS_CONNECTION | cut -d'@' -f1)
 VPS_IP=$(echo $VPS_CONNECTION | cut -d'@' -f2)
 
+# Configuration par défaut pour votre projet
+DEFAULT_DOMAIN="ges-cab.com"
+DEFAULT_VPS="root@82.25.116.122"
+
+# Utiliser les valeurs par défaut si pas de paramètres
+if [ $# -eq 0 ]; then
+    DOMAIN=$DEFAULT_DOMAIN
+    VPS_CONNECTION=$DEFAULT_VPS
+    VPS_USER="root"
+    VPS_IP="82.25.116.122"
+    print_step "🚀 Utilisation de la configuration par défaut"
+    print_step "   Domaine: $DOMAIN"
+    print_step "   Serveur: $VPS_CONNECTION"
+elif [ $# -ne 2 ]; then
+    echo "Usage: $0 [DOMAIN] [USER@VPS_IP]"
+    echo "Ou sans paramètres pour utiliser la configuration par défaut:"
+    echo "   Domaine: $DEFAULT_DOMAIN"
+    echo "   Serveur: $DEFAULT_VPS"
+    exit 1
+else
+    DOMAIN=$1
+    VPS_CONNECTION=$2
+    VPS_USER=$(echo $VPS_CONNECTION | cut -d'@' -f1)
+    VPS_IP=$(echo $VPS_CONNECTION | cut -d'@' -f2)
+fi
+
 print_step "🚀 Déploiement de Ges-Cab sur $DOMAIN ($VPS_IP)"
 
 # ┌───────────────────────────────────────────────────────────────────────────────┐
