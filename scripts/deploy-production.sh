@@ -106,10 +106,16 @@ print_success "Package créé: ges-cab-deploy.tar.gz"
 
 print_step "2️⃣ Vérification de la connexion au VPS..."
 
-if ssh -o ConnectTimeout=10 -o BatchMode=yes $VPS_CONNECTION "echo 'Connexion réussie'" > /dev/null 2>&1; then
+print_warning "Authentification par mot de passe détectée"
+print_info "Vous devrez saisir le mot de passe root plusieurs fois pendant le processus"
+
+if ssh -o ConnectTimeout=10 $VPS_CONNECTION "echo 'Connexion réussie'" > /dev/null 2>&1; then
     print_success "Connexion VPS établie"
 else
-    print_error "Impossible de se connecter au VPS. Vérifiez vos paramètres SSH."
+    print_error "Impossible de se connecter au VPS. Vérifiez :"
+    print_error "  • L'adresse IP : $VPS_IP"
+    print_error "  • Le mot de passe root"
+    print_error "  • La connectivité réseau"
     exit 1
 fi
 

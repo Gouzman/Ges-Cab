@@ -55,12 +55,26 @@ echo ""
 
 # Test de connexion SSH rapide
 echo "🔍 Test de connexion SSH..."
-if ssh -o ConnectTimeout=10 -o BatchMode=yes root@82.25.116.122 "echo 'SSH OK'" > /dev/null 2>&1; then
+echo "⚠️  Votre serveur nécessite une authentification par mot de passe."
+echo "📝 Vous devrez saisir le mot de passe root plusieurs fois pendant le déploiement."
+echo ""
+read -p "🔐 Avez-vous le mot de passe root pour 82.25.116.122 ? (y/N): " -n 1 -r
+echo
+if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    echo "❌ Le mot de passe root est nécessaire pour continuer."
+    echo "💡 Contactez votre hébergeur pour obtenir le mot de passe root."
+    exit 1
+fi
+
+echo "🔍 Test de connexion avec mot de passe..."
+if ssh -o ConnectTimeout=10 root@82.25.116.122 "echo 'SSH OK'" > /dev/null 2>&1; then
     echo "✅ Connexion SSH réussie"
 else
-    echo "❌ Impossible de se connecter en SSH"
-    echo "Vérifiez que vous pouvez vous connecter manuellement :"
-    echo "ssh root@82.25.116.122"
+    echo "❌ Échec de la connexion SSH"
+    echo "Vérifiez :"
+    echo "  • Que l'IP 82.25.116.122 est correcte"
+    echo "  • Que le mot de passe root est correct"
+    echo "  • Que le port SSH 22 est ouvert"
     exit 1
 fi
 
