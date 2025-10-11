@@ -89,14 +89,15 @@ print_success "Build React terminé"
 # Création du package de déploiement
 print_info "Création du package de déploiement..."
 tar -czf ges-cab-deploy.tar.gz \
+    --exclude='node_modules' \
+    --exclude='.git' \
+    --exclude='.env*' \
     dist/ \
     database/ \
     config/ \
     scripts/ \
     package.json \
-    package-lock.json \
-    --exclude=node_modules \
-    --exclude=.git
+    package-lock.json
 
 print_success "Package créé: ges-cab-deploy.tar.gz"
 
@@ -108,8 +109,10 @@ print_step "2️⃣ Vérification de la connexion au VPS..."
 
 print_warning "Authentification par mot de passe détectée"
 print_info "Vous devrez saisir le mot de passe root plusieurs fois pendant le processus"
+print_info "Test de connexion SSH..."
 
-if ssh -o ConnectTimeout=10 $VPS_CONNECTION "echo 'Connexion réussie'" > /dev/null 2>&1; then
+# Test de connexion plus simple
+if ssh -o ConnectTimeout=10 -o StrictHostKeyChecking=no $VPS_CONNECTION "echo 'Connexion réussie'"; then
     print_success "Connexion VPS établie"
 else
     print_error "Impossible de se connecter au VPS. Vérifiez :"
