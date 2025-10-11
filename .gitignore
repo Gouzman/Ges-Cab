@@ -36,3 +36,19 @@ yarn-error.log*
 .DS_Store
 Thumbs.db
 node_modules
+
+# Fichiers de nettoyage temporaires
+*-temp.sh
+*-backup.*
+*.tar.gz
+test-*.sh
+diagnostic-*.sh
+check-*.sh
+monitor-*.sh
+fix-*.sh
+setup-*.sh
+
+# Archives locales
+archive/
+temp/
+backup/
