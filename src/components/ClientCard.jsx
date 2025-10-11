@@ -107,7 +107,7 @@ const ClientCard = ({ client, index, onEdit, onDelete }) => {
       <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-700/50 print:border-slate-200">
         <div className="flex items-center gap-2 text-xs text-slate-500 print:text-slate-500">
           <Calendar className="w-3 h-3" />
-          <span>Ajouté le {formatDate(client.createdAt)}</span>
+          <span>Ajouté le {formatDate(client.created_at)}</span>
         </div>
         
         <div className={`px-2 py-1 rounded-full text-xs font-medium print:border print:text-slate-600 ${
@@ -136,7 +136,7 @@ ClientCard.propTypes = {
     postal_code: PropTypes.string,
     country: PropTypes.string,
     notes: PropTypes.string,
-    createdAt: PropTypes.string.isRequired
+    created_at: PropTypes.string.isRequired
   }).isRequired,
   index: PropTypes.number.isRequired,
   onEdit: PropTypes.func.isRequired,

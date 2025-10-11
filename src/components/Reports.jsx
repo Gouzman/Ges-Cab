@@ -159,9 +159,11 @@ const Reports = ({ currentUser }) => {
       link.setAttribute('href', url);
       link.setAttribute('download', filename);
       link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      if (document.body) {
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
     }
     toast({
       title: "✅ Exportation réussie",

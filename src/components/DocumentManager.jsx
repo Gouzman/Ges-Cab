@@ -63,10 +63,12 @@ import React, { useState, useEffect } from 'react';
         const a = document.createElement('a');
         a.href = url;
         a.download = name;
-        document.body.appendChild(a);
-        a.click();
+        if (document.body) {
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        }
         window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
       };
 
       const handlePreview = async (path) => {

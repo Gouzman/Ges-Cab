@@ -98,9 +98,11 @@ const TaskForm = ({ task, onSubmit, onCancel, teamMembers, cases, currentUser })
     const a = document.createElement('a');
     a.href = url;
     a.download = filePath.split('/').pop();
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    if (document.body) {
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
     URL.revokeObjectURL(url);
   };
 
