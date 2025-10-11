@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Settings as SettingsIcon, Tag, Save, Plus, Trash2, Shield, Users } from 'lucide-react';
+import { Settings as SettingsIcon, Tag, Save, Plus, Trash2, Shield, Users, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import UserManagement from './UserManagement';
 
 const modules = [
   { id: 'dashboard', label: 'Tableau de Bord', actions: [] },
@@ -34,6 +35,7 @@ const defaultPermissions = modules.reduce((acc, mod) => {
 
 const Settings = () => {
   const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState('categories'); // 'categories', 'permissions', 'users'
   const [taskCategories, setTaskCategories] = useState([]);
   const [newCategory, setNewCategory] = useState('');
   const [collaborators, setCollaborators] = useState([]);
@@ -150,7 +152,56 @@ const Settings = () => {
         <p className="text-slate-400">Gérez les configurations de l'application.</p>
       </div>
 
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl p-6">
+      {/* Navigation par onglets */}
+      <div className="flex space-x-1 bg-slate-800/50 p-1 rounded-lg">
+        <button
+          onClick={() => setActiveTab('categories')}
+          className={`flex-1 flex items-center justify-center px-4 py-2 rounded-md transition-colors ${
+            activeTab === 'categories' 
+              ? 'bg-blue-600 text-white' 
+              : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+          }`}
+        >
+          <Tag className="w-4 h-4 mr-2" />
+          Catégories
+        </button>
+        <button
+          onClick={() => setActiveTab('users')}
+          className={`flex-1 flex items-center justify-center px-4 py-2 rounded-md transition-colors ${
+            activeTab === 'users' 
+              ? 'bg-blue-600 text-white' 
+              : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+          }`}
+        >
+          <UserPlus className="w-4 h-4 mr-2" />
+          Utilisateurs
+        </button>
+        <button
+          onClick={() => setActiveTab('permissions')}
+          className={`flex-1 flex items-center justify-center px-4 py-2 rounded-md transition-colors ${
+            activeTab === 'permissions' 
+              ? 'bg-blue-600 text-white' 
+              : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+          }`}
+        >
+          <Shield className="w-4 h-4 mr-2" />
+          Permissions
+        </button>
+      </div>
+
+      {/* Contenu des onglets */}
+      {activeTab === 'users' && (
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }} 
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl p-6"
+        >
+          <UserManagement />
+        </motion.div>
+      )}
+
+      {activeTab === 'permissions' && (
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl p-6">
         <div className="flex items-center gap-3 mb-6"><Shield className="w-6 h-6 text-purple-400" /><h2 className="text-xl font-semibold text-white">Gestion des Permissions</h2></div>
         <div className="mb-4">
           <Label htmlFor="collaborator-select" className="text-slate-300 mb-2 block">Sélectionner un collaborateur</Label>
@@ -188,8 +239,10 @@ const Settings = () => {
           </div>
         )}
       </motion.div>
+      )}
 
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl p-6">
+      {activeTab === 'categories' && (
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl p-6">
         <div className="flex items-center gap-3 mb-6"><Tag className="w-6 h-6 text-blue-400" /><h2 className="text-xl font-semibold text-white">Catégories de Tâches</h2></div>
         <div className="space-y-3 mb-4">
           {taskCategories.map(cat => (
@@ -203,11 +256,17 @@ const Settings = () => {
           <input type="text" value={newCategory} onChange={(e) => setNewCategory(e.target.value)} placeholder="Nouvelle catégorie..." className="flex-grow px-3 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500" />
           <Button onClick={handleAddCategory} className="bg-blue-500 hover:bg-blue-600"><Plus className="w-4 h-4 mr-2" /> Ajouter</Button>
         </div>
-      </motion.div>
+        </motion.div>
+      )}
 
-      <div className="flex justify-end">
-        <Button onClick={handleSaveSettings} size="lg" className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"><Save className="w-5 h-5 mr-2" /> Sauvegarder les Paramètres Généraux</Button>
-      </div>
+      {activeTab === 'categories' && (
+        <div className="flex justify-end">
+          <Button onClick={handleSaveSettings} size="lg" className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700">
+            <Save className="w-5 h-5 mr-2" /> 
+            Sauvegarder les Paramètres Généraux
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

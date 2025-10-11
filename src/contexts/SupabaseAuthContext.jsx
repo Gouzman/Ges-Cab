@@ -205,45 +205,126 @@ export const AuthProvider = ({ children }) => {
 
   const checkUserExists = useCallback(async (email) => {
     try {
-      // ✅ MÉTHODE SÉCURISÉE : Utilisation de resetPasswordForEmail
-      // Cette méthode ne révèle pas l'existence des comptes
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password-check`
-      });
-
-      // Supabase renvoie toujours "success" même si l'email n'existe pas
-      // Pour des raisons de sécurité, on assume que l'utilisateur existe
-      // et on laisse Supabase gérer la sécurité
+      // Vérifier dans notre base de données profiles
+      const { data: profileData, error } = await supabase
+        .from('profiles')
+        .select('id, first_login, temp_password_expires_at')
+        .eq('email', email.toLowerCase())
+        .maybeSingle();
       
       if (error) {
-        // Si erreur (email invalide, rate limit, etc.), traiter comme non-existant
-        if (error.message.includes('Invalid email')) {
-          return { exists: false, error: null };
-        }
-        return { exists: false, error };
+        console.error('Erreur lors de la vérification de l\'utilisateur:', error);
+        return { exists: false, error, isFirstLogin: false };
       }
       
-      // ⚠️ Pour l'UX, on fait une vérification dans notre base de données
-      // Ceci est acceptable car on contrôle l'accès
-      try {
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('email', email.toLowerCase())
-          .maybeSingle();
-        
-        return { exists: !!profileData, error: null };
-      } catch (dbError) {
-        // En cas d'erreur DB, on assume que l'utilisateur n'existe pas
-        console.warn('Erreur lors de la vérification en base:', dbError);
-        return { exists: false, error: null };
-      }
+      return { 
+        exists: !!profileData, 
+        error: null,
+        isFirstLogin: profileData?.first_login || false,
+        hasTempPassword: profileData?.temp_password_expires_at && new Date(profileData.temp_password_expires_at) > new Date()
+      };
       
     } catch (error) {
       console.error('Erreur lors de la vérification de l\'utilisateur:', error);
-      return { exists: false, error };
+      return { exists: false, error, isFirstLogin: false };
     }
   }, []);
+
+  const validateTempPassword = useCallback(async (email, tempPassword) => {
+    try {
+      const { data, error } = await supabase.rpc('validate_temp_password', {
+        p_email: email,
+        p_temp_password: tempPassword
+      });
+
+      if (error) throw error;
+
+      const result = typeof data === 'string' ? JSON.parse(data) : data;
+      return result;
+    } catch (error) {
+      console.error('Erreur validation mot de passe temporaire:', error);
+      return { success: false, error: error.message };
+    }
+  }, []);
+
+  const completeFirstLogin = useCallback(async (email, password, keepTempPassword = false) => {
+    try {
+      // D'abord créer/mettre à jour l'utilisateur dans Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: email,
+        password: password,
+      });
+
+      if (authError) {
+        // Si l'utilisateur existe déjà dans auth, essayer de se connecter
+        if (authError.message.includes('User already registered')) {
+          const { error: signInError } = await supabase.auth.signInWithPassword({
+            email: email,
+            password: password
+          });
+          
+          if (signInError) throw signInError;
+        } else {
+          throw authError;
+        }
+      }
+
+      // Finaliser la première connexion
+      const { data, error } = await supabase.rpc('complete_first_login', {
+        p_email: email,
+        p_password: password,
+        p_keep_temp_password: keepTempPassword
+      });
+
+      if (error) throw error;
+
+      const result = typeof data === 'string' ? JSON.parse(data) : data;
+      return result;
+    } catch (error) {
+      console.error('Erreur finalisation première connexion:', error);
+      return { success: false, error: error.message };
+    }
+  }, []);
+
+  const resetPassword = useCallback(async (email) => {
+    try {
+      const { data, error } = await supabase.rpc('reset_user_password', {
+        p_email: email.toLowerCase()
+      });
+
+      if (error) throw error;
+
+      const result = typeof data === 'string' ? JSON.parse(data) : data;
+      return result;
+    } catch (error) {
+      console.error('Erreur réinitialisation mot de passe:', error);
+      return { success: false, error: error.message };
+    }
+  }, []);
+
+  const createUserByAdmin = useCallback(async (userData) => {
+    try {
+      if (!user || (user.function !== 'Gerant' && user.function !== 'Associe Emerite' && user.role !== 'admin')) {
+        throw new Error('Permissions insuffisantes pour créer un utilisateur');
+      }
+
+      const { data, error } = await supabase.rpc('admin_create_user', {
+        p_email: userData.email.toLowerCase(),
+        p_full_name: userData.fullName,
+        p_function: userData.function,
+        p_role: userData.role || 'user',
+        p_admin_id: user.id
+      });
+
+      if (error) throw error;
+
+      const result = typeof data === 'string' ? JSON.parse(data) : data;
+      return result;
+    } catch (error) {
+      console.error('Erreur création utilisateur par admin:', error);
+      return { success: false, error: error.message };
+    }
+  }, [user]);
 
   const value = useMemo(() => ({
     user,
@@ -254,7 +335,11 @@ export const AuthProvider = ({ children }) => {
     signOut,
     createAccount,
     checkUserExists,
-  }), [user, session, loading, signUp, signIn, signOut, createAccount, checkUserExists]);
+    validateTempPassword,
+    completeFirstLogin,
+    resetPassword,
+    createUserByAdmin,
+  }), [user, session, loading, signUp, signIn, signOut, createAccount, checkUserExists, validateTempPassword, completeFirstLogin, resetPassword, createUserByAdmin]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

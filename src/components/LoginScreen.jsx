@@ -5,12 +5,15 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import CreatePasswordScreen from './CreatePasswordScreen';
+import FirstLoginScreen from './FirstLoginScreen';
+import ForgotPasswordScreen from './ForgotPasswordScreen';
 
 const LoginScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [currentStep, setCurrentStep] = useState('email'); // 'email', 'password', 'create-password'
+  const [currentStep, setCurrentStep] = useState('email'); // 'email', 'password', 'create-password', 'first-login', 'forgot-password'
   const [isLoading, setIsLoading] = useState(false);
+  const [userInfo, setUserInfo] = useState(null);
   
   const { signIn, checkUserExists } = useAuth();
   const { toast } = useToast();
@@ -48,7 +51,7 @@ const LoginScreen = () => {
     setIsLoading(true);
 
     try {
-      const { exists, error } = await checkUserExists(email);
+      const { exists, error, isFirstLogin, hasTempPassword } = await checkUserExists(email);
       
       if (error) {
         toast({
@@ -61,8 +64,13 @@ const LoginScreen = () => {
       }
 
       if (exists) {
-        // Utilisateur existe, passer à la connexion
-        setCurrentStep('password');
+        if (isFirstLogin || hasTempPassword) {
+          // Première connexion avec mot de passe temporaire
+          setCurrentStep('first-login');
+        } else {
+          // Utilisateur existant, connexion normale
+          setCurrentStep('password');
+        }
       } else {
         // Nouvel utilisateur, passer à la création de mot de passe
         setCurrentStep('create-password');
@@ -239,8 +247,54 @@ const LoginScreen = () => {
                   {isLoading ? 'Connexion...' : 'Se connecter'}
                 </Button>
               </div>
+
+              {/* Lien mot de passe oublié */}
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={() => setCurrentStep('forgot-password')}
+                  className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
+                >
+                  Mot de passe oublié ?
+                </button>
+              </div>
             </form>
           </motion.div>
+        )}
+
+        {/* Écran de création de mot de passe */}
+        {currentStep === 'create-password' && (
+          <CreatePasswordScreen 
+            email={email}
+            onBack={handleBackToEmail}
+          />
+        )}
+
+        {/* Écran de première connexion avec mot de passe temporaire */}
+        {currentStep === 'first-login' && (
+          <FirstLoginScreen 
+            email={email}
+            onSuccess={() => {
+              // La connexion sera gérée automatiquement par le contexte
+              setCurrentStep('email');
+            }}
+            onBack={handleBackToEmail}
+          />
+        )}
+
+        {/* Écran de mot de passe oublié */}
+        {currentStep === 'forgot-password' && (
+          <ForgotPasswordScreen 
+            onSuccess={() => {
+              // Retour à l'écran de connexion après réinitialisation
+              setCurrentStep('email');
+              toast({
+                title: "Mot de passe mis à jour",
+                description: "Vous pouvez maintenant vous connecter avec votre nouveau mot de passe."
+              });
+            }}
+            onBack={() => setCurrentStep('password')}
+          />
         )}
       </motion.div>
     </div>
