@@ -101,7 +101,8 @@ const Reports = ({ currentUser }) => {
   }, []);
 
   const teamPerformanceData = data.team.map(member => ({
-    name: member.name ? member.name.split(' ')[0] : 'N/A',
+    id: member.id, // Identifiant unique
+    name: member.name ? member.name.split(' ')[0] : `User-${member.id.slice(0, 8)}`,
     'Tâches assignées': data.tasks.filter(t => t.assigned_to_id === member.id).length,
     'Tâches terminées': data.tasks.filter(t => t.assigned_to_id === member.id && t.status === 'completed').length,
   }));

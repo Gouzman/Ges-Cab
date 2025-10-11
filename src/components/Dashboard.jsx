@@ -41,6 +41,7 @@ const Dashboard = ({ currentUser, setActiveView }) => {
         t.deadline && new Date(t.deadline) < now && t.status !== 'completed'
       ).length;
       return {
+        id: member.id, // Ajout de l'ID unique
         name: member.name,
         total: memberTasks.length,
         completed,
@@ -283,7 +284,7 @@ const Dashboard = ({ currentUser, setActiveView }) => {
               </thead>
               <tbody>
                 {teamPerformance.map(member => (
-                  <tr key={member.name} className="border-b border-slate-800 hover:bg-slate-700/30">
+                  <tr key={member.id} className="border-b border-slate-800 hover:bg-slate-700/30">
                     <td className="p-3 text-white font-medium">{member.name}</td>
                     <td className="p-3 text-white text-center">{member.total}</td>
                     <td className="p-3 text-green-400 text-center">{member.completed}</td>
