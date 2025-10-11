@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
+import { generateConfirmationCodeWithExpiration } from '@/lib/codeGenerator';
 
 const AuthContext = createContext(undefined);
 
@@ -109,13 +110,18 @@ export const AuthProvider = ({ children }) => {
     }
 
     try {
-      // Inscription via Supabase Auth
+      // Générer un code de confirmation à 6 caractères
+      const confirmationData = generateConfirmationCodeWithExpiration(15); // Expire dans 15 minutes
+      
+      // Inscription via Supabase Auth avec code de confirmation personnalisé
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
             email: email,
+            confirmation_code: confirmationData.code,
+            code_expires_at: confirmationData.expiresAt
           }
         }
       });
@@ -132,6 +138,23 @@ export const AuthProvider = ({ children }) => {
         }
       }
 
+      // Envoyer le code de confirmation par email (via fonction RPC)
+      try {
+        await supabase.rpc('send_confirmation_email', {
+          p_email: email,
+          p_confirmation_code: confirmationData.code,
+          p_expires_at: confirmationData.expiresAt
+        });
+      } catch (emailError) {
+        console.error('Erreur envoi email de confirmation:', emailError);
+        // Ne pas échouer complètement si l'email ne peut pas être envoyé
+        toast({
+          variant: "destructive",
+          title: "⚠️ Attention",
+          description: "Compte créé mais l'email de confirmation n'a pas pu être envoyé."
+        });
+      }
+
       // Logger l'inscription
       try {
         await supabase.rpc('log_user_signup', {
@@ -142,9 +165,14 @@ export const AuthProvider = ({ children }) => {
         console.error('Erreur lors du logging de l\'inscription:', logError);
       }
 
-      // Si l'utilisateur est créé et confirmé automatiquement, 
-      // la session sera automatiquement gérée par le listener onAuthStateChange
-      return { data, error: null };
+      // Retourner les données avec le code pour référence
+      return { 
+        data: {
+          ...data,
+          confirmationCode: confirmationData.code // Pour tests/debug uniquement
+        }, 
+        error: null 
+      };
 
     } catch (error) {
       // Logger l'échec
@@ -187,6 +215,38 @@ export const AuthProvider = ({ children }) => {
     }
 
     return { error };
+  }, [toast]);
+
+  const verifyConfirmationCode = useCallback(async (email, code) => {
+    try {
+      // Valider le code de confirmation via RPC
+      const { data, error } = await supabase.rpc('verify_confirmation_code', {
+        p_email: email,
+        p_code: code
+      });
+
+      if (error) throw error;
+
+      const result = typeof data === 'string' ? JSON.parse(data) : data;
+
+      if (result.success) {
+        toast({
+          title: "✅ Email confirmé",
+          description: "Votre email a été confirmé avec succès ! Vous pouvez maintenant vous connecter."
+        });
+        return { success: true };
+      } else {
+        throw new Error(result.error || 'Code de confirmation invalide ou expiré');
+      }
+    } catch (error) {
+      console.error('Erreur vérification code:', error);
+      toast({
+        variant: "destructive",
+        title: "Code invalide",
+        description: error.message || "Le code de confirmation est invalide ou a expiré."
+      });
+      return { success: false, error: error.message };
+    }
   }, [toast]);
 
   const signOut = useCallback(async () => {
@@ -339,7 +399,8 @@ export const AuthProvider = ({ children }) => {
     completeFirstLogin,
     resetPassword,
     createUserByAdmin,
-  }), [user, session, loading, signUp, signIn, signOut, createAccount, checkUserExists, validateTempPassword, completeFirstLogin, resetPassword, createUserByAdmin]);
+    verifyConfirmationCode,
+  }), [user, session, loading, signUp, signIn, signOut, createAccount, checkUserExists, validateTempPassword, completeFirstLogin, resetPassword, createUserByAdmin, verifyConfirmationCode]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

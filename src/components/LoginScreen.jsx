@@ -7,13 +7,13 @@ import { useToast } from '@/components/ui/use-toast';
 import CreatePasswordScreen from './CreatePasswordScreen';
 import FirstLoginScreen from './FirstLoginScreen';
 import ForgotPasswordScreen from './ForgotPasswordScreen';
+import EmailConfirmationScreen from './EmailConfirmationScreen';
 
 const LoginScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [currentStep, setCurrentStep] = useState('email'); // 'email', 'password', 'create-password', 'first-login', 'forgot-password'
+  const [currentStep, setCurrentStep] = useState('email'); // 'email', 'password', 'create-password', 'first-login', 'forgot-password', 'email-confirmation'
   const [isLoading, setIsLoading] = useState(false);
-  const [userInfo, setUserInfo] = useState(null);
   
   const { signIn, checkUserExists } = useAuth();
   const { toast } = useToast();
@@ -117,10 +117,9 @@ const LoginScreen = () => {
     setPassword('');
   };
 
-  // Succès création de compte
+  // Succès création de compte - rediriger vers confirmation email
   const handleCreatePasswordSuccess = () => {
-    // Le contexte d'auth gère la redirection après inscription réussie
-    // La session sera automatiquement mise à jour
+    setCurrentStep('email-confirmation');
   };
 
   // Annuler création de mot de passe
@@ -135,6 +134,22 @@ const LoginScreen = () => {
         email={email}
         onCancel={handleCreatePasswordCancel}
         onSuccess={handleCreatePasswordSuccess}
+      />
+    );
+  }
+
+  if (currentStep === 'email-confirmation') {
+    return (
+      <EmailConfirmationScreen
+        email={email}
+        onSuccess={() => {
+          toast({
+            title: "🎉 Email confirmé !",
+            description: "Vous pouvez maintenant vous connecter avec vos identifiants."
+          });
+          setCurrentStep('password');
+        }}
+        onBack={() => setCurrentStep('email')}
       />
     );
   }

@@ -42,10 +42,14 @@ const CreatePasswordScreen = ({ email, onCancel, onSuccess }) => {
       
       if (!error) {
         toast({
-          title: "Compte créé !",
-          description: "Votre compte a été créé avec succès."
+          title: "🎉 Compte créé !",
+          description: "Un code de confirmation a été envoyé à votre email. Veuillez le vérifier puis vous connecter."
         });
-        onSuccess();
+        
+        // Redirection vers la page de connexion après 2 secondes
+        setTimeout(() => {
+          onSuccess();
+        }, 2000);
       }
     } catch (err) {
       console.error('Erreur lors de la création du compte:', err);
