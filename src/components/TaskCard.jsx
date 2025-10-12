@@ -140,8 +140,9 @@ const TaskCard = ({ task, index, onEdit, onDelete, onStatusChange, currentUser }
           <div>
             <div className="flex items-center gap-2 text-sm mb-2"><Paperclip className="w-4 h-4 text-slate-400" /><span className="text-slate-300">Pièces jointes</span></div>
             <div className="flex flex-col gap-1">
+              {/* Utilise le nom de fichier et l'index pour créer une clé unique pour chaque pièce jointe */}
               {task.attachments.map((path, i) => (
-                <div key={i} className="flex items-center justify-between text-xs text-slate-400 bg-slate-700/30 p-1.5 rounded-md">
+                <div key={`attachment-${task.id}-${path.split('/').pop()}-${i}`} className="flex items-center justify-between text-xs text-slate-400 bg-slate-700/30 p-1.5 rounded-md">
                   <span className="truncate w-36">{path.split('/').pop()}</span>
                   <div className="flex">
                     <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleDownload(path)} title="Télécharger"><Download className="h-3 w-3" /></Button>

@@ -200,8 +200,9 @@ const TaskForm = ({ task, onSubmit, onCancel, teamMembers, cases, currentUser })
               </label>
               <div className="p-3 bg-slate-700/50 border border-slate-600 rounded-lg max-h-40 overflow-y-auto">
                 {availableSubTasks.length > 0 ? (
-                  availableSubTasks.map(subTask => (
-                    <div key={subTask} className="flex items-center space-x-2 py-1">
+                  availableSubTasks.map((subTask, index) => (
+                    // Combine le nom de la sous-tâche avec l'index pour garantir l'unicité
+                    <div key={`subtask-${subTask}-${index}`} className="flex items-center space-x-2 py-1">
                       <Checkbox
                         id={subTask}
                         checked={formData.associated_tasks.includes(subTask)}

@@ -224,8 +224,9 @@ const TeamManager = ({ currentUser }) => {
           <div className="flex items-center justify-between"><p className="text-slate-400">Total</p><Briefcase className="w-6 h-6 text-slate-400" /></div>
           <p className="text-3xl font-bold text-white">{members.length}</p>
         </motion.div>
+        {/* Utilise l'index combiné au rôle pour garantir l'unicité même avec des rôles dupliqués */}
         {Object.entries(roleCounts).slice(0, 3).map(([role, count], index) => (
-          <motion.div key={role} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: (index + 1) * 0.1 }} className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-lg p-6">
+          <motion.div key={`role-${role}-${index}`} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: (index + 1) * 0.1 }} className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-lg p-6">
             <div className="flex items-center justify-between"><p className="text-slate-400 capitalize">{role}</p><User className="w-6 h-6 text-green-400" /></div>
             <p className="text-3xl font-bold text-white">{count}</p>
           </motion.div>

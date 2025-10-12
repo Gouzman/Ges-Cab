@@ -113,9 +113,11 @@ import React, { useState, useEffect, useCallback } from 'react';
         const dateFormat = "EEEE";
         const startDate = startOfWeek(currentDate, { locale: fr });
         for (let i = 0; i < 7; i++) {
+          const dayDate = addDays(startDate, i);
           days.push(
-            <div className="text-center text-sm font-medium text-slate-400 capitalize" key={i}>
-              {format(addDays(startDate, i), dateFormat, { locale: fr })}
+            // Utilise la date formatée comme clé unique pour chaque jour de la semaine
+            <div className="text-center text-sm font-medium text-slate-400 capitalize" key={`day-header-${dayDate.toISOString()}`}>
+              {format(dayDate, dateFormat, { locale: fr })}
             </div>
           );
         }

@@ -317,8 +317,9 @@ const PieChartCard = ({ title, data, colors }) => (
     <ResponsiveContainer width="100%" height="85%">
       <PieChart>
         <Pie data={data} cx="50%" cy="50%" labelLine={false} outerRadius={80} fill="#8884d8" dataKey="value" nameKey="name" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+          {/* Utilise l'ID de l'entrée si disponible, sinon combine nom et index */}
           {data.map((entry, index) => (
-            <Cell key={`cell-${entry.name}-${index}`} fill={colors[index % colors.length]} />
+            <Cell key={`cell-${entry.id || entry.name}-${index}`} fill={colors[index % colors.length]} />
           ))}
         </Pie>
         <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155' }} />
