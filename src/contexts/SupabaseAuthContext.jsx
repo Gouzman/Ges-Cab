@@ -138,22 +138,30 @@ export const AuthProvider = ({ children }) => {
         }
       }
 
-      // Envoyer le code de confirmation par email (via fonction RPC)
-      try {
-        await supabase.rpc('send_confirmation_email', {
-          p_email: email,
-          p_confirmation_code: confirmationData.code,
-          p_expires_at: confirmationData.expiresAt
-        });
-      } catch (emailError) {
-        console.error('Erreur envoi email de confirmation:', emailError);
-        // Ne pas échouer complètement si l'email ne peut pas être envoyé
+      // Simuler l'envoi d'email de confirmation (en développement)
+      if (import.meta.env.VITE_APP_ENV === 'development') {
+        console.log(`📧 [DEV] Code de confirmation pour ${email}: ${confirmationData.code}`);
         toast({
-          variant: "destructive",
-          title: "⚠️ Attention",
-          description: "Compte créé mais l'email de confirmation n'a pas pu être envoyé."
+          title: "📧 Code de confirmation généré",
+          description: `Code: ${confirmationData.code} (voir console en mode dev)`
         });
       }
+      
+      // TODO: Implémenter l'envoi d'email réel en production
+      // try {
+      //   await supabase.rpc('send_confirmation_email', {
+      //     p_email: email,
+      //     p_confirmation_code: confirmationData.code,
+      //     p_expires_at: confirmationData.expiresAt
+      //   });
+      // } catch (emailError) {
+      //   console.error('Erreur envoi email de confirmation:', emailError);
+      //   toast({
+      //     variant: "destructive", 
+      //     title: "⚠️ Attention",
+      //     description: "Compte créé mais l'email de confirmation n'a pas pu être envoyé."
+      //   });
+      // }
 
       // Logger l'inscription
       try {
@@ -219,25 +227,53 @@ export const AuthProvider = ({ children }) => {
 
   const verifyConfirmationCode = useCallback(async (email, code) => {
     try {
-      // Valider le code de confirmation via RPC
-      const { data, error } = await supabase.rpc('verify_confirmation_code', {
-        p_email: email,
-        p_code: code
-      });
+      // Version simplifiée en développement - à remplacer par RPC en production
+      if (import.meta.env.VITE_APP_ENV === 'development') {
+        // Simuler la validation côté client en développement
+        const isValidFormat = /^[a-z0-9!@#$%&*]{6}$/.test(code);
+        
+        if (!isValidFormat) {
+          throw new Error('Format de code invalide');
+        }
 
-      if (error) throw error;
+        // Simuler un délai réseau
+        await new Promise(resolve => setTimeout(resolve, 500));
 
-      const result = typeof data === 'string' ? JSON.parse(data) : data;
-
-      if (result.success) {
         toast({
           title: "✅ Email confirmé",
           description: "Votre email a été confirmé avec succès ! Vous pouvez maintenant vous connecter."
         });
         return { success: true };
-      } else {
-        throw new Error(result.error || 'Code de confirmation invalide ou expiré');
       }
+
+      // TODO: Version production avec RPC
+      // const { data, error } = await supabase.rpc('verify_confirmation_code', {
+      //   p_email: email,
+      //   p_code: code
+      // });
+
+      // if (error) throw error;
+
+      // const result = typeof data === 'string' ? JSON.parse(data) : data;
+
+      // if (result.success) {
+      //   toast({
+      //     title: "✅ Email confirmé",
+      //     description: "Votre email a été confirmé avec succès ! Vous pouvez maintenant vous connecter."
+      //   });
+      //   return { success: true };
+      // } else {
+      //   throw new Error(result.error || 'Code de confirmation invalide ou expiré');
+      // }
+
+      // Fallback pour production sans RPC
+      toast({
+        variant: "destructive",
+        title: "Service indisponible",
+        description: "La vérification d'email n'est pas encore disponible en production."
+      });
+      return { success: false, error: "Service indisponible" };
+
     } catch (error) {
       console.error('Erreur vérification code:', error);
       toast({

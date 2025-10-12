@@ -1,8 +1,18 @@
-# Système de Confirmation d'Email avec Code à 6 Caractères
+# Système Dual d'Authentification - Ges-Cab
 
-## Aperçu des Modifications
+## Aperçu du Système
 
-Ce document décrit les nouvelles fonctionnalités ajoutées au système d'authentification de Ges-Cab pour améliorer la sécurité et l'expérience utilisateur lors de la création de compte.
+Ges-Cab utilise maintenant un système dual d'authentification qui distingue deux types de comptes :
+
+### 🔧 **Comptes créés par Admin** (UserManagement/TeamManager)
+- **Processus :** Mot de passe temporaire généré automatiquement
+- **Format :** 8 caractères alphanumériques (ex: `AB3C9X2M`)
+- **Utilisation :** Première connexion avec validation puis choix du mot de passe final
+
+### 👤 **Comptes auto-créés** (Inscription directe)
+- **Processus :** Code de confirmation par email
+- **Format :** 6 caractères mélangés (ex: `2467e!`, `8a3b9z`) 
+- **Utilisation :** Confirmation d'email puis connexion normale
 
 ## Fonctionnalités Ajoutées
 

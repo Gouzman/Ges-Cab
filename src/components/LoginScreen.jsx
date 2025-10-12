@@ -68,11 +68,11 @@ const LoginScreen = () => {
           // Première connexion avec mot de passe temporaire
           setCurrentStep('first-login');
         } else {
-          // Utilisateur existant, connexion normale
+          // Utilisateur existant - connexion directe (plus de réinitialisation automatique)
           setCurrentStep('password');
         }
       } else {
-        // Nouvel utilisateur, passer à la création de mot de passe
+        // Nouvel utilisateur - utiliser le nouveau système de confirmation d'email
         setCurrentStep('create-password');
       }
     } catch (err) {

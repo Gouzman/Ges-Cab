@@ -151,19 +151,40 @@ const EmailConfirmationScreen = ({ email, onSuccess, onBack }) => {
             </div>
           </form>
 
-          <div className="text-center">
+          <div className="text-center space-y-2">
             <p className="text-sm text-gray-600 mb-2">
               Vous n'avez pas reçu le code ?
             </p>
-            <Button
-              type="button"
-              variant="link"
-              onClick={handleResendCode}
-              disabled={loading}
-              className="text-blue-600 hover:text-blue-500"
-            >
-              Renvoyer le code
-            </Button>
+            <div className="flex flex-col gap-2">
+              <Button
+                type="button"
+                variant="link"
+                onClick={handleResendCode}
+                disabled={loading}
+                className="text-blue-600 hover:text-blue-500"
+              >
+                Renvoyer le code
+              </Button>
+              
+              {import.meta.env.VITE_APP_ENV === 'development' && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const testCode = "2467e!"; 
+                    setConfirmationCode(testCode);
+                    toast({
+                      title: "🧪 Mode dev",
+                      description: `Code de test inséré: ${testCode}`
+                    });
+                  }}
+                  className="text-xs"
+                >
+                  🧪 Utiliser code de test (dev)
+                </Button>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
