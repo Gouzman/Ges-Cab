@@ -98,6 +98,36 @@ export const AuthProvider = ({ children }) => {
     return { data, error };
   }, [toast]);
 
+  // Fonction utilitaire pour vérifier l'existence d'un utilisateur
+  const checkUserExists = useCallback(async (email) => {
+    try {
+      // Vérifier dans notre base de données profiles
+      const { data: userData, error } = await supabase
+        .from('profiles')
+        .select('id, email')
+        .eq('email', email.toLowerCase())
+        .maybeSingle();
+      
+      if (error) {
+        console.error('Erreur lors de la vérification de l\'utilisateur:', error);
+        return { exists: false, error, hasPassword: false };
+      }
+      
+      // Si l'utilisateur existe dans profiles, on considère qu'il peut avoir un mot de passe
+      // (géré par Supabase Auth directement)
+      return { 
+        exists: !!userData, 
+        error: null,
+        hasPassword: !!userData, // Si profil existe, on suppose qu'il peut se connecter
+        userId: userData?.id
+      };
+      
+    } catch (error) {
+      console.error('Erreur lors de la vérification de l\'utilisateur:', error);
+      return { exists: false, error, hasPassword: false };
+    }
+  }, []);
+
   const createAccount = useCallback(async (email, password) => {
     // Validation côté client
     if (!email || !password) {
@@ -110,25 +140,14 @@ export const AuthProvider = ({ children }) => {
 
     try {
       // D'abord, vérifier que l'utilisateur existe dans la table profiles
-      const { exists, userId } = await checkUserExists(email);
+      const { exists } = await checkUserExists(email);
       
       if (!exists) {
         throw new Error("Vous devez être enregistré par l'administrateur.");
       }
 
-      // Hacher le mot de passe
-      const bcrypt = await import('bcryptjs');
-      const hashedPassword = await bcrypt.hash(password, 10);
-
-      // Mettre à jour le hash du mot de passe dans la base
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ password_hash: hashedPassword })
-        .eq('id', userId);
-
-      if (updateError) {
-        throw new Error("Erreur lors de la mise à jour du mot de passe");
-      }
+      // Note: Le hachage du mot de passe est géré automatiquement par Supabase Auth
+      // Pas besoin de stocker un hash séparé dans la table profiles
 
       // Créer l'utilisateur dans Supabase Auth pour la session
       const { data, error } = await supabase.auth.signUp({
@@ -170,34 +189,11 @@ export const AuthProvider = ({ children }) => {
 
   const signIn = useCallback(async (email, password) => {
     try {
-      // Vérifier d'abord si l'utilisateur existe avec un mot de passe
-      const { exists, hasPassword, userId } = await checkUserExists(email);
+      // Vérifier d'abord si l'utilisateur existe dans notre système
+      const { exists } = await checkUserExists(email);
       
       if (!exists) {
-        throw new Error("Email ou mot de passe incorrect.");
-      }
-
-      if (!hasPassword) {
-        throw new Error("Vous devez d'abord créer votre mot de passe.");
-      }
-
-      // Récupérer le hash du mot de passe
-      const { data: userData, error: fetchError } = await supabase
-        .from('profiles')
-        .select('password_hash')
-        .eq('id', userId)
-        .single();
-
-      if (fetchError || !userData?.password_hash) {
-        throw new Error("Email ou mot de passe incorrect.");
-      }
-
-      // Vérifier le mot de passe
-      const bcrypt = await import('bcryptjs');
-      const isPasswordValid = await bcrypt.compare(password, userData.password_hash);
-
-      if (!isPasswordValid) {
-        throw new Error("Email ou mot de passe incorrect.");
+        throw new Error("Vous devez être enregistré par l'administrateur pour accéder au système.");
       }
 
       // Connexion via Supabase Auth
@@ -207,31 +203,12 @@ export const AuthProvider = ({ children }) => {
       });
 
       if (error) {
-        // Si l'utilisateur n'existe pas dans Auth, le créer
         if (error.message.includes('Invalid login credentials')) {
-          const { error: signUpError } = await supabase.auth.signUp({
-            email,
-            password,
-            options: {
-              emailRedirectTo: undefined
-            }
-          });
-          
-          if (signUpError) {
-            throw new Error("Erreur lors de la création de la session");
-          }
-
-          // Réessayer la connexion
-          const { error: retryError } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-          });
-
-          if (retryError) {
-            throw new Error("Email ou mot de passe incorrect.");
-          }
-        } else {
           throw new Error("Email ou mot de passe incorrect.");
+        } else if (error.message.includes('Email not confirmed')) {
+          throw new Error("Veuillez confirmer votre email avant de vous connecter.");
+        } else {
+          throw new Error("Erreur de connexion. Veuillez réessayer.");
         }
       }
 
@@ -268,32 +245,7 @@ export const AuthProvider = ({ children }) => {
     return { error };
   }, [toast]);
 
-  const checkUserExists = useCallback(async (email) => {
-    try {
-      // Vérifier dans notre base de données profiles (table users selon la nouvelle logique)
-      const { data: userData, error } = await supabase
-        .from('profiles')
-        .select('id, email, password_hash')
-        .eq('email', email.toLowerCase())
-        .maybeSingle();
-      
-      if (error) {
-        console.error('Erreur lors de la vérification de l\'utilisateur:', error);
-        return { exists: false, error, hasPassword: false };
-      }
-      
-      return { 
-        exists: !!userData, 
-        error: null,
-        hasPassword: !!userData?.password_hash,
-        userId: userData?.id
-      };
-      
-    } catch (error) {
-      console.error('Erreur lors de la vérification de l\'utilisateur:', error);
-      return { exists: false, error, hasPassword: false };
-    }
-  }, []);
+
 
   const validateTempPassword = useCallback(async (email, tempPassword) => {
     try {
@@ -315,7 +267,7 @@ export const AuthProvider = ({ children }) => {
   const completeFirstLogin = useCallback(async (email, password, keepTempPassword = false) => {
     try {
       // D'abord créer/mettre à jour l'utilisateur dans Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      const { error: authError } = await supabase.auth.signUp({
         email: email,
         password: password,
       });
@@ -367,6 +319,50 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
+  // Nouvelle méthode pour demander la réinitialisation par email
+  const requestPasswordReset = useCallback(async (email) => {
+    try {
+      // D'abord vérifier que l'utilisateur existe
+      const { exists } = await checkUserExists(email);
+      
+      if (!exists) {
+        throw new Error("Ce compte n'existe pas. Vous devez être enregistré par l'administrateur.");
+      }
+
+      // Envoyer l'email de réinitialisation via Supabase Auth
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`
+      });
+
+      if (error) {
+        throw new Error(error.message || "Erreur lors de l'envoi de l'email de réinitialisation");
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Erreur demande de réinitialisation:', error);
+      return { success: false, error: error.message };
+    }
+  }, [checkUserExists]);
+
+  // Méthode pour mettre à jour le mot de passe avec le token
+  const updatePasswordWithToken = useCallback(async (newPassword) => {
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+
+      if (error) {
+        throw new Error(error.message || "Erreur lors de la mise à jour du mot de passe");
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Erreur mise à jour mot de passe:', error);
+      return { success: false, error: error.message };
+    }
+  }, []);
+
   const createUserByAdmin = useCallback(async (userData) => {
     try {
       if (!user || (user.function !== 'Gerant' && user.function !== 'Associe Emerite' && user.role !== 'admin')) {
@@ -404,7 +400,9 @@ export const AuthProvider = ({ children }) => {
     completeFirstLogin,
     resetPassword,
     createUserByAdmin,
-  }), [user, session, loading, signUp, signIn, signOut, createAccount, checkUserExists, validateTempPassword, completeFirstLogin, resetPassword, createUserByAdmin]);
+    requestPasswordReset,
+    updatePasswordWithToken,
+  }), [user, session, loading, signUp, signIn, signOut, createAccount, checkUserExists, validateTempPassword, completeFirstLogin, resetPassword, createUserByAdmin, requestPasswordReset, updatePasswordWithToken]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

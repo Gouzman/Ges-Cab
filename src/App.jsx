@@ -10,6 +10,8 @@ import React, { useState, useEffect } from 'react';
     import Reports from '@/components/Reports';
     import TeamManager from '@/components/TeamManager';
     import LoginScreen from '@/components/LoginScreen';
+    import ForgotPasswordScreen from '@/components/ForgotPasswordScreen';
+    import ResetPasswordScreen from '@/components/ResetPasswordScreen';
     import DocumentManager from '@/components/DocumentManager';
     import Settings from '@/components/Settings';
     import BillingManager from '@/components/BillingManager';
@@ -20,6 +22,17 @@ import React, { useState, useEffect } from 'react';
 function App() {
   const [activeView, setActiveView] = useState('dashboard');
   const { user, loading, signOut } = useAuth();
+
+  // Détecter la route courante pour les écrans de réinitialisation
+  const currentPath = window.location.pathname;
+  const urlParams = new URLSearchParams(window.location.search);
+  const hashParams = new URLSearchParams(window.location.hash.substring(1));
+  
+  const isResetPasswordFlow = currentPath === '/reset-password' || 
+                             window.location.hash.includes('type=recovery') ||
+                             hashParams.get('type') === 'recovery' ||
+                             urlParams.get('type') === 'recovery';
+  const isForgotPasswordFlow = currentPath === '/forgot-password';
 
   // ✨ Définir le titre de la page avec l'API native (remplacement de react-helmet)
   useEffect(() => {
@@ -67,6 +80,27 @@ function App() {
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex items-center justify-center">
         <Loader2 className="w-16 h-16 text-white animate-spin" />
       </div>
+    );
+  }
+
+  // Gérer les écrans de réinitialisation de mot de passe
+  if (isResetPasswordFlow) {
+    return (
+      <>
+        <ResetPasswordScreen />
+        <Toaster />
+        <RateLimitDebugPanel />
+      </>
+    );
+  }
+
+  if (isForgotPasswordFlow) {
+    return (
+      <>
+        <ForgotPasswordScreen />
+        <Toaster />
+        <RateLimitDebugPanel />
+      </>
     );
   }
 
