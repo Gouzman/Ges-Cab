@@ -10,7 +10,7 @@ const CreatePasswordScreen = ({ email, onCancel, onSuccess }) => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
-  const { signUp } = useAuth();
+  const { createAccount } = useAuth();
   const { toast } = useToast();
 
   const handleSubmit = async (e) => {
@@ -38,25 +38,18 @@ const CreatePasswordScreen = ({ email, onCancel, onSuccess }) => {
     setIsLoading(true);
 
     try {
-      const { error } = await signUp(email, password);
+      const { error } = await createAccount(email, password);
       
       if (!error) {
-        toast({
-          title: "🎉 Compte créé !",
-          description: "Un code de confirmation a été envoyé à votre email. Veuillez le vérifier puis vous connecter."
-        });
-        
-        // Redirection vers la page de connexion après 2 secondes
-        setTimeout(() => {
-          onSuccess();
-        }, 2000);
+        // L'utilisateur est automatiquement connecté après création
+        onSuccess();
       }
     } catch (err) {
       console.error('Erreur lors de la création du compte:', err);
       toast({
         variant: "destructive",
         title: "Erreur de création",
-        description: "Impossible de créer le compte. Réessayez."
+        description: err.message || "Impossible de créer le compte. Réessayez."
       });
     } finally {
       setIsLoading(false);

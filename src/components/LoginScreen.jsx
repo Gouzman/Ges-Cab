@@ -5,9 +5,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/SupabaseAuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import CreatePasswordScreen from './CreatePasswordScreen';
-import FirstLoginScreen from './FirstLoginScreen';
 import ForgotPasswordScreen from './ForgotPasswordScreen';
-import EmailConfirmationScreen from './EmailConfirmationScreen';
 
 const LoginScreen = () => {
   const [email, setEmail] = useState('');
@@ -51,7 +49,7 @@ const LoginScreen = () => {
     setIsLoading(true);
 
     try {
-      const { exists, error, isFirstLogin, hasTempPassword } = await checkUserExists(email);
+      const { exists, error, hasPassword } = await checkUserExists(email);
       
       if (error) {
         toast({
@@ -64,16 +62,20 @@ const LoginScreen = () => {
       }
 
       if (exists) {
-        if (isFirstLogin || hasTempPassword) {
-          // Première connexion avec mot de passe temporaire
-          setCurrentStep('first-login');
-        } else {
-          // Utilisateur existant - connexion directe (plus de réinitialisation automatique)
+        if (hasPassword) {
+          // Utilisateur existant avec mot de passe défini - connexion directe
           setCurrentStep('password');
+        } else {
+          // Utilisateur existant sans mot de passe - création de mot de passe
+          setCurrentStep('create-password');
         }
       } else {
-        // Nouvel utilisateur - utiliser le nouveau système de confirmation d'email
-        setCurrentStep('create-password');
+        // Email n'existe pas dans la base - accès refusé
+        toast({
+          variant: "destructive",
+          title: "Accès refusé",
+          description: "Vous devez être enregistré par l'administrateur."
+        });
       }
     } catch (err) {
       console.error('Erreur lors de la vérification de l\'email:', err);
@@ -117,9 +119,9 @@ const LoginScreen = () => {
     setPassword('');
   };
 
-  // Succès création de compte - rediriger vers confirmation email
+  // Succès création de compte - l'utilisateur est automatiquement connecté
   const handleCreatePasswordSuccess = () => {
-    setCurrentStep('email-confirmation');
+    // Rien à faire, l'utilisateur est automatiquement connecté après création
   };
 
   // Annuler création de mot de passe
@@ -134,22 +136,6 @@ const LoginScreen = () => {
         email={email}
         onCancel={handleCreatePasswordCancel}
         onSuccess={handleCreatePasswordSuccess}
-      />
-    );
-  }
-
-  if (currentStep === 'email-confirmation') {
-    return (
-      <EmailConfirmationScreen
-        email={email}
-        onSuccess={() => {
-          toast({
-            title: "🎉 Email confirmé !",
-            description: "Vous pouvez maintenant vous connecter avec vos identifiants."
-          });
-          setCurrentStep('password');
-        }}
-        onBack={() => setCurrentStep('email')}
       />
     );
   }
@@ -275,26 +261,6 @@ const LoginScreen = () => {
               </div>
             </form>
           </motion.div>
-        )}
-
-        {/* Écran de création de mot de passe */}
-        {currentStep === 'create-password' && (
-          <CreatePasswordScreen 
-            email={email}
-            onBack={handleBackToEmail}
-          />
-        )}
-
-        {/* Écran de première connexion avec mot de passe temporaire */}
-        {currentStep === 'first-login' && (
-          <FirstLoginScreen 
-            email={email}
-            onSuccess={() => {
-              // La connexion sera gérée automatiquement par le contexte
-              setCurrentStep('email');
-            }}
-            onBack={handleBackToEmail}
-          />
         )}
 
         {/* Écran de mot de passe oublié */}

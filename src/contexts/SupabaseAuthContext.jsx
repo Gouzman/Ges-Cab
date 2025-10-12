@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/customSupabaseClient';
 import { useToast } from '@/components/ui/use-toast';
-import { generateConfirmationCodeWithExpiration } from '@/lib/codeGenerator';
 
 const AuthContext = createContext(undefined);
 
@@ -110,180 +109,150 @@ export const AuthProvider = ({ children }) => {
     }
 
     try {
-      // Générer un code de confirmation à 6 caractères
-      const confirmationData = generateConfirmationCodeWithExpiration(15); // Expire dans 15 minutes
+      // D'abord, vérifier que l'utilisateur existe dans la table profiles
+      const { exists, userId } = await checkUserExists(email);
       
-      // Inscription via Supabase Auth avec code de confirmation personnalisé
+      if (!exists) {
+        throw new Error("Vous devez être enregistré par l'administrateur.");
+      }
+
+      // Hacher le mot de passe
+      const bcrypt = await import('bcryptjs');
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      // Mettre à jour le hash du mot de passe dans la base
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ password_hash: hashedPassword })
+        .eq('id', userId);
+
+      if (updateError) {
+        throw new Error("Erreur lors de la mise à jour du mot de passe");
+      }
+
+      // Créer l'utilisateur dans Supabase Auth pour la session
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          data: {
-            email: email,
-            confirmation_code: confirmationData.code,
-            code_expires_at: confirmationData.expiresAt
-          }
+          emailRedirectTo: undefined // Pas de confirmation d'email
         }
       });
 
-      if (error) {
-        if (error.message.includes('User already registered')) {
-          throw new Error("Un compte avec cet email existe déjà");
-        } else if (error.message.includes('Password should be at least')) {
-          throw new Error("Le mot de passe doit contenir au moins 6 caractères");
-        } else if (error.message.includes('Unable to validate email address')) {
-          throw new Error("Format d'email invalide");
-        } else {
-          throw new Error(error.message || "Erreur lors de la création du compte");
-        }
+      if (error && !error.message.includes('User already registered')) {
+        throw new Error(error.message || "Erreur lors de la création du compte");
       }
 
-      // Simuler l'envoi d'email de confirmation (en développement)
-      if (import.meta.env.VITE_APP_ENV === 'development') {
-        console.log(`📧 [DEV] Code de confirmation pour ${email}: ${confirmationData.code}`);
-        toast({
-          title: "📧 Code de confirmation généré",
-          description: `Code: ${confirmationData.code} (voir console en mode dev)`
-        });
-      }
-      
-      // TODO: Implémenter l'envoi d'email réel en production
-      // try {
-      //   await supabase.rpc('send_confirmation_email', {
-      //     p_email: email,
-      //     p_confirmation_code: confirmationData.code,
-      //     p_expires_at: confirmationData.expiresAt
-      //   });
-      // } catch (emailError) {
-      //   console.error('Erreur envoi email de confirmation:', emailError);
-      //   toast({
-      //     variant: "destructive", 
-      //     title: "⚠️ Attention",
-      //     description: "Compte créé mais l'email de confirmation n'a pas pu être envoyé."
-      //   });
-      // }
+      // Connecter automatiquement l'utilisateur
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
 
-      // Logger l'inscription
-      try {
-        await supabase.rpc('log_user_signup', {
-          p_user_email: email,
-          p_success: true
-        });
-      } catch (logError) {
-        console.error('Erreur lors du logging de l\'inscription:', logError);
+      if (signInError) {
+        throw new Error("Erreur lors de la connexion automatique");
       }
 
-      // Retourner les données avec le code pour référence
+      toast({
+        title: "🎉 Compte créé !",
+        description: "Votre compte a été créé et vous êtes maintenant connecté."
+      });
+
       return { 
-        data: {
-          ...data,
-          confirmationCode: confirmationData.code // Pour tests/debug uniquement
-        }, 
+        data,
         error: null 
       };
 
     } catch (error) {
-      // Logger l'échec
-      try {
-        await supabase.rpc('log_user_signup', {
-          p_user_email: email,
-          p_success: false
-        });
-      } catch (logError) {
-        console.error('Erreur lors du logging de l\'inscription échouée:', logError);
-      }
-
       throw error;
     }
-  }, [toast]);
+  }, [toast, checkUserExists]);
 
   const signIn = useCallback(async (email, password) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) {
-      let description = "Vérifiez votre e-mail et mot de passe.";
-      if (error.message.includes("Email not confirmed")) {
-        description = "Votre e-mail n'a pas été confirmé. Veuillez vérifier votre boîte de réception.";
-      } else if (error.message.includes("Failed to fetch")) {
-        description = "Impossible de se connecter au serveur. Vérifiez votre connexion internet.";
+    try {
+      // Vérifier d'abord si l'utilisateur existe avec un mot de passe
+      const { exists, hasPassword, userId } = await checkUserExists(email);
+      
+      if (!exists) {
+        throw new Error("Email ou mot de passe incorrect.");
       }
-      toast({
-        variant: "destructive",
-        title: "La connexion a échoué",
-        description: description,
+
+      if (!hasPassword) {
+        throw new Error("Vous devez d'abord créer votre mot de passe.");
+      }
+
+      // Récupérer le hash du mot de passe
+      const { data: userData, error: fetchError } = await supabase
+        .from('profiles')
+        .select('password_hash')
+        .eq('id', userId)
+        .single();
+
+      if (fetchError || !userData?.password_hash) {
+        throw new Error("Email ou mot de passe incorrect.");
+      }
+
+      // Vérifier le mot de passe
+      const bcrypt = await import('bcryptjs');
+      const isPasswordValid = await bcrypt.compare(password, userData.password_hash);
+
+      if (!isPasswordValid) {
+        throw new Error("Email ou mot de passe incorrect.");
+      }
+
+      // Connexion via Supabase Auth
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
-    } else {
+
+      if (error) {
+        // Si l'utilisateur n'existe pas dans Auth, le créer
+        if (error.message.includes('Invalid login credentials')) {
+          const { error: signUpError } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+              emailRedirectTo: undefined
+            }
+          });
+          
+          if (signUpError) {
+            throw new Error("Erreur lors de la création de la session");
+          }
+
+          // Réessayer la connexion
+          const { error: retryError } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
+
+          if (retryError) {
+            throw new Error("Email ou mot de passe incorrect.");
+          }
+        } else {
+          throw new Error("Email ou mot de passe incorrect.");
+        }
+      }
+
       toast({
         title: "👋 Bienvenue !",
         description: "Vous êtes maintenant connecté.",
       });
-    }
 
-    return { error };
-  }, [toast]);
-
-  const verifyConfirmationCode = useCallback(async (email, code) => {
-    try {
-      // Version simplifiée en développement - à remplacer par RPC en production
-      if (import.meta.env.VITE_APP_ENV === 'development') {
-        // Simuler la validation côté client en développement
-        const isValidFormat = /^[a-z0-9!@#$%&*]{6}$/.test(code);
-        
-        if (!isValidFormat) {
-          throw new Error('Format de code invalide');
-        }
-
-        // Simuler un délai réseau
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        toast({
-          title: "✅ Email confirmé",
-          description: "Votre email a été confirmé avec succès ! Vous pouvez maintenant vous connecter."
-        });
-        return { success: true };
-      }
-
-      // TODO: Version production avec RPC
-      // const { data, error } = await supabase.rpc('verify_confirmation_code', {
-      //   p_email: email,
-      //   p_code: code
-      // });
-
-      // if (error) throw error;
-
-      // const result = typeof data === 'string' ? JSON.parse(data) : data;
-
-      // if (result.success) {
-      //   toast({
-      //     title: "✅ Email confirmé",
-      //     description: "Votre email a été confirmé avec succès ! Vous pouvez maintenant vous connecter."
-      //   });
-      //   return { success: true };
-      // } else {
-      //   throw new Error(result.error || 'Code de confirmation invalide ou expiré');
-      // }
-
-      // Fallback pour production sans RPC
-      toast({
-        variant: "destructive",
-        title: "Service indisponible",
-        description: "La vérification d'email n'est pas encore disponible en production."
-      });
-      return { success: false, error: "Service indisponible" };
+      return { error: null };
 
     } catch (error) {
-      console.error('Erreur vérification code:', error);
       toast({
         variant: "destructive",
-        title: "Code invalide",
-        description: error.message || "Le code de confirmation est invalide ou a expiré."
+        title: "La connexion a échoué",
+        description: error.message,
       });
-      return { success: false, error: error.message };
+      return { error };
     }
-  }, [toast]);
+  }, [toast, checkUserExists]);
+
+
 
   const signOut = useCallback(async () => {
     const { error } = await supabase.auth.signOut();
@@ -301,28 +270,28 @@ export const AuthProvider = ({ children }) => {
 
   const checkUserExists = useCallback(async (email) => {
     try {
-      // Vérifier dans notre base de données profiles
-      const { data: profileData, error } = await supabase
+      // Vérifier dans notre base de données profiles (table users selon la nouvelle logique)
+      const { data: userData, error } = await supabase
         .from('profiles')
-        .select('id, first_login, temp_password_expires_at')
+        .select('id, email, password_hash')
         .eq('email', email.toLowerCase())
         .maybeSingle();
       
       if (error) {
         console.error('Erreur lors de la vérification de l\'utilisateur:', error);
-        return { exists: false, error, isFirstLogin: false };
+        return { exists: false, error, hasPassword: false };
       }
       
       return { 
-        exists: !!profileData, 
+        exists: !!userData, 
         error: null,
-        isFirstLogin: profileData?.first_login || false,
-        hasTempPassword: profileData?.temp_password_expires_at && new Date(profileData.temp_password_expires_at) > new Date()
+        hasPassword: !!userData?.password_hash,
+        userId: userData?.id
       };
       
     } catch (error) {
       console.error('Erreur lors de la vérification de l\'utilisateur:', error);
-      return { exists: false, error, isFirstLogin: false };
+      return { exists: false, error, hasPassword: false };
     }
   }, []);
 
@@ -435,8 +404,7 @@ export const AuthProvider = ({ children }) => {
     completeFirstLogin,
     resetPassword,
     createUserByAdmin,
-    verifyConfirmationCode,
-  }), [user, session, loading, signUp, signIn, signOut, createAccount, checkUserExists, validateTempPassword, completeFirstLogin, resetPassword, createUserByAdmin, verifyConfirmationCode]);
+  }), [user, session, loading, signUp, signIn, signOut, createAccount, checkUserExists, validateTempPassword, completeFirstLogin, resetPassword, createUserByAdmin]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
