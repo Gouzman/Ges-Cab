@@ -20,23 +20,37 @@ const ResetPasswordScreen = () => {
   // Vérifier la validité du token au chargement
   useEffect(() => {
     const checkToken = async () => {
-      // Récupérer les paramètres de l'URL
+      // Récupérer les paramètres de l'URL (query params et hash fragment)
       const urlParams = new URLSearchParams(window.location.search);
-      const token = urlParams.get('token') || window.location.hash.split('access_token=')[1]?.split('&')[0];
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
       
-      if (!token) {
+      // Vérifier les différents formats possibles de token
+      const token = urlParams.get('token') || 
+                   urlParams.get('access_token') ||
+                   hashParams.get('access_token') ||
+                   hashParams.get('token');
+      
+      const type = urlParams.get('type') || hashParams.get('type');
+      
+      if (!token || type !== 'recovery') {
         setTokenValid(false);
         return;
       }
 
       try {
         // Le token sera automatiquement utilisé par Supabase si présent dans l'URL
-        // On teste juste si on peut récupérer la session
+        // On teste si on peut récupérer la session de récupération
         const { supabase } = await import('@/lib/customSupabaseClient');
         const { data: { session }, error } = await supabase.auth.getSession();
         
-        if (error || !session) {
-          setTokenValid(false);
+        if (error || !session || !session.user) {
+          // Tenter de vérifier le token manuellement
+          const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+          if (userError || !user) {
+            setTokenValid(false);
+          } else {
+            setTokenValid(true);
+          }
         } else {
           setTokenValid(true);
         }
@@ -84,9 +98,9 @@ const ResetPasswordScreen = () => {
           description: "Votre mot de passe a été réinitialisé avec succès."
         });
         
-        // Redirection vers login après 3 secondes
+        // Redirection vers la page principale après 3 secondes
         setTimeout(() => {
-          window.location.href = '/login';
+          window.location.href = '/';
         }, 3000);
       } else {
         throw new Error(result.error);
@@ -134,8 +148,8 @@ const ResetPasswordScreen = () => {
             Le lien de réinitialisation est invalide ou a expiré. Veuillez demander un nouveau lien de réinitialisation.
           </p>
           <Button
-            onClick={() => window.location.href = '/login'}
-            className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700"
+            onClick={() => window.location.href = '/'}
+            className="w-full h-12 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700"
           >
             Retour à la connexion
           </Button>
@@ -180,10 +194,10 @@ const ResetPasswordScreen = () => {
         className="w-full max-w-md bg-slate-800/50 backdrop-blur-lg border border-slate-700/50 rounded-2xl p-8 shadow-2xl"
       >
         <div className="flex flex-col items-center mb-8">
-          <div className="p-3 bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg mb-4">
+          <div className="p-3 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg mb-4">
             <Lock className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-white">Nouveau mot de passe</h1>
+          <h1 className="text-3xl font-bold text-white">Ges-Cab</h1>
           <p className="text-slate-400 text-center">
             Choisissez un nouveau mot de passe sécurisé
           </p>
@@ -202,7 +216,7 @@ const ResetPasswordScreen = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full pl-12 pr-12 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-full pl-12 pr-12 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Choisissez un mot de passe sécurisé"
               />
               <button
@@ -231,7 +245,7 @@ const ResetPasswordScreen = () => {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
-                className="w-full pl-12 pr-12 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-full pl-12 pr-12 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Confirmez votre mot de passe"
               />
               <button
@@ -268,7 +282,7 @@ const ResetPasswordScreen = () => {
           <Button
             type="submit"
             disabled={loading || !passwordValidation.isMinimumValid || password !== confirmPassword}
-            className="w-full h-12 text-lg bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
+            className="w-full h-12 text-lg bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700"
           >
             {loading ? (
               <>

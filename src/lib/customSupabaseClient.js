@@ -32,9 +32,9 @@ const createRateLimitedProxy = (client) => {
                   ['select', 'insert', 'update', 'delete', 'upsert'].includes(queryProp)) {
                 
                 return function(...args) {
-                  // Vérification du rate limit avant l'exécution
+                  // Vérification du rate limit avant l'exécution (silencieux)
                   if (!rateLimiter.isAllowed(`${queryProp}_${table}`)) {
-                    return Promise.reject(new Error(`Rate limit atteint pour ${queryProp} sur ${table}`));
+                    return Promise.reject(new Error(`Trop de requêtes. Veuillez patienter.`));
                   }
                   
                   return originalMethod.apply(this, args);

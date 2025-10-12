@@ -15,7 +15,6 @@ import React, { useState, useEffect } from 'react';
     import DocumentManager from '@/components/DocumentManager';
     import Settings from '@/components/Settings';
     import BillingManager from '@/components/BillingManager';
-    import RateLimitDebugPanel from '@/components/RateLimitDebugPanel';
     import { useAuth } from '@/contexts/SupabaseAuthContext';
     import { Loader2 } from 'lucide-react';
 
@@ -89,7 +88,6 @@ function App() {
       <>
         <ResetPasswordScreen />
         <Toaster />
-        <RateLimitDebugPanel />
       </>
     );
   }
@@ -99,7 +97,6 @@ function App() {
       <>
         <ForgotPasswordScreen />
         <Toaster />
-        <RateLimitDebugPanel />
       </>
     );
   }
@@ -109,7 +106,6 @@ function App() {
       <>
         <LoginScreen />
         <Toaster />
-        <RateLimitDebugPanel />
       </>
     );
   }      return (
@@ -136,7 +132,6 @@ function App() {
           </div>
           
           <Toaster />
-          <RateLimitDebugPanel />
         </div>
       );
     }

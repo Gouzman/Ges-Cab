@@ -71,10 +71,10 @@ const ForgotPasswordScreen = ({ onBack, onSuccess }) => {
         className="w-full max-w-md bg-slate-800/50 backdrop-blur-lg border border-slate-700/50 rounded-2xl p-8 shadow-2xl"
       >
         <div className="flex flex-col items-center mb-8">
-          <div className="p-3 bg-gradient-to-r from-orange-500 to-red-600 rounded-lg mb-4">
+          <div className="p-3 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg mb-4">
             <Key className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-white">Mot de passe oublié</h1>
+          <h1 className="text-3xl font-bold text-white">Ges-Cab</h1>
           <p className="text-slate-400 text-center">
             {emailSent 
               ? 'Vérifiez votre boîte email' 
@@ -97,18 +97,18 @@ const ForgotPasswordScreen = ({ onBack, onSuccess }) => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="w-full pl-12 pr-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="w-full pl-12 pr-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="votre@email.com"
                 />
               </div>
             </div>
 
-            <div className="flex space-x-3">
+            <div className="flex gap-3">
               <Button
                 type="button"
                 onClick={onBack}
                 variant="outline"
-                className="flex-1 border-slate-600 text-slate-300 hover:bg-slate-700"
+                className="flex-1 h-12 border-slate-600 text-slate-300 hover:bg-slate-700"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Retour
@@ -116,7 +116,7 @@ const ForgotPasswordScreen = ({ onBack, onSuccess }) => {
               <Button
                 type="submit"
                 disabled={loading}
-                className="flex-1 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700"
+                className="flex-1 h-12 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700"
               >
                 {loading ? (
                   <>
@@ -157,17 +157,17 @@ const ForgotPasswordScreen = ({ onBack, onSuccess }) => {
               </ul>
             </div>
 
-            <div className="flex space-x-3">
+            <div className="flex gap-3">
               <Button
                 onClick={() => setEmailSent(false)}
                 variant="outline"
-                className="flex-1 border-slate-600 text-slate-300 hover:bg-slate-700"
+                className="flex-1 h-12 border-slate-600 text-slate-300 hover:bg-slate-700"
               >
                 Renvoyer
               </Button>
               <Button
                 onClick={onBack}
-                className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700"
+                className="flex-1 h-12 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700"
               >
                 Retour à la connexion
               </Button>
