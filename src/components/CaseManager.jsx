@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
     import PropTypes from 'prop-types';
     import { motion } from 'framer-motion';
-    import { Plus, Search, FileText, Scale, Clock, CheckCircle, Archive } from 'lucide-react';
+    import { Plus, Search, FileText, Scale, Clock, CheckCircle, Archive, Printer, X, Pencil, Trash2 } from 'lucide-react';
     import { Button } from '@/components/ui/button';
     import { toast } from '@/components/ui/use-toast';
     import CaseForm from '@/components/CaseForm';
     import CaseCard from '@/components/CaseCard';
+    import { Checkbox } from '@/components/ui/checkbox';
     import { supabase } from '@/lib/customSupabaseClient';
 
     const CaseManager = ({ currentUser }) => {
@@ -14,6 +15,8 @@ import React, { useState, useEffect } from 'react';
       const [editingCase, setEditingCase] = useState(null);
       const [searchTerm, setSearchTerm] = useState('');
       const [filterStatus, setFilterStatus] = useState('all');
+      const [showPrintDialog, setShowPrintDialog] = useState(false);
+      const [selectedCases, setSelectedCases] = useState([]);
 
 
 
@@ -94,6 +97,138 @@ import React, { useState, useEffect } from 'react';
         'ferme': cases.filter(c => c.status === 'ferme').length,
         'archive': cases.filter(c => c.status === 'archive').length
       };
+      
+      // Fonctions d'aide pour les styles et textes des statuts et priorités
+      const getStatusClass = (status) => {
+        switch (status) {
+          case 'ferme': return 'bg-green-100 text-green-800';
+          case 'en_cours': return 'bg-blue-100 text-blue-800';
+          case 'ouvert': return 'bg-yellow-100 text-yellow-800';
+          case 'archive': return 'bg-gray-100 text-gray-800';
+          default: return 'bg-slate-100 text-slate-800';
+        }
+      };
+      
+      const getStatusText = (status) => {
+        switch (status) {
+          case 'ferme': return 'Fermé';
+          case 'en_cours': return 'En cours';
+          case 'ouvert': return 'Ouvert';
+          case 'archive': return 'Archivé';
+          default: return status || 'Non défini';
+        }
+      };
+      
+      const getPriorityClass = (priority) => {
+        switch (priority) {
+          case 'haute': return 'bg-red-100 text-red-800 border border-red-300';
+          case 'moyenne': return 'bg-orange-100 text-orange-800';
+          case 'basse': return 'bg-blue-100 text-blue-800';
+          default: return 'bg-slate-100 text-slate-800';
+        }
+      };
+      
+      const getPriorityText = (priority) => {
+        switch (priority) {
+          case 'haute': return 'Haute';
+          case 'moyenne': return 'Moyenne';
+          case 'basse': return 'Basse';
+          default: return priority || 'Non définie';
+        }
+      };
+
+      // ✅ Ajout des fonctions pour l'impression des dossiers
+      const handleSelectCase = (caseId) => {
+        setSelectedCases(prev => {
+          if (prev.includes(caseId)) {
+            return prev.filter(id => id !== caseId);
+          } else {
+            return [...prev, caseId];
+          }
+        });
+      };
+
+      const handleSelectAllCases = (select) => {
+        if (select) {
+          setSelectedCases(filteredCases.map(c => c.id));
+        } else {
+          setSelectedCases([]);
+        }
+      };
+
+      const handlePrintSelected = () => {
+        if (selectedCases.length === 0) {
+          toast({
+            variant: "destructive",
+            title: "Aucun dossier sélectionné",
+            description: "Veuillez sélectionner au moins un dossier à imprimer."
+          });
+          return;
+        }
+
+        // Créer une fenêtre d'impression pour les dossiers sélectionnés
+        const printWindow = window.open('', '_blank');
+        
+        // Vérifier si la fenêtre a bien été ouverte
+        if (!printWindow) {
+          toast({ variant: "destructive", title: "Bloqueur de popup", description: "Veuillez autoriser les fenêtres pop-up pour imprimer." });
+          return;
+        }
+        
+        const casesToPrint = cases.filter(c => selectedCases.includes(c.id));
+
+        const htmlContent = `
+          <html>
+            <head>
+              <title>Liste des Dossiers - Ges-Cab</title>
+              <style>
+                body { font-family: Arial, sans-serif; padding: 20px; }
+                h1 { color: #333; text-align: center; }
+                table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                th { background-color: #f2f2f2; padding: 10px; text-align: left; border: 1px solid #ddd; }
+                td { padding: 10px; border: 1px solid #ddd; }
+                .header { display: flex; justify-content: space-between; align-items: center; }
+                .date { margin-top: 10px; text-align: right; font-style: italic; }
+              </style>
+            </head>
+            <body>
+              <div class="header">
+                <h1>Liste des Dossiers</h1>
+                <div class="date">Date: ${new Date().toLocaleDateString()}</div>
+              </div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Titre</th>
+                    <th>Statut</th>
+                    <th>Priorité</th>
+                    <th>Date de création</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${casesToPrint.map(c => `
+                    <tr>
+                      <td>${c.title || '-'}</td>
+                      <td>${c.status || '-'}</td>
+                      <td>${c.priority || '-'}</td>
+                      <td>${c.created_at ? new Date(c.created_at).toLocaleDateString() : '-'}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </body>
+          </html>
+        `;
+
+        printWindow.document.write(htmlContent);
+        printWindow.document.close();
+        printWindow.focus();
+        setTimeout(() => {
+          printWindow.print();
+          printWindow.close();
+          setShowPrintDialog(false);
+        }, 250);
+      };
 
       return (
         <div className="space-y-6">
@@ -102,16 +237,22 @@ import React, { useState, useEffect } from 'react';
               <h1 className="text-3xl font-bold text-white mb-2">Gestion des Dossiers</h1>
               <p className="text-slate-400">Suivez et gérez vos affaires juridiques</p>
             </div>
-            <Button
-              onClick={() => {
-                setEditingCase(null);
-                setShowForm(true);
-              }}
-              className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Nouveau Dossier
-            </Button>
+            <div className="flex gap-2">
+              {/* ✅ Ajout de l'option "Imprimer" */}
+              <Button variant="outline" onClick={() => setShowPrintDialog(true)}>
+                <Printer className="w-4 h-4 mr-2" /> Imprimer
+              </Button>
+              <Button
+                onClick={() => {
+                  setEditingCase(null);
+                  setShowForm(true);
+                }}
+                className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Nouveau Dossier
+              </Button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
@@ -173,19 +314,85 @@ import React, { useState, useEffect } from 'react';
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredCases.map((caseItem, index) => (
-              <CaseCard
-                key={caseItem.id}
-                case={caseItem}
-                index={index}
-                onEdit={(caseItem) => {
-                  setEditingCase(caseItem);
-                  setShowForm(true);
-                }}
-                onDelete={handleDeleteCase}
-              />
-            ))}
+          {/* ✅ Modification demandée : présentation des dossiers sous forme de liste */}
+          <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl overflow-hidden">
+            <table className="w-full text-left">
+              <thead className="bg-slate-700/50">
+                <tr>
+                  <th className="px-6 py-3 text-xs font-medium text-slate-300 uppercase tracking-wider">
+                    <div className="flex items-center">
+                      <Checkbox 
+                        id="select-all"
+                        className="mr-2"
+                        checked={selectedCases.length === filteredCases.length && filteredCases.length > 0}
+                        onCheckedChange={handleSelectAllCases}
+                      />
+                      Titre
+                    </div>
+                  </th>
+                  <th className="px-6 py-3 text-xs font-medium text-slate-300 uppercase tracking-wider">Statut</th>
+                  <th className="px-6 py-3 text-xs font-medium text-slate-300 uppercase tracking-wider">Priorité</th>
+                  <th className="px-6 py-3 text-xs font-medium text-slate-300 uppercase tracking-wider">Date de création</th>
+                  <th className="px-6 py-3 text-xs font-medium text-slate-300 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredCases.map((caseItem, index) => (
+                  <tr key={caseItem.id} className={index % 2 === 0 ? 'bg-slate-800/30' : 'bg-slate-800/60'}>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <Checkbox 
+                          id={`select-case-${caseItem.id}`}
+                          className="mr-3"
+                          checked={selectedCases.includes(caseItem.id)}
+                          onCheckedChange={(checked) => handleSelectCase(caseItem.id)}
+                        />
+                        <div>
+                          <div className="font-medium text-white">{caseItem.title}</div>
+                          {caseItem.description && (
+                            <div className="text-sm text-slate-400 truncate max-w-[300px]">{caseItem.description}</div>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClass(caseItem.status)}`}>
+                        {getStatusText(caseItem.status)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getPriorityClass(caseItem.priority)}`}>
+                        {getPriorityText(caseItem.priority)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-slate-300">
+                      {caseItem.created_at ? new Date(caseItem.created_at).toLocaleDateString() : '-'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <div className="flex space-x-3 justify-end">
+                        <button
+                          onClick={() => {
+                            setEditingCase(caseItem);
+                            setShowForm(true);
+                          }}
+                          className="text-indigo-400 hover:text-indigo-300 p-1 rounded-full hover:bg-slate-700/50"
+                          title="Modifier"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteCase(caseItem.id)}
+                          className="text-red-400 hover:text-red-300 p-1 rounded-full hover:bg-slate-700/50"
+                          title="Supprimer"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
 
           {filteredCases.length === 0 && (
@@ -215,6 +422,42 @@ import React, { useState, useEffect } from 'react';
               }}
               currentUser={currentUser}
             />
+          )}
+          
+          {/* Dialogue de confirmation d'impression */}
+          {showPrintDialog && (
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+              <div className="bg-slate-800 border border-slate-700 rounded-lg p-6 w-[500px] max-w-full">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-xl font-bold text-white">Imprimer les dossiers</h3>
+                  <Button variant="ghost" onClick={() => setShowPrintDialog(false)}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="mb-6">
+                  <p className="text-slate-300 mb-4">
+                    {selectedCases.length === 0 ? (
+                      "Aucun dossier sélectionné. Veuillez cocher les dossiers à imprimer."
+                    ) : (
+                      `Vous avez sélectionné ${selectedCases.length} dossier(s) à imprimer.`
+                    )}
+                  </p>
+                  <div className="flex gap-2 justify-end">
+                    <Button variant="outline" onClick={() => setShowPrintDialog(false)}>
+                      Annuler
+                    </Button>
+                    <Button 
+                      disabled={selectedCases.length === 0} 
+                      onClick={handlePrintSelected}
+                      className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700"
+                    >
+                      <Printer className="w-4 h-4 mr-2" />
+                      Imprimer la sélection
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
           )}
         </div>
       );

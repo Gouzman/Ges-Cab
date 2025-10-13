@@ -1,19 +1,20 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Search, Building, User, Upload, Printer } from 'lucide-react';
+import { Plus, Search, Building, User, Printer, X, Pencil, Trash2, Mail, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import ClientForm from '@/components/ClientForm';
-import ClientCard from '@/components/ClientCard';
-import Papa from 'papaparse';
 import { supabase } from '@/lib/customSupabaseClient';
+import { Checkbox } from '@/components/ui/checkbox';
+// Les importations DialogX ont été supprimées car non utilisées
 
 const ClientManager = () => {
   const [clients, setClients] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editingClient, setEditingClient] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const csvInputRef = useRef(null);
+  const [showPrintDialog, setShowPrintDialog] = useState(false);
+  const [selectedClients, setSelectedClients] = useState([]);
 
   // Fonction utilitaire pour générer le champ name
   const generateName = (clientData) => {
@@ -84,10 +85,106 @@ const ClientManager = () => {
     }
   };
 
-  const handlePrint = () => {
-    window.print();
+  // ✅ Fonction pour gérer la sélection des clients à imprimer
+  const handleSelectClient = (clientId) => {
+    setSelectedClients(prev => {
+      if (prev.includes(clientId)) {
+        return prev.filter(id => id !== clientId);
+      } else {
+        return [...prev, clientId];
+      }
+    });
   };
 
+  // ✅ Fonction pour sélectionner ou désélectionner tous les clients
+  const handleSelectAllClients = (select) => {
+    if (select) {
+      setSelectedClients(filteredClients.map(client => client.id));
+    } else {
+      setSelectedClients([]);
+    }
+  };
+
+  // ✅ Fonction pour imprimer les clients sélectionnés
+  const handlePrintSelected = () => {
+    if (selectedClients.length === 0) {
+      toast({ 
+        variant: "destructive", 
+        title: "Aucun client sélectionné", 
+        description: "Veuillez sélectionner au moins un client à imprimer." 
+      });
+      return;
+    }
+
+    // Créer une fenêtre d'impression pour les clients sélectionnés
+    const printWindow = window.open('', '_blank');
+    
+    // Vérifier si la fenêtre a bien été ouverte
+    if (!printWindow) {
+      toast({ variant: "destructive", title: "Bloqueur de popup", description: "Veuillez autoriser les fenêtres pop-up pour imprimer." });
+      return;
+    }
+    
+    const clientsToPrint = clients.filter(client => selectedClients.includes(client.id));
+    
+    const htmlContent = `
+      <html>
+        <head>
+          <title>Liste des Clients - Ges-Cab</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 20px; }
+            h1 { color: #333; text-align: center; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th { background-color: #f2f2f2; padding: 10px; text-align: left; border: 1px solid #ddd; }
+            td { padding: 10px; border: 1px solid #ddd; }
+            .header { display: flex; justify-content: space-between; align-items: center; }
+            .date { margin-top: 10px; text-align: right; font-style: italic; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>Liste des Clients</h1>
+            <div class="date">Date: ${new Date().toLocaleDateString()}</div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Nom</th>
+                <th>Email</th>
+                <th>Téléphone</th>
+                <th>Adresse</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${clientsToPrint.map(client => `
+                <tr>
+                  <td>${client.name}</td>
+                  <td>${client.email || '-'}</td>
+                  <td>${client.phone || '-'}</td>
+                  <td>${[client.address, client.city, client.country].filter(Boolean).join(', ') || '-'}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </body>
+      </html>
+    `;
+    
+    try {
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+        setShowPrintDialog(false);
+      }, 250);
+    } catch (error) {
+      toast({ variant: "destructive", title: "Erreur d'impression", description: "Une erreur est survenue lors de l'impression." });
+    }
+  };
+  
+  // Fonction d'importation CSV (gardée pour référence mais désactivée dans l'interface)
   const handleCsvImport = (event) => {
     const file = event.target.files[0];
     if (file) {
@@ -134,14 +231,31 @@ const ClientManager = () => {
     event.target.value = '';
   };
 
+  // Fonctions d'aide pour les types de clients
+  const getClientTypeClass = (type) => {
+    switch (type) {
+      case 'company': return 'bg-blue-100 text-blue-800';
+      case 'individual': return 'bg-green-100 text-green-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+  
+  const getClientTypeText = (type) => {
+    switch (type) {
+      case 'company': return 'Entreprise';
+      case 'individual': return 'Particulier';
+      default: return 'Non défini';
+    }
+  };
+
   const filteredClients = clients.filter(client => {
     const searchLower = searchTerm.toLowerCase();
     return (
-      (client.first_name && client.first_name.toLowerCase().includes(searchLower)) ||
-      (client.last_name && client.last_name.toLowerCase().includes(searchLower)) ||
-      (client.email && client.email.toLowerCase().includes(searchLower)) ||
-      (client.company && client.company.toLowerCase().includes(searchLower)) ||
-      (client.phone && client.phone.includes(searchTerm))
+      client.first_name?.toLowerCase().includes(searchLower) ||
+      client.last_name?.toLowerCase().includes(searchLower) ||
+      client.email?.toLowerCase().includes(searchLower) ||
+      client.company?.toLowerCase().includes(searchLower) ||
+      client.phone?.includes(searchTerm)
     );
   });
 
@@ -152,18 +266,9 @@ const ClientManager = () => {
           <h1 className="text-3xl font-bold text-white mb-2">Gestion des Clients</h1>
           <p className="text-slate-400">Gérez votre portefeuille client</p>
         </div>
+        {/* ✅ Suppression de l'option "Importer CSV" du menu */}
         <div className="flex gap-2">
-          <input
-            type="file"
-            ref={csvInputRef}
-            className="hidden"
-            accept=".csv"
-            onChange={handleCsvImport}
-          />
-          <Button variant="outline" onClick={() => csvInputRef.current.click()}>
-            <Upload className="w-4 h-4 mr-2" /> Importer CSV
-          </Button>
-          <Button variant="outline" onClick={handlePrint}>
+          <Button variant="outline" onClick={() => setShowPrintDialog(true)}>
             <Printer className="w-4 h-4 mr-2" /> Imprimer
           </Button>
           <Button
@@ -242,19 +347,108 @@ const ClientManager = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 print:grid-cols-2 print:gap-4">
-        {filteredClients.map((client, index) => (
-          <ClientCard
-            key={client.id}
-            client={client}
-            index={index}
-            onEdit={(client) => {
-              setEditingClient(client);
-              setShowForm(true);
-            }}
-            onDelete={handleDeleteClient}
-          />
-        ))}
+      {/* ✅ Modification demandée : présentation des clients sous forme de liste comme pour les factures */}
+      <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl overflow-hidden">
+        <table className="w-full text-left">
+          <thead className="bg-slate-700/50">
+            <tr>
+              <th className="px-6 py-3 text-xs font-medium text-slate-300 uppercase tracking-wider">
+                <div className="flex items-center">
+                  <Checkbox 
+                    id="select-all"
+                    className="mr-2"
+                    checked={selectedClients.length === filteredClients.length && filteredClients.length > 0}
+                    onCheckedChange={(checked) => handleSelectAllClients(checked)}
+                  />
+                  Client
+                </div>
+              </th>
+              <th className="px-6 py-3 text-xs font-medium text-slate-300 uppercase tracking-wider">Contact</th>
+              <th className="px-6 py-3 text-xs font-medium text-slate-300 uppercase tracking-wider">Adresse</th>
+              <th className="px-6 py-3 text-xs font-medium text-slate-300 uppercase tracking-wider">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredClients.map((client, index) => (
+              <tr key={client.id} className={index % 2 === 0 ? 'bg-slate-800/30' : 'bg-slate-800/60'}>
+                <td className="px-6 py-4">
+                  <div className="flex items-center">
+                    <Checkbox 
+                      id={`select-client-${client.id}`}
+                      className="mr-3"
+                      checked={selectedClients.includes(client.id)}
+                      onCheckedChange={(checked) => handleSelectClient(client.id)}
+                    />
+                    <div className={`h-10 w-10 rounded-full flex items-center justify-center mr-3 flex-shrink-0 ${client.type === 'company' ? 'bg-blue-400/10' : 'bg-green-400/10'}`}>
+                      {client.type === 'company' ? (
+                        <Building className="h-6 w-6 text-blue-400" />
+                      ) : (
+                        <User className="h-6 w-6 text-green-400" />
+                      )}
+                    </div>
+                    <div>
+                      <div className="font-medium text-white">
+                        {client.type === 'company' ? client.company : `${client.first_name} ${client.last_name}`}
+                      </div>
+                      {client.type === 'company' && client.first_name && client.last_name && (
+                        <div className="text-sm text-slate-400">Contact: {client.first_name} {client.last_name}</div>
+                      )}
+                      <div className="text-xs text-slate-400">
+                        <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-medium inline-block ${getClientTypeClass(client.type)}`}>
+                          {getClientTypeText(client.type)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="text-sm">
+                    {client.email && (
+                      <div className="flex items-center text-slate-300 mb-1">
+                        <Mail className="w-3 h-3 mr-2" />
+                        <span>{client.email}</span>
+                      </div>
+                    )}
+                    {client.phone && (
+                      <div className="flex items-center text-slate-300">
+                        <Phone className="w-3 h-3 mr-2" />
+                        <span>{client.phone}</span>
+                      </div>
+                    )}
+                  </div>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="text-sm text-slate-300">
+                    {[client.address, client.city, client.postal_code, client.country]
+                      .filter(Boolean)
+                      .join(', ') || '-'}
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <div className="flex space-x-3 justify-end">
+                    <button
+                      onClick={() => {
+                        setEditingClient(client);
+                        setShowForm(true);
+                      }}
+                      className="text-indigo-400 hover:text-indigo-300 p-1 rounded-full hover:bg-slate-700/50"
+                      title="Modifier"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteClient(client.id)}
+                      className="text-red-400 hover:text-red-300 p-1 rounded-full hover:bg-slate-700/50"
+                      title="Supprimer"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
       {filteredClients.length === 0 && (
@@ -283,6 +477,87 @@ const ClientManager = () => {
             setEditingClient(null);
           }}
         />
+      )}
+      
+      {/* ✅ Ajout du formulaire d'impression pour les clients */}
+      {showPrintDialog && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="bg-slate-800 border border-slate-700 rounded-xl p-6 w-full max-w-3xl max-h-[80vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-white">Imprimer des clients</h2>
+              <Button variant="ghost" size="icon" onClick={() => setShowPrintDialog(false)}>
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+            
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-slate-300">Sélectionnez les clients à imprimer :</p>
+              <div className="flex items-center gap-3">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => handleSelectAllClients(true)}
+                >
+                  Tout sélectionner
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => handleSelectAllClients(false)}
+                >
+                  Tout désélectionner
+                </Button>
+              </div>
+            </div>
+            
+            <div className="bg-slate-900/50 border border-slate-700 rounded-lg overflow-hidden">
+              <table className="w-full">
+                <thead className="bg-slate-700">
+                  <tr>
+                    <th className="w-16 p-3 text-left"></th>
+                    <th className="p-3 text-left text-white">Nom</th>
+                    <th className="p-3 text-left text-white">Email</th>
+                    <th className="p-3 text-left text-white">Téléphone</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredClients.map((client, index) => (
+                    <tr 
+                      key={client.id} 
+                      className={index % 2 === 0 ? "bg-slate-800/30" : "bg-slate-800/60"}
+                    >
+                      <td className="p-3">
+                        <Checkbox 
+                          checked={selectedClients.includes(client.id)} 
+                          onCheckedChange={() => handleSelectClient(client.id)}
+                        />
+                      </td>
+                      <td className="p-3 text-white">{client.name}</td>
+                      <td className="p-3 text-slate-300">{client.email}</td>
+                      <td className="p-3 text-slate-300">{client.phone}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            
+            <div className="flex justify-end mt-6 gap-3">
+              <Button 
+                variant="outline"
+                onClick={() => setShowPrintDialog(false)}
+              >
+                Annuler
+              </Button>
+              <Button 
+                onClick={handlePrintSelected}
+                className="bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700"
+              >
+                <Printer className="w-4 h-4 mr-2" />
+                Imprimer sélection ({selectedClients.length})
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -93,9 +93,14 @@ const TaskCard = ({ task, index, onEdit, onDelete, onStatusChange, currentUser }
     const { data } = supabase.storage.from('attachments').getPublicUrl(filePath);
     if (data.publicUrl) {
       const printWindow = window.open(data.publicUrl, '_blank');
-      printWindow.onload = () => {
-        printWindow.print();
-      };
+      // Vérifier si la fenêtre a bien été ouverte avant d'utiliser onload
+      if (printWindow) {
+        printWindow.onload = () => {
+          printWindow.print();
+        };
+      } else {
+        toast({ variant: "destructive", title: "Bloqueur de popup", description: "Veuillez autoriser les fenêtres pop-up pour imprimer." });
+      }
     } else {
       toast({ variant: "destructive", title: "Erreur", description: "Impossible d'imprimer le fichier." });
     }
