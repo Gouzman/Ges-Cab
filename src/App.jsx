@@ -17,9 +17,11 @@ import React, { useState, useEffect } from 'react';
     import BillingManager from '@/components/BillingManager';
     import { useAuth } from '@/contexts/SupabaseAuthContext';
     import { Loader2 } from 'lucide-react';
+    import CorsTestComponent from '@/components/CorsTestComponent';
 
 function App() {
   const [activeView, setActiveView] = useState('dashboard');
+  const [showCorsTest, setShowCorsTest] = useState(false);
   const { user, loading, signOut } = useAuth();
 
   // Détecter la route courante pour les écrans de réinitialisation
@@ -74,10 +76,31 @@ function App() {
     }
   };
 
+  // Afficher le loader pendant l'initialisation de l'authentification
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex items-center justify-center">
-        <Loader2 className="w-16 h-16 text-white animate-spin" />
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <p className="ml-4 text-lg font-medium">Chargement de l'application...</p>
+      </div>
+    );
+  }
+  
+  // Afficher l'outil de diagnostic CORS en mode développement avec le paramètre d'URL
+  const showDiagnostic = import.meta.env.DEV && urlParams.get('diagnostic') === 'cors';
+  if (showDiagnostic) {
+    return (
+      <div className="p-8 max-w-4xl mx-auto">
+        <h1 className="text-2xl font-bold mb-6">Diagnostic de Connexion Supabase</h1>
+        <CorsTestComponent />
+        <div className="mt-8">
+          <button 
+            onClick={() => window.location.href = '/'} 
+            className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+          >
+            Retour à l'application
+          </button>
+        </div>
       </div>
     );
   }
@@ -108,14 +131,17 @@ function App() {
         <Toaster />
       </>
     );
-  }      return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 print:bg-white">
-          <div className="flex">
-            <Sidebar 
-              activeView={activeView} 
-              setActiveView={setActiveView} 
-              currentUser={user}
-              onLogout={handleLogout}
+  }
+  
+  // Interface principale pour les utilisateurs connectés
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 print:bg-white">
+      <div className="flex">
+        <Sidebar 
+          activeView={activeView} 
+          setActiveView={setActiveView} 
+          currentUser={user}
+          onLogout={handleLogout}
             />
             
             <main className="flex-1 ml-64 print:ml-0">

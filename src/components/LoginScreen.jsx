@@ -266,6 +266,7 @@ const LoginScreen = () => {
         {/* Écran de mot de passe oublié */}
         {currentStep === 'forgot-password' && (
           <ForgotPasswordScreen 
+            embedded={true}
             onSuccess={() => {
               // Retour à l'écran de connexion après réinitialisation
               setCurrentStep('email');

@@ -52,3 +52,17 @@ setup-*.sh
 archive/
 temp/
 backup/
+
+# Fichiers de nettoyage temporaires
+*-temp.sh
+*-backup.*
+*.tar.gz
+test-*.sh
+diagnostic-*.sh
+check-*.sh
+monitor-*.sh
+
+# Archives locales
+archive/
+temp/
+backup/

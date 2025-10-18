@@ -208,6 +208,12 @@ logger.error = (msg, options) => {
 }
 
 export default defineConfig({
+  esbuild: {
+    target: "es2020",
+    supported: {
+      "async-await": true
+    }
+  },
 	customLogger: logger,
 	plugins: [
 		...(isDev ? [inlineEditPlugin(), editModeDevPlugin(), iframeRouteRestorationPlugin()] : []),
@@ -218,8 +224,26 @@ export default defineConfig({
 		cors: true,
 		headers: {
 			'Cross-Origin-Embedder-Policy': 'credentialless',
+			'Access-Control-Allow-Origin': '*',
+			'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
+			'Access-Control-Allow-Headers': 'Origin, X-Requested-With, Content-Type, Accept, Authorization, X-Client-Info, apikey',
 		},
 		allowedHosts: true,
+		proxy: {
+			// Proxy pour les requêtes Supabase API
+			'/api/supabase': {
+				target: 'https://api.ges-cab.com',
+				changeOrigin: true,
+				secure: true,
+				rewrite: (path) => path.replace(/^\/api\/supabase/, ''),
+				configure: (proxy, options) => {
+					proxy.on('proxyReq', (proxyReq, req, res) => {
+						// Ajouter les en-têtes nécessaires
+						proxyReq.setHeader('Origin', 'https://api.ges-cab.com');
+					});
+				}
+			}
+		}
 	},
 	resolve: {
 		extensions: ['.jsx', '.js', '.tsx', '.ts', '.json', ],

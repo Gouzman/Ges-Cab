@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { motion } from 'framer-motion';
-import { Search, Calendar, ListTodo, FilePlus } from 'lucide-react';
+import { Search, Calendar, ListTodo, FilePlus, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import TaskForm from '@/components/TaskForm';
@@ -32,6 +32,43 @@ const TaskManager = ({ currentUser }) => {
 
   const isGerantOrAssocie = currentUser && (currentUser.function === 'Gerant' || currentUser.function === 'Associe Emerite');
   const isAdmin = isGerantOrAssocie || (currentUser.role && currentUser.role.toLowerCase() === 'admin');
+  
+  // Fonctions d'aide pour les styles et textes des statuts et priorités
+  const getStatusClass = (status) => {
+    switch (status) {
+      case 'completed': return 'bg-green-100 text-green-800';
+      case 'in-progress': return 'bg-blue-100 text-blue-800';
+      case 'seen': return 'bg-yellow-100 text-yellow-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+  
+  const getStatusText = (status) => {
+    switch (status) {
+      case 'completed': return 'Terminée';
+      case 'in-progress': return 'En cours';
+      case 'seen': return 'Vue';
+      default: return 'En attente';
+    }
+  };
+  
+  const getPriorityClass = (priority) => {
+    switch (priority) {
+      case 'urgent': return 'bg-red-100 text-red-800 border border-red-300';
+      case 'high': return 'bg-orange-100 text-orange-800';
+      case 'medium': return 'bg-yellow-100 text-yellow-800';
+      default: return 'bg-blue-100 text-blue-800';
+    }
+  };
+  
+  const getPriorityText = (priority) => {
+    switch (priority) {
+      case 'urgent': return 'Urgente';
+      case 'high': return 'Élevée';
+      case 'medium': return 'Moyenne';
+      default: return 'Faible';
+    }
+  };
 
   useEffect(() => {
     fetchTasks();
@@ -326,18 +363,65 @@ const TaskManager = ({ currentUser }) => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredTasks.map((task, index) => (
-              <TaskCard
-                key={task.id}
-                task={task}
-                index={index}
-                onEdit={handleEditRequest}
-                onDelete={isAdmin ? handleDeleteTask : null}
-                onStatusChange={handleStatusChange}
-                currentUser={currentUser}
-              />
-            ))}
+          {/* ✅ Modification demandée : présentation des tâches sous forme de liste */}
+          <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl overflow-hidden">
+            <table className="w-full text-left">
+              <thead className="bg-slate-700/50">
+                <tr>
+                  <th className="px-6 py-3 text-xs font-medium text-slate-300 uppercase tracking-wider">Titre</th>
+                  <th className="px-6 py-3 text-xs font-medium text-slate-300 uppercase tracking-wider">Statut</th>
+                  <th className="px-6 py-3 text-xs font-medium text-slate-300 uppercase tracking-wider">Priorité</th>
+                  <th className="px-6 py-3 text-xs font-medium text-slate-300 uppercase tracking-wider">Responsable</th>
+                  <th className="px-6 py-3 text-xs font-medium text-slate-300 uppercase tracking-wider">Date</th>
+                  <th className="px-6 py-3 text-xs font-medium text-slate-300 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredTasks.map((task, index) => (
+                  <tr key={task.id} className={index % 2 === 0 ? 'bg-slate-800/30' : 'bg-slate-800/60'}>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="font-medium text-white">{task.title}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClass(task.status)}`}>
+                        {getStatusText(task.status)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getPriorityClass(task.priority)}`}>
+                        {getPriorityText(task.priority)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-slate-300">
+                      {task.assigned_to_name || 'Non assignée'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-slate-300">
+                      {task.deadline ? new Date(task.deadline).toLocaleDateString() : 'Aucune'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <div className="flex space-x-3 justify-end">
+                        <button
+                          onClick={() => handleEditRequest(task)}
+                          className="text-indigo-400 hover:text-indigo-300 p-1 rounded-full hover:bg-slate-700/50"
+                          title="Modifier"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        {isAdmin && (
+                          <button
+                            onClick={() => handleDeleteTask(task.id)}
+                            className="text-red-400 hover:text-red-300 p-1 rounded-full hover:bg-slate-700/50"
+                            title="Supprimer"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
 
           {filteredTasks.length === 0 && (

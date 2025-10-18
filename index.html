@@ -6,6 +6,46 @@
 		<meta name="generator" content="Hostinger Horizons" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>Hostinger Horizons</title>
+		<!-- Script de détection précoce des problèmes CORS -->
+		<script>
+			// En mode développement uniquement
+			if (window.location.hostname === 'localhost') {
+				// Intercepter les erreurs de console pour détecter les problèmes CORS
+				const originalConsoleError = console.error;
+				console.error = function(...args) {
+					originalConsoleError.apply(console, args);
+					
+					// Vérifier si l'erreur est liée à CORS
+					const errorString = args.join(' ');
+					if (errorString.includes('CORS') || errorString.includes('cross-origin')) {
+						console.warn('⚠️ Problème CORS détecté, activation du mode de contournement.');
+						
+						// Stocker l'état pour que l'application puisse réagir
+						localStorage.setItem('cors_issues_detected', 'true');
+						
+						// Si l'erreur mentionne un domaine spécifique, le marquer
+						try {
+							const urlMatch = errorString.match(/from origin '([^']+)'/);
+							const domainMatch = errorString.match(/at '([^']+)'/);
+							
+							if (urlMatch || domainMatch) {
+								const domain = (urlMatch && urlMatch[1]) || (domainMatch && domainMatch[1]);
+								const corsFailedDomains = JSON.parse(localStorage.getItem('cors_failed_domains') || '[]');
+								
+								if (domain && !corsFailedDomains.includes(domain)) {
+									corsFailedDomains.push(domain);
+									localStorage.setItem('cors_failed_domains', JSON.stringify(corsFailedDomains));
+								}
+							}
+						} catch (e) {
+							// Gestion silencieuse des erreurs de parsing JSON ou localStorage
+							// En mode développement, on peut ignorer ces erreurs non-critiques
+							console.debug('Erreur lors du traitement CORS (non-critique):', e.message);
+						}
+					}
+				};
+			}
+		</script>
 	</head>
 	<body>
 		<div id="root"></div>

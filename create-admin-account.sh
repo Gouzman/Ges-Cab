@@ -4,11 +4,15 @@ echo "👤 Création d'un compte administrateur pour Ges-Cab"
 echo "=================================================="
 echo ""
 
-# Demander les informations du compte admin
-read -p "📧 Adresse email de l'administrateur : " ADMIN_EMAIL
-read -s -p "🔒 Mot de passe de l'administrateur : " ADMIN_PASSWORD
+# Information du compte admin pré-configurées
+ADMIN_EMAIL="elie.gouzou@gmail.com"
+ADMIN_PASSWORD="Gouzman*1990"
+ADMIN_NAME="Elie Gouzou"
+
+# Afficher les informations du compte
+echo "📧 Email administrateur: $ADMIN_EMAIL"
+echo "👤 Nom administrateur: $ADMIN_NAME"
 echo ""
-read -p "👤 Nom de l'administrateur : " ADMIN_NAME
 
 echo ""
 echo "🔧 Création du compte administrateur..."
