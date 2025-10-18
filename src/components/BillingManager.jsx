@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import { motion } from 'framer-motion';
-import { Plus, Search, Receipt, Printer, Edit, Trash2, Filter, X, CheckCircle } from 'lucide-react';
+import { Plus, Search, Receipt, Printer, Edit, Trash2, Filter, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import InvoiceForm from '@/components/InvoiceForm';
@@ -56,7 +56,6 @@ const BillingManager = () => {
   const [showForm, setShowForm] = useState(false);
   const [currentInvoice, setCurrentInvoice] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [editingInvoice, setEditingInvoice] = useState(null);
   const [deleteDialog, setDeleteDialog] = useState({ isOpen: false, invoice: null });
   const [previewInvoice, setPreviewInvoice] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
@@ -64,7 +63,6 @@ const BillingManager = () => {
   // ✅ Injecter les styles d'impression dans le DOM
   useEffect(() => {
     const style = document.createElement('style');
-    style.type = 'text/css';
     style.appendChild(document.createTextNode(printStyles));
     document.head.appendChild(style);
     
@@ -417,7 +415,7 @@ const BillingManager = () => {
             <InvoiceForm 
               invoice={editingInvoice} 
               onSubmit={editingInvoice ? handleEditInvoice : handleCreateInvoice}
-              onPrint={() => editingInvoice && handleShowInvoicePreview(editingInvoice)}
+              onPrint={() => editingInvoice && handlePrintInvoice(editingInvoice)}
             />
           </motion.div>
         </div>
