@@ -339,15 +339,18 @@ export const AuthProvider = ({ children }) => {
         throw new Error(error.message || "Erreur lors de l'envoi de l'email de réinitialisation");
       }
 
-      // En développement, informer l'utilisateur sur Mailpit
+      // Vérifier si SMTP est configuré (vrais emails)
       const isDevelopment = import.meta.env.VITE_ENVIRONMENT === 'development' || 
                            import.meta.env.DEV || 
                            window.location.hostname === 'localhost';
+      
+      const hasRealSMTP = import.meta.env.SMTP_EMAIL && import.meta.env.SMTP_PASSWORD;
 
       return { 
         success: true, 
         isDevelopment,
-        mailpitUrl: isDevelopment ? 'http://127.0.0.1:54324' : null
+        hasRealSMTP,
+        mailpitUrl: (isDevelopment && !hasRealSMTP) ? 'http://127.0.0.1:54324' : null
       };
     } catch (error) {
       console.error('Erreur demande de réinitialisation:', error);

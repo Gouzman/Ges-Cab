@@ -40,13 +40,14 @@ const ForgotPasswordScreen = ({ onBack, onSuccess, embedded = false }) => {
         setEmailSent(true);
         setDevelopmentInfo(result.isDevelopment ? { mailpitUrl: result.mailpitUrl } : null);
         
-        // Message différent selon l'environnement
+        // Message différent selon la configuration
         if (result.isDevelopment && result.mailpitUrl) {
+          // Mode développement avec Mailpit (SMTP non configuré)
           toast({
-            title: "📧 Email envoyé (Mode Développement)",
+            title: "📧 Email envoyé à Mailpit (Test Local)",
             description: (
               <div className="space-y-2">
-                <p>L'email a été envoyé à Mailpit (serveur de test local).</p>
+                <p>L'email a été capturé par Mailpit (serveur de test local).</p>
                 <div className="flex items-center gap-2">
                   <button 
                     onClick={() => window.open(result.mailpitUrl, '_blank')}
@@ -57,9 +58,22 @@ const ForgotPasswordScreen = ({ onBack, onSuccess, embedded = false }) => {
                 </div>
               </div>
             ),
-            duration: 10000 // Afficher plus longtemps
+            duration: 10000
+          });
+        } else if (result.isDevelopment && result.hasRealSMTP) {
+          // Mode développement avec SMTP configuré (vrais emails)
+          toast({
+            title: "📧 Email envoyé à votre adresse Gmail",
+            description: (
+              <div className="space-y-2">
+                <p>Un email de réinitialisation a été envoyé à <strong>{email}</strong></p>
+                <p className="text-sm text-green-300">✅ SMTP configuré - Email réel envoyé via Gmail</p>
+              </div>
+            ),
+            duration: 8000
           });
         } else {
+          // Mode production
           toast({
             title: "📧 Lien de réinitialisation envoyé",
             description: "Un lien de réinitialisation a été envoyé à votre adresse email."
