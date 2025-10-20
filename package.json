@@ -18,6 +18,11 @@
     "db:start": "./scripts/supabase-manager.sh start",
     "db:stop": "./scripts/supabase-manager.sh stop",
     "db:reset": "./scripts/supabase-manager.sh reset",
+    "env": "./switch-env.sh",
+    "env:local": "./switch-env.sh local",
+    "env:cloud": "./switch-env.sh cloud", 
+    "env:vps": "./switch-env.sh vps",
+    "env:test": "./switch-env.sh test",
     "db:migrate": "./scripts/supabase-manager.sh migrate",
     "db:seed": "./scripts/supabase-manager.sh seed",
     "db:studio": "./scripts/supabase-manager.sh studio"
