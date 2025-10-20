@@ -14,6 +14,7 @@ const ForgotPasswordScreen = ({ onBack, onSuccess, embedded = false }) => {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
+  const [developmentInfo, setDevelopmentInfo] = useState(null);
 
   const handleEmailSubmit = async (e) => {
     e.preventDefault();
@@ -37,10 +38,33 @@ const ForgotPasswordScreen = ({ onBack, onSuccess, embedded = false }) => {
 
       if (result.success) {
         setEmailSent(true);
-        toast({
-          title: "📧 Lien de réinitialisation envoyé",
-          description: "Un lien de réinitialisation a été envoyé à votre adresse email."
-        });
+        setDevelopmentInfo(result.isDevelopment ? { mailpitUrl: result.mailpitUrl } : null);
+        
+        // Message différent selon l'environnement
+        if (result.isDevelopment && result.mailpitUrl) {
+          toast({
+            title: "📧 Email envoyé (Mode Développement)",
+            description: (
+              <div className="space-y-2">
+                <p>L'email a été envoyé à Mailpit (serveur de test local).</p>
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => window.open(result.mailpitUrl, '_blank')}
+                    className="text-blue-400 underline hover:text-blue-300"
+                  >
+                    🔗 Ouvrir Mailpit ({result.mailpitUrl})
+                  </button>
+                </div>
+              </div>
+            ),
+            duration: 10000 // Afficher plus longtemps
+          });
+        } else {
+          toast({
+            title: "📧 Lien de réinitialisation envoyé",
+            description: "Un lien de réinitialisation a été envoyé à votre adresse email."
+          });
+        }
       } else {
         throw new Error(result.error);
       }

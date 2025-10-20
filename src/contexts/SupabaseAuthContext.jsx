@@ -335,10 +335,20 @@ export const AuthProvider = ({ children }) => {
       });
 
       if (error) {
+        console.error('Erreur Supabase resetPasswordForEmail:', error);
         throw new Error(error.message || "Erreur lors de l'envoi de l'email de réinitialisation");
       }
 
-      return { success: true };
+      // En développement, informer l'utilisateur sur Mailpit
+      const isDevelopment = import.meta.env.VITE_ENVIRONMENT === 'development' || 
+                           import.meta.env.DEV || 
+                           window.location.hostname === 'localhost';
+
+      return { 
+        success: true, 
+        isDevelopment,
+        mailpitUrl: isDevelopment ? 'http://127.0.0.1:54324' : null
+      };
     } catch (error) {
       console.error('Erreur demande de réinitialisation:', error);
       return { success: false, error: error.message };
