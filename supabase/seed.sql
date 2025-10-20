@@ -22,13 +22,13 @@ INSERT INTO cases (id, title, description, status, type, client_id) VALUES
 
 -- Insertion de tâches de test
 INSERT INTO tasks (id, title, description, priority, status, deadline, case_id) VALUES
-    ('t1111111-1111-1111-1111-111111111111', 'Analyse du contrat de fourniture', 'Examiner les clauses du contrat initial pour identifier les manquements du fournisseur', 'high', 'completed', NOW() + INTERVAL '5 days', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'),
-    ('t2222222-2222-2222-2222-222222222222', 'Rédaction de la mise en demeure', 'Préparer la mise en demeure à envoyer au fournisseur défaillant', 'high', 'in-progress', NOW() + INTERVAL '3 days', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'),
-    ('t3333333-3333-3333-3333-333333333333', 'Préparation convention divorce', 'Rédiger la convention de divorce en tenant compte des accords des époux', 'medium', 'pending', NOW() + INTERVAL '10 days', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'),
-    ('t4444444-4444-4444-4444-444444444444', 'Rendez-vous notaire', 'Organiser le rendez-vous chez le notaire pour la signature finale', 'medium', 'pending', NOW() + INTERVAL '15 days', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'),
-    ('t5555555-5555-5555-5555-555555555555', 'Expertise médicale', 'Organiser l expertise médicale pour évaluer les séquelles de l accident', 'urgent', 'seen', NOW() + INTERVAL '7 days', 'dddddddd-dddd-dddd-dddd-dddddddddddd'),
-    ('t6666666-6666-6666-6666-666666666666', 'Négociation assurance', 'Négocier avec l assurance pour obtenir une indemnisation juste', 'high', 'pending', NOW() + INTERVAL '20 days', 'dddddddd-dddd-dddd-dddd-dddddddddddd'),
-    ('t7777777-7777-7777-7777-777777777777', 'Révision clauses contrat', 'Analyser et proposer des modifications aux clauses de distribution', 'medium', 'pending', NOW() + INTERVAL '12 days', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee');
+    ('a1111111-1111-1111-1111-111111111111', 'Analyse du contrat de fourniture', 'Examiner les clauses du contrat initial pour identifier les manquements du fournisseur', 'high', 'completed', NOW() + INTERVAL '5 days', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'),
+    ('a2222222-2222-2222-2222-222222222222', 'Rédaction de la mise en demeure', 'Préparer la mise en demeure à envoyer au fournisseur défaillant', 'high', 'in-progress', NOW() + INTERVAL '3 days', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'),
+    ('a3333333-3333-3333-3333-333333333333', 'Préparation convention divorce', 'Rédiger la convention de divorce en tenant compte des accords des époux', 'medium', 'pending', NOW() + INTERVAL '10 days', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'),
+    ('a4444444-4444-4444-4444-444444444444', 'Rendez-vous notaire', 'Organiser le rendez-vous chez le notaire pour la signature finale', 'medium', 'pending', NOW() + INTERVAL '15 days', 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'),
+    ('a5555555-5555-5555-5555-555555555555', 'Expertise médicale', 'Organiser l expertise médicale pour évaluer les séquelles de l accident', 'urgent', 'seen', NOW() + INTERVAL '7 days', 'dddddddd-dddd-dddd-dddd-dddddddddddd'),
+    ('a6666666-6666-6666-6666-666666666666', 'Négociation assurance', 'Négocier avec l assurance pour obtenir une indemnisation juste', 'high', 'pending', NOW() + INTERVAL '20 days', 'dddddddd-dddd-dddd-dddd-dddddddddddd'),
+    ('a7777777-7777-7777-7777-777777777777', 'Révision clauses contrat', 'Analyser et proposer des modifications aux clauses de distribution', 'medium', 'pending', NOW() + INTERVAL '12 days', 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee');
 
 -- Insertion d'événements de test
 INSERT INTO events (id, title, description, start_date, end_date) VALUES

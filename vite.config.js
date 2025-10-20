@@ -229,21 +229,22 @@ export default defineConfig({
 			'Access-Control-Allow-Headers': 'Origin, X-Requested-With, Content-Type, Accept, Authorization, X-Client-Info, apikey',
 		},
 		allowedHosts: true,
-		proxy: {
-			// Proxy pour les requêtes Supabase API
-			'/api/supabase': {
-				target: 'https://api.ges-cab.com',
-				changeOrigin: true,
-				secure: true,
-				rewrite: (path) => path.replace(/^\/api\/supabase/, ''),
-				configure: (proxy, options) => {
-					proxy.on('proxyReq', (proxyReq, req, res) => {
-						// Ajouter les en-têtes nécessaires
-						proxyReq.setHeader('Origin', 'https://api.ges-cab.com');
-					});
-				}
-			}
-		}
+		// Proxy désactivé en développement - utilise les variables d'environnement directement
+		// proxy: {
+		// 	// Proxy pour les requêtes Supabase API
+		// 	'/api/supabase': {
+		// 		target: 'https://api.ges-cab.com',
+		// 		changeOrigin: true,
+		// 		secure: true,
+		// 		rewrite: (path) => path.replace(/^\/api\/supabase/, ''),
+		// 		configure: (proxy, options) => {
+		// 			proxy.on('proxyReq', (proxyReq, req, res) => {
+		// 				// Ajouter les en-têtes nécessaires
+		// 				proxyReq.setHeader('Origin', 'https://api.ges-cab.com');
+		// 			});
+		// 		}
+		// 	}
+		// }
 	},
 	resolve: {
 		extensions: ['.jsx', '.js', '.tsx', '.ts', '.json', ],
