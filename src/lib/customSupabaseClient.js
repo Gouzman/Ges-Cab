@@ -4,10 +4,10 @@ import corsProxyHelper from './corsProxy.js';
 
 // Configuration sécurisée via variables d'environnement
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 // Validation des variables d'environnement
-if (!supabaseUrl || !supabaseKey) {
+if (!supabaseUrl || !supabaseAnonKey) {
   console.error('Configuration Supabase manquante. Utilisation des valeurs par défaut.');
   console.warn('Cette erreur peut apparaître pendant la construction. En production, les variables devraient être définies.');
 }
@@ -32,10 +32,11 @@ const options = {
   }
 };
 
-// Utiliser l'URL locale avec proxy en développement, URL complète en production
-const finalSupabaseUrl = import.meta.env.DEV 
-  ? `${window.location.origin}/api/supabase`
-  : (supabaseUrl || 'https://api.ges-cab.com');
+// Utiliser directement les variables d'environnement (plus de proxy)
+const finalSupabaseUrl = supabaseUrl || 'http://127.0.0.1:54321';
+
+console.log('🔗 Supabase URL utilisée:', finalSupabaseUrl);
+console.log('🔑 Environment:', import.meta.env.VITE_ENVIRONMENT || 'development');
 
 // Configurer le client avec des options spécifiques selon l'environnement
 const clientOptions = { ...options };
@@ -46,7 +47,8 @@ if (import.meta.env.DEV) {
     ...clientOptions.global,
     headers: {
       ...clientOptions.global.headers,
-      'X-Dev-Mode': 'true'
+      'X-Dev-Mode': 'true',
+      'X-Environment': import.meta.env.VITE_ENVIRONMENT || 'development'
     }
   };
 }
@@ -54,7 +56,7 @@ if (import.meta.env.DEV) {
 // Client Supabase avec rate limiting intégré
 const supabaseClient = createClient(
   finalSupabaseUrl,
-  supabaseKey || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdlc2NhYiIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNzYwNDI5NzYwfQ.ooZf1q1eWVOj-3xrFrvR3OazM9RV7i0npZyBxJKp6V4',
+  supabaseAnonKey, // Utilisation directe de la clé depuis les variables d'environnement
   clientOptions
 );
 
