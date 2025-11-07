@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { useAuth } from '../contexts/SimpleAuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+
 import { ArrowLeft, Mail, RefreshCw, Key } from 'lucide-react';
 
 const ForgotPasswordScreen = ({ onBack, onSuccess, embedded = false }) => {
@@ -14,7 +12,7 @@ const ForgotPasswordScreen = ({ onBack, onSuccess, embedded = false }) => {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
-  const [developmentInfo, setDevelopmentInfo] = useState(null);
+
 
   const handleEmailSubmit = async (e) => {
     e.preventDefault();

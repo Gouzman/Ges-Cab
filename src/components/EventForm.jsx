@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { X, Calendar, Users, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
-import { supabase } from '@/lib/customSupabaseClient';
+// TODO: Replace with backend API calls
 
 const EventForm = ({ currentUser, onCancel, onEventCreated }) => {
   const [formData, setFormData] = useState({

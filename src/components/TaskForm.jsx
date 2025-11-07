@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { X, Calendar, FileText, User, Paperclip, RefreshCw, Download, ScanLine } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
-import { supabase } from '@/lib/customSupabaseClient';
+import supabase from '@/lib/customSupabaseClient';
 import { taskCategoriesData } from '@/lib/taskCategories';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";

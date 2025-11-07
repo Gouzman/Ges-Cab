@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
+import PropTypes from 'prop-types';
 import { motion } from 'framer-motion';
 import { Mail, Shield, RefreshCw, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { useAuth } from '../contexts/SimpleAuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import { validateConfirmationCode } from '@/lib/codeGenerator';
 
@@ -65,6 +66,7 @@ const EmailConfirmationScreen = ({ email, onSuccess, onBack }) => {
         description: "Un nouveau code de confirmation a été envoyé à votre email."
       });
     } catch (error) {
+      console.error('Erreur lors du renvoi du code:', error);
       toast({
         variant: "destructive",
         title: "Erreur",
@@ -190,6 +192,12 @@ const EmailConfirmationScreen = ({ email, onSuccess, onBack }) => {
       </Card>
     </motion.div>
   );
+};
+
+EmailConfirmationScreen.propTypes = {
+  email: PropTypes.string.isRequired,
+  onSuccess: PropTypes.func.isRequired,
+  onBack: PropTypes.func.isRequired,
 };
 
 export default EmailConfirmationScreen;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { useAuth } from '../contexts/SimpleAuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { validatePassword } from '@/lib/authValidation';
@@ -21,8 +21,8 @@ const ResetPasswordScreen = () => {
   useEffect(() => {
     const checkToken = async () => {
       // Récupérer les paramètres de l'URL (query params et hash fragment)
-      const urlParams = new URLSearchParams(window.location.search);
-      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const urlParams = new URLSearchParams(globalThis.location.search);
+      const hashParams = new URLSearchParams(globalThis.location.hash.substring(1));
       
       // Vérifier les différents formats possibles de token
       const token = urlParams.get('token') || 
@@ -40,10 +40,10 @@ const ResetPasswordScreen = () => {
       try {
         // Le token sera automatiquement utilisé par Supabase si présent dans l'URL
         // On teste si on peut récupérer la session de récupération
-        const { supabase } = await import('@/lib/customSupabaseClient');
+        // Note: Reset password functionality needs to be implemented with new backend API
         const { data: { session }, error } = await supabase.auth.getSession();
         
-        if (error || !session || !session.user) {
+        if (error || !session?.user) {
           // Tenter de vérifier le token manuellement
           const { data: { user }, error: userError } = await supabase.auth.getUser(token);
           if (userError || !user) {
@@ -100,7 +100,7 @@ const ResetPasswordScreen = () => {
         
         // Redirection vers la page principale après 3 secondes
         setTimeout(() => {
-          window.location.href = '/';
+          globalThis.location.href = '/';
         }, 3000);
       } else {
         throw new Error(result.error);
@@ -148,7 +148,7 @@ const ResetPasswordScreen = () => {
             Le lien de réinitialisation est invalide ou a expiré. Veuillez demander un nouveau lien de réinitialisation.
           </p>
           <Button
-            onClick={() => window.location.href = '/'}
+            onClick={() => globalThis.location.href = '/'}
             className="w-full h-12 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700"
           >
             Retour à la connexion

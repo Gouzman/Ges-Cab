@@ -1,189 +1,290 @@
 import { createClient } from '@supabase/supabase-js';
 import { rateLimiter } from './rateLimiter.js';
-import corsProxyHelper from './corsProxy.js';
 
-// Configuration sécurisée via variables d'environnement
+// Configuration selon l'environnement
+const isProduction = import.meta.env.VITE_ENVIRONMENT === 'production';
+const isDevelopment = import.meta.env.VITE_ENVIRONMENT === 'development' || import.meta.env.DEV;
+
+console.log('🔧 Environment:', import.meta.env.VITE_ENVIRONMENT || 'development');
+console.log('🔧 Is Production:', isProduction);
+console.log('🔧 Is Development:', isDevelopment);
+
+// Configuration pour la production (Supabase Cloud)
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Validation des variables d'environnement
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Configuration Supabase manquante. Utilisation des valeurs par défaut.');
-  console.warn('Cette erreur peut apparaître pendant la construction. En production, les variables devraient être définies.');
-}
+// Configuration pour le développement (API locale)
+// Configuration pour le développement (API locale)
+const localApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3003';
 
-// Options de configuration améliorées pour le client Supabase
-const options = {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true,
-    flowType: 'pkce',
-    debug: import.meta.env.DEV // Active le debug seulement en développement
-  },
-  global: {
-    headers: {
-      'X-Client-Info': `ges-cab/${import.meta.env.VITE_APP_VERSION || '1.0.0'}`
-    }
-  },
-  // Gérer les timeouts pour éviter les problèmes de connexion
-  realtime: {
-    timeout: 30000, // 30 secondes
+// Adaptateur pour l'API locale PostgreSQL
+class LocalApiAdapter {
+  constructor(baseUrl) {
+    this.baseUrl = baseUrl;
   }
-};
 
-// Utiliser directement les variables d'environnement (plus de proxy)
-const finalSupabaseUrl = supabaseUrl || 'http://127.0.0.1:54321';
+  from(tableName) {
+    return new LocalQueryBuilder(tableName, this.baseUrl);
+  }
 
-console.log('🔗 Supabase URL utilisée:', finalSupabaseUrl);
-console.log('🔑 Environment:', import.meta.env.VITE_ENVIRONMENT || 'development');
+  get storage() {
+    return {
+      from: (bucket) => new LocalStorageAdapter(bucket)
+    };
+  }
 
-// Configurer le client avec des options spécifiques selon l'environnement
-const clientOptions = { ...options };
-
-// En mode développement, ajouter des en-têtes personnalisés
-if (import.meta.env.DEV) {
-  clientOptions.global = {
-    ...clientOptions.global,
-    headers: {
-      ...clientOptions.global.headers,
-      'X-Dev-Mode': 'true',
-      'X-Environment': import.meta.env.VITE_ENVIRONMENT || 'development'
-    }
-  };
+  get auth() {
+    return {
+      getUser: async () => ({ data: null, error: null }),
+      signIn: async () => ({ data: null, error: null }),
+      signUp: async () => ({ data: null, error: null }),
+      signOut: async () => ({ error: null })
+    };
+  }
 }
 
-// Client Supabase avec rate limiting intégré
-const supabaseClient = createClient(
-  finalSupabaseUrl,
-  supabaseAnonKey, // Utilisation directe de la clé depuis les variables d'environnement
-  clientOptions
-);
+class LocalQueryBuilder {
+  constructor(tableName, baseUrl) {
+    this.tableName = tableName;
+    this.baseUrl = baseUrl;
+    this.selectFields = '*';
+    this.whereConditions = {};
+    this.orderByClause = '';
+    this.limitValue = null;
+    this.isSingleQuery = false;
+  }
+
+  select(fields = '*') {
+    this.selectFields = fields;
+    return this;
+  }
+
+  eq(column, value) {
+    this.whereConditions[column] = value;
+    return this;
+  }
+
+  not(column, operator, value) {
+    // Pour l'instant, on gère seulement le cas "not null"
+    if (operator === 'is' && value === null) {
+      this.whereConditions[`${column}_not_null`] = true;
+    }
+    return this;
+  }
+
+  order(column, options = {}) {
+    const direction = options.ascending === false ? 'desc' : 'asc';
+    this.orderByClause = `${column}.${direction}`;
+    return this;
+  }
+
+  limit(count) {
+    this.limitValue = count;
+    return this;
+  }
+
+  single() {
+    this.isSingleQuery = true;
+    return this;
+  }
+
+  async insert(data) {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/${this.tableName}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      
+      // Retourner un objet qui a une méthode select() pour compatibilité avec Supabase
+      return {
+        data: result.data,
+        error: result.error,
+        select: () => ({
+          single: async () => ({ data: result.data, error: result.error })
+        })
+      };
+    } catch (error) {
+      console.error('Insert error:', error);
+      return { 
+        data: null, 
+        error,
+        select: () => ({
+          single: async () => ({ data: null, error })
+        })
+      };
+    }
+  }
+
+  async update(data) {
+    try {
+      // Pour update, nous devons avoir un ID dans les conditions WHERE
+      const id = this.whereConditions.id;
+      if (!id) {
+        return { data: null, error: new Error('ID required for update') };
+      }
+
+      const response = await fetch(`${this.baseUrl}/api/${this.tableName}/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+      });
+      
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      console.error('Update error:', error);
+      return { data: null, error };
+    }
+  }
+
+  async delete() {
+    try {
+      const id = this.whereConditions.id;
+      if (!id) {
+        return { data: null, error: new Error('ID required for delete') };
+      }
+
+      const response = await fetch(`${this.baseUrl}/api/${this.tableName}/${id}`, {
+        method: 'DELETE'
+      });
+      
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      console.error('Delete error:', error);
+      return { data: null, error };
+    }
+  }
+
+  // Méthode pour exécuter une requête GET
+  async then(onResolve, onReject) {
+    try {
+      let url = `${this.baseUrl}/api/${this.tableName}`;
+      const params = new URLSearchParams();
+
+      // Ajouter les paramètres de requête
+      Object.keys(this.whereConditions).forEach(key => {
+        if (key === 'assigned_to_id') {
+          params.append('user_id', this.whereConditions[key]);
+        }
+      });
+
+      if (params.toString()) {
+        url += `?${params.toString()}`;
+      }
+
+      const response = await fetch(url);
+      const result = await response.json();
+
+      if (this.isSingleQuery && result.data && result.data.length > 0) {
+        result.data = result.data[0];
+      }
+
+      return onResolve ? onResolve(result) : result;
+    } catch (error) {
+      console.error('Query error:', error);
+      const errorResult = { data: null, error };
+      return onReject ? onReject(errorResult) : errorResult;
+    }
+  }
+
+  catch(onReject) {
+    return this.then(null, onReject);
+  }
+}
+
+class LocalStorageAdapter {
+  constructor(bucket) {
+    this.bucket = bucket;
+  }
+
+  async upload(path, file) {
+    // Simulation d'upload pour le développement
+    console.log(`🔄 Simulating file upload: ${path}`);
+    return { data: { path }, error: null };
+  }
+
+  async download(path) {
+    // Simulation de téléchargement
+    console.log(`🔄 Simulating file download: ${path}`);
+    return { data: new Blob(), error: null };
+  }
+}
+
+// Créer le client approprié selon l'environnement
+let supabase;
+
+if (isProduction && supabaseUrl && supabaseAnonKey) {
+  // Production : utiliser Supabase Cloud
+  console.log('🔗 Using Supabase Cloud for production');
+  const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: true,
+      flowType: 'pkce'
+    }
+  });
+  supabase = supabaseClient;
+} else {
+  // Développement : utiliser l'API locale PostgreSQL
+  console.log('🔗 Using Local PostgreSQL API for development');
+  console.log('🔗 Local API URL:', localApiUrl);
+  supabase = new LocalApiAdapter(localApiUrl);
+}
 
 // On assigne à la variable supabase pour la compatibilité
-const supabase = supabaseClient;
+const client = supabase;
 
 /**
- * Vérifie la connexion à Supabase
+ * Vérifie la connexion à la base de données
  * @returns {Promise<Object>} Statut de la connexion
  */
-async function checkSupabaseConnection() {
+async function checkConnection() {
   try {
-    // Tester la connexion avec un appel simple
-    const { data, error } = await supabase.from('profiles').select('count').limit(1);
-    
-    if (error) {
-      console.error('❌ Erreur lors de la vérification de connexion:', error);
-      return { connected: false, error };
+    if (isProduction) {
+      // Tester la connexion Supabase
+      const { data, error } = await supabase.from('profiles').select('count').limit(1);
+      
+      if (error) {
+        console.error('❌ Erreur lors de la vérification de connexion Supabase:', error);
+        return { connected: false, error };
+      }
+      
+      return { connected: true, data };
+    } else {
+      // Tester la connexion API locale
+      const response = await fetch(`${localApiUrl}/api/health`);
+      const result = await response.json();
+      
+      if (result.status === 'ok') {
+        return { connected: true, data: result };
+      } else {
+        return { connected: false, error: result.message };
+      }
     }
-    
-    return { connected: true, data };
   } catch (error) {
     console.error('❌ Exception lors de la vérification de connexion:', error);
     return { connected: false, error };
   }
 }
 
-// Proxy pour intercepter les appels et appliquer le rate limiting
-const createRateLimitedProxy = (client) => {
-  return new Proxy(client, {
-    get(target, prop) {
-      if (prop === 'from') {
-        return (table) => {
-          const tableQuery = target.from(table);
-          
-          // Applique le rate limiting sur les méthodes de requête
-          return new Proxy(tableQuery, {
-            get(queryTarget, queryProp) {
-              const originalMethod = queryTarget[queryProp];
-              
-              if (typeof originalMethod === 'function' && 
-                  ['select', 'insert', 'update', 'delete', 'upsert'].includes(queryProp)) {
-                
-                return function(...args) {
-                  // Vérification du rate limit avant l'exécution (silencieux)
-                  if (!rateLimiter.isAllowed(`${queryProp}_${table}`)) {
-                    return Promise.reject(new Error(`Trop de requêtes. Veuillez patienter.`));
-                  }
-                  
-                  return originalMethod.apply(this, args);
-                };
-              }
-              
-              return originalMethod;
-            }
-          });
-        };
-      }
-      
-      return target[prop];
-    }
-  });
-};
 
-/**
- * Fonction pour diagnostiquer les problèmes CORS
- * Cette fonction peut être appelée pour tester la configuration CORS et identifier les problèmes
- * @param {String} endpoint - L'endpoint à tester (par défaut: 'rest/v1/profiles')
- */
-async function diagnoseCorsIssue(endpoint = 'rest/v1/profiles') {
-  try {
-    console.info('🔍 Diagnostic CORS en cours...');
-    
-    // Construction de l'URL complète
-    const url = `${supabaseUrl}/${endpoint}`;
-    console.log(`Tentative de connexion à: ${url}`);
-    
-    // 1. Effectuer une requête OPTIONS pour vérifier le préflight
-    const preflightResponse = await fetch(url, {
-      method: 'OPTIONS',
-      headers: {
-        'Origin': window.location.origin,
-        'Access-Control-Request-Method': 'GET',
-        'Access-Control-Request-Headers': 'Content-Type, Authorization'
-      }
-    });
-    
-    console.log('Réponse préflight:', preflightResponse.status, preflightResponse.ok);
-    
-    // Vérifier les en-têtes CORS
-    const corsHeaders = {
-      'Access-Control-Allow-Origin': preflightResponse.headers.get('Access-Control-Allow-Origin'),
-      'Access-Control-Allow-Methods': preflightResponse.headers.get('Access-Control-Allow-Methods'),
-      'Access-Control-Allow-Headers': preflightResponse.headers.get('Access-Control-Allow-Headers')
-    };
-    
-    console.log('En-têtes CORS:', corsHeaders);
-    
-    // Vérifier si les en-têtes nécessaires sont présents
-    const corsConfigured = corsHeaders['Access-Control-Allow-Origin'] !== null;
-    
-    if (!corsConfigured) {
-      console.error('❌ Configuration CORS incomplète. Exécutez le script fix-cors-supabase.sh');
-      return {
-        success: false,
-        message: 'Configuration CORS manquante',
-        headers: corsHeaders
-      };
-    }
-    
-    return {
-      success: true,
-      message: 'Configuration CORS valide',
-      headers: corsHeaders
-    };
-  } catch (error) {
-    console.error('❌ Erreur lors du diagnostic CORS:', error);
-    return {
-      success: false,
-      message: `Erreur de diagnostic: ${error.message}`,
-      error
-    };
-  }
-}
 
 // Exportation du client et des fonctions utilitaires
-export { supabase, checkSupabaseConnection, diagnoseCorsIssue, createClient };
+export { client as supabase, checkConnection };
+export { createClient } from '@supabase/supabase-js';
 
 // Pour la compatibilité avec l'ancien code
-export default supabase;
+export default client;

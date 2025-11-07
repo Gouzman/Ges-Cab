@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
+import PropTypes from 'prop-types';
 import { motion } from 'framer-motion';
-import { supabase } from '@/lib/customSupabaseClient';
-import { useAuth } from '@/contexts/SupabaseAuthContext';
-import { useToast } from '@/components/ui/use-toast';
+import { useAuth } from '../contexts/SimpleAuthContext';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -98,7 +98,7 @@ const FirstLoginScreen = ({ email, onSuccess, onBack }) => {
       const finalPassword = keepTemp ? tempPassword : newPassword;
 
       // Créer le compte dans Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      const { error: authError } = await supabase.auth.signUp({
         email: email,
         password: finalPassword,
         options: {
@@ -283,7 +283,7 @@ const FirstLoginScreen = ({ email, onSuccess, onBack }) => {
                   <button
                     onClick={() => setKeepTempPassword(false)}
                     className={`w-full p-4 border-2 rounded-lg text-left transition-colors ${
-                      !keepTempPassword 
+                      keepTempPassword === false
                         ? 'border-blue-500 bg-blue-50' 
                         : 'border-gray-200 hover:border-gray-300'
                     }`}
@@ -383,6 +383,12 @@ const FirstLoginScreen = ({ email, onSuccess, onBack }) => {
       </Card>
     </motion.div>
   );
+};
+
+FirstLoginScreen.propTypes = {
+  email: PropTypes.string.isRequired,
+  onSuccess: PropTypes.func.isRequired,
+  onBack: PropTypes.func.isRequired,
 };
 
 export default FirstLoginScreen;

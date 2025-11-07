@@ -1,16 +1,16 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import App from '@/App';
-import '@/index.css';
-import { AuthProvider } from '@/contexts/SupabaseAuthContext';
+import App from './App';
+import { SimpleAuthProvider } from './contexts/SimpleAuthContext';
+import './index.css';
 
 const rootElement = document.getElementById('root');
 if (rootElement) {
   ReactDOM.createRoot(rootElement).render(
     <React.StrictMode>
-      <AuthProvider>
+      <SimpleAuthProvider>
         <App />
-      </AuthProvider>
+      </SimpleAuthProvider>
     </React.StrictMode>
   );
 } else {

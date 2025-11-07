@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Settings as SettingsIcon, Tag, Save, Plus, Trash2, Shield, Users, UserPlus } from 'lucide-react';
+import { Settings as SettingsIcon, Tag, Save, Plus, Trash2, Shield, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
-import { supabase } from '@/lib/customSupabaseClient';
-import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { useAuth } from '../contexts/SimpleAuthContext';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import UserManagement from './UserManagement';
@@ -72,7 +71,7 @@ const Settings = () => {
 
   const fetchCategories = async () => {
     const { data } = await supabase.from('app_metadata').select('task_categories').single();
-    if (data && data.task_categories) {
+    if (data?.task_categories) {
       setTaskCategories(data.task_categories);
     }
   };
@@ -84,7 +83,7 @@ const Settings = () => {
 
   const handleAddCategory = () => {
     if (newCategory.trim() === '') return;
-    const newCat = { value: newCategory.toLowerCase().replace(/\s+/g, '-'), label: newCategory };
+    const newCat = { value: newCategory.toLowerCase().replaceAll(/\s+/g, '-'), label: newCategory };
     if (taskCategories.some(cat => cat.value === newCat.value)) {
       toast({ variant: "destructive", title: "Catégorie existante" });
       return;
@@ -108,7 +107,7 @@ const Settings = () => {
 
   const handlePermissionChange = (moduleId, type, action) => {
     setPermissions(prev => {
-      const newPerms = JSON.parse(JSON.stringify(prev));
+      const newPerms = structuredClone(prev);
       if (!newPerms[moduleId]) {
         newPerms[moduleId] = { visible: false, actions: {} };
       }

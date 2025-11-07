@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
+import PropTypes from 'prop-types';
 import { motion } from 'framer-motion';
-import { Scale, Mail, Lock, ArrowLeft } from 'lucide-react';
+import { Scale, Lock, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/contexts/SupabaseAuthContext';
+import { useAuth } from '../contexts/SimpleAuthContext';
 import { useToast } from '@/components/ui/use-toast';
 
 const CreatePasswordScreen = ({ email, onCancel, onSuccess }) => {
@@ -76,12 +77,13 @@ const CreatePasswordScreen = ({ email, onCancel, onSuccess }) => {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-slate-200 mb-2">
+            <label htmlFor="password" className="block text-sm font-medium text-slate-200 mb-2">
               Mot de passe
             </label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
               <input
+                id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -94,12 +96,13 @@ const CreatePasswordScreen = ({ email, onCancel, onSuccess }) => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-200 mb-2">
+            <label htmlFor="confirmPassword" className="block text-sm font-medium text-slate-200 mb-2">
               Confirmer le mot de passe
             </label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
               <input
+                id="confirmPassword"
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
@@ -133,6 +136,12 @@ const CreatePasswordScreen = ({ email, onCancel, onSuccess }) => {
       </motion.div>
     </div>
   );
+};
+
+CreatePasswordScreen.propTypes = {
+  email: PropTypes.string.isRequired,
+  onCancel: PropTypes.func.isRequired,
+  onSuccess: PropTypes.func.isRequired,
 };
 
 export default CreatePasswordScreen;

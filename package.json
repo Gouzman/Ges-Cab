@@ -4,9 +4,10 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "dev": "vite --host :: --port 3000",
+    "dev": "vite",
     "build": "node tools/generate-llms.js || true && vite build",
-    "preview": "vite preview --host :: --port 3000",
+    "preview": "vite preview",
+    "lint": "eslint src --ext .js,.jsx",
     "secretlint": "secretlint \"**/*\"",
     "secretlint:ci": "secretlint \"**/*\" --format json",
     "prepare-prod": "./scripts/prepare-production.sh",
@@ -20,12 +21,15 @@
     "db:reset": "./scripts/supabase-manager.sh reset",
     "env": "./switch-env.sh",
     "env:local": "./switch-env.sh local",
-    "env:cloud": "./switch-env.sh cloud", 
+    "env:cloud": "./switch-env.sh cloud",
     "env:vps": "./switch-env.sh vps",
     "env:test": "./switch-env.sh test",
     "db:migrate": "./scripts/supabase-manager.sh migrate",
     "db:seed": "./scripts/supabase-manager.sh seed",
-    "db:studio": "./scripts/supabase-manager.sh studio"
+    "db:studio": "./scripts/supabase-manager.sh studio",
+    "seed:users": "node scripts/seed-users.js",
+    "seed:users:sql": "./seed-users.sh sql",
+    "seed:info": "./seed-users.sh info"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.0.5",
@@ -37,7 +41,9 @@
     "bcryptjs": "^3.0.2",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
+    "cors": "^2.8.5",
     "date-fns": "^2.30.0",
+    "express": "^5.1.0",
     "framer-motion": "^10.16.4",
     "lucide-react": "^0.285.0",
     "papaparse": "^5.4.1",
@@ -51,7 +57,11 @@
   },
   "devDependencies": {
     "@babel/core": "^7.28.4",
+    "@babel/generator": "^7.28.5",
+    "@babel/parser": "^7.28.5",
     "@babel/preset-env": "^7.28.3",
+    "@babel/traverse": "^7.28.5",
+    "@babel/types": "^7.28.5",
     "@secretlint/secretlint-rule-preset-recommend": "^11.2.4",
     "@vitejs/plugin-react": "^4.0.3",
     "autoprefixer": "^10.4.16",
@@ -59,10 +69,12 @@
     "dotenv": "^17.2.3",
     "eslint": "^8.57.1",
     "eslint-config-react-app": "^7.0.1",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.0.1",
     "postcss": "^8.4.31",
     "secretlint": "^11.2.4",
     "tailwindcss": "^3.3.3",
     "terser": "^5.39.0",
-    "vite": "^4.4.5"
+    "vite": "^7.2.1"
   }
 }

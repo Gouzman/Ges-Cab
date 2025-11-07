@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Scale, Mail, Lock, ArrowRight } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { useAuth } from '@/contexts/SupabaseAuthContext';
-import { useToast } from '@/components/ui/use-toast';
+import { Button } from './ui/button';
+import { useAuth } from '../contexts/SimpleAuthContext';
+import { useToast } from './ui/use-toast';
 import CreatePasswordScreen from './CreatePasswordScreen';
 import ForgotPasswordScreen from './ForgotPasswordScreen';
 
@@ -13,23 +13,23 @@ const LoginScreen = () => {
   const [currentStep, setCurrentStep] = useState('email'); // 'email', 'password', 'create-password', 'first-login', 'forgot-password', 'email-confirmation'
   const [isLoading, setIsLoading] = useState(false);
   
-  const { signIn, checkUserExists } = useAuth();
+  const { signIn } = useAuth();
   const { toast } = useToast();
 
-  // Test des toasts au chargement
-  useEffect(() => {
-    // Toast de test pour vérifier que le système fonctionne
-    const timer = setTimeout(() => {
-      if (import.meta.env.VITE_APP_ENV === 'development') {
-        toast({
-          title: "🔧 Mode développement",
-          description: "Système de toasts opérationnel !"
-        });
-      }
-    }, 1000);
+  // Test des toasts au chargement - TEMPORAIREMENT DÉSACTIVÉ
+  // useEffect(() => {
+  //   // Toast de test pour vérifier que le système fonctionne
+  //   const timer = setTimeout(() => {
+  //     if (import.meta.env.VITE_APP_ENV === 'development') {
+  //       toast({
+  //         title: "🔧 Mode développement",
+  //         description: "Système de toasts opérationnel !"
+  //       });
+  //     }
+  //   }, 1000);
 
-    return () => clearTimeout(timer);
-  }, [toast]);
+  //   return () => clearTimeout(timer);
+  // }, [toast]);
 
   // Étape 1: Vérifier l'email
   const handleEmailSubmit = async (e) => {
@@ -49,34 +49,8 @@ const LoginScreen = () => {
     setIsLoading(true);
 
     try {
-      const { exists, error, hasPassword } = await checkUserExists(email);
-      
-      if (error) {
-        toast({
-          variant: "destructive",
-          title: "Erreur de vérification",
-          description: "Impossible de vérifier l'email. Réessayez."
-        });
-        setIsLoading(false);
-        return;
-      }
-
-      if (exists) {
-        if (hasPassword) {
-          // Utilisateur existant avec mot de passe défini - connexion directe
-          setCurrentStep('password');
-        } else {
-          // Utilisateur existant sans mot de passe - création de mot de passe
-          setCurrentStep('create-password');
-        }
-      } else {
-        // Email n'existe pas dans la base - accès refusé
-        toast({
-          variant: "destructive",
-          title: "Accès refusé",
-          description: "Vous devez être enregistré par l'administrateur."
-        });
-      }
+      // Simplifié : passer directement à l'étape mot de passe
+      setCurrentStep('password');
     } catch (err) {
       console.error('Erreur lors de la vérification de l\'email:', err);
       toast({
@@ -95,18 +69,30 @@ const LoginScreen = () => {
     setIsLoading(true);
 
     try {
-      const { error } = await signIn(email, password);
+      const { data, error } = await signIn(email, password);
       
-      if (!error) {
-        // Connexion réussie - le contexte d'auth gère la redirection
+      if (!error && data) {
+        // Connexion réussie
+        toast({
+          title: "Connexion réussie",
+          description: `Bienvenue ${data.name || email} !`
+        });
         return;
+      }
+      
+      if (error) {
+        toast({
+          variant: "destructive",
+          title: "Erreur de connexion",
+          description: error.message
+        });
       }
     } catch (err) {
       console.error('Erreur lors de la connexion:', err);
       toast({
         variant: "destructive",
-        title: "Erreur de connexion",
-        description: "Vérifiez vos identifiants."
+        title: "Erreur inattendue",
+        description: "Une erreur inattendue s'est produite. Veuillez réessayer."
       });
     } finally {
       setIsLoading(false);

@@ -1,15 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
-    import PropTypes from 'prop-types';
-    import { motion } from 'framer-motion';
-    import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
-    import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay, parseISO, addWeeks, subWeeks, eachDayOfInterval, setHours } from 'date-fns';
-    import { fr } from 'date-fns/locale';
-    import { Button } from '@/components/ui/button';
-    import { supabase } from '@/lib/customSupabaseClient';
-    import { toast } from '@/components/ui/use-toast';
-    import EventForm from '@/components/EventForm';
-
-    // Fonctions utilitaires pour éviter les ternaires imbriqués
+import PropTypes from 'prop-types';
+import { motion } from 'framer-motion';
+import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay, parseISO, addWeeks, subWeeks, eachDayOfInterval, setHours } from 'date-fns';
+import { fr } from 'date-fns/locale';
+import { Button } from '@/components/ui/button';
+import supabase from '@/lib/customSupabaseClient';
+import { toast } from '@/components/ui/use-toast';
+import EventForm from '@/components/EventForm';    // Fonctions utilitaires pour éviter les ternaires imbriqués
     const getTaskPriorityStyle = (priority) => {
       switch (priority) {
         case 'urgent':

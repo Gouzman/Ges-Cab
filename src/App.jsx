@@ -1,36 +1,34 @@
 import React, { useState, useEffect } from 'react';
-    import { motion } from 'framer-motion';
-    import { Toaster } from '@/components/ui/toaster';
-    import Sidebar from '@/components/Sidebar';
-    import Dashboard from '@/components/Dashboard';
-    import TaskManager from '@/components/TaskManager';
-    import ClientManager from '@/components/ClientManager';
-    import CaseManager from '@/components/CaseManager';
-    import Calendar from '@/components/Calendar';
-    import Reports from '@/components/Reports';
-    import TeamManager from '@/components/TeamManager';
-    import LoginScreen from '@/components/LoginScreen';
-    import ForgotPasswordScreen from '@/components/ForgotPasswordScreen';
-    import ResetPasswordScreen from '@/components/ResetPasswordScreen';
-    import DocumentManager from '@/components/DocumentManager';
-    import Settings from '@/components/Settings';
-    import BillingManager from '@/components/BillingManager';
-    import { useAuth } from '@/contexts/SupabaseAuthContext';
-    import { Loader2 } from 'lucide-react';
-    import CorsTestComponent from '@/components/CorsTestComponent';
+import { motion } from 'framer-motion';
+import { Toaster } from './components/ui/toaster';
+import Sidebar from './components/Sidebar';
+import Dashboard from './components/Dashboard';
+import TaskManager from './components/TaskManager';
+import ClientManager from './components/ClientManager';
+import CaseManager from './components/CaseManager';
+import Calendar from './components/Calendar';
+import Reports from './components/Reports';
+import TeamManager from './components/TeamManager';
+import LoginScreen from './components/LoginScreen';
+import ForgotPasswordScreen from './components/ForgotPasswordScreen';
+import ResetPasswordScreen from './components/ResetPasswordScreen';
+import DocumentManager from './components/DocumentManager';
+import Settings from './components/Settings';
+import BillingManager from './components/BillingManager';
+import { useAuth } from './contexts/SimpleAuthContext';
+import { Loader2 } from 'lucide-react';
 
 function App() {
   const [activeView, setActiveView] = useState('dashboard');
-  const [showCorsTest, setShowCorsTest] = useState(false);
   const { user, loading, signOut } = useAuth();
 
   // Détecter la route courante pour les écrans de réinitialisation
-  const currentPath = window.location.pathname;
-  const urlParams = new URLSearchParams(window.location.search);
-  const hashParams = new URLSearchParams(window.location.hash.substring(1));
+  const currentPath = globalThis.location.pathname;
+  const urlParams = new URLSearchParams(globalThis.location.search);
+  const hashParams = new URLSearchParams(globalThis.location.hash.substring(1));
   
   const isResetPasswordFlow = currentPath === '/reset-password' || 
-                             window.location.hash.includes('type=recovery') ||
+                             globalThis.location.hash.includes('type=recovery') ||
                              hashParams.get('type') === 'recovery' ||
                              urlParams.get('type') === 'recovery';
   const isForgotPasswordFlow = currentPath === '/forgot-password';
@@ -86,24 +84,7 @@ function App() {
     );
   }
   
-  // Afficher l'outil de diagnostic CORS en mode développement avec le paramètre d'URL
-  const showDiagnostic = import.meta.env.DEV && urlParams.get('diagnostic') === 'cors';
-  if (showDiagnostic) {
-    return (
-      <div className="p-8 max-w-4xl mx-auto">
-        <h1 className="text-2xl font-bold mb-6">Diagnostic de Connexion Supabase</h1>
-        <CorsTestComponent />
-        <div className="mt-8">
-          <button 
-            onClick={() => window.location.href = '/'} 
-            className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
-          >
-            Retour à l'application
-          </button>
-        </div>
-      </div>
-    );
-  }
+
 
   // Gérer les écrans de réinitialisation de mot de passe
   if (isResetPasswordFlow) {
@@ -142,24 +123,24 @@ function App() {
           setActiveView={setActiveView} 
           currentUser={user}
           onLogout={handleLogout}
-            />
-            
-            <main className="flex-1 ml-64 print:ml-0">
-              <motion.div
-                key={activeView}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.3 }}
-                className="p-6 print:p-0"
-              >
-                {renderActiveView()}
-              </motion.div>
-            </main>
-          </div>
-          
-          <Toaster />
-        </div>
-      );
-    }
+        />
+        
+        <main className="flex-1 ml-64 print:ml-0">
+          <motion.div
+            key={activeView}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.3 }}
+            className="p-6 print:p-0"
+          >
+            {renderActiveView()}
+          </motion.div>
+        </main>
+      </div>
+      
+      <Toaster />
+    </div>
+  );
+}
 
-    export default App;
+export default App;

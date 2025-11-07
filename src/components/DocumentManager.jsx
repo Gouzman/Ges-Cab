@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
-    import { motion } from 'framer-motion';
-    import { FileArchive, Search, Printer, Eye, Trash2, Timer, Download } from 'lucide-react';
-    import { Button } from '@/components/ui/button';
-    import { toast } from '@/components/ui/use-toast';
-    import { supabase } from '@/lib/customSupabaseClient';
-
-    const DocumentManager = ({ currentUser }) => {
+import { motion } from 'framer-motion';
+import { FileArchive, Search, Printer, Eye, Trash2, Timer, Download } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { toast } from '@/components/ui/use-toast';
+import supabase from '@/lib/customSupabaseClient';    const DocumentManager = ({ currentUser }) => {
       const [documents, setDocuments] = useState([]);
       const [searchTerm, setSearchTerm] = useState('');
       const [profile, setProfile] = useState(null);

@@ -1,15 +1,13 @@
 import React, { useState, useEffect } from 'react';
-    import PropTypes from 'prop-types';
-    import { motion } from 'framer-motion';
-    import { Plus, Search, FileText, Scale, Clock, CheckCircle, Archive, Printer, X, Pencil, Trash2 } from 'lucide-react';
-    import { Button } from '@/components/ui/button';
-    import { toast } from '@/components/ui/use-toast';
-    import CaseForm from '@/components/CaseForm';
-    import CaseCard from '@/components/CaseCard';
-    import { Checkbox } from '@/components/ui/checkbox';
-    import { supabase } from '@/lib/customSupabaseClient';
-
-    const CaseManager = ({ currentUser }) => {
+import PropTypes from 'prop-types';
+import { motion } from 'framer-motion';
+import { Plus, Search, FileText, Scale, Clock, CheckCircle, Archive, Printer, X, Pencil, Trash2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { toast } from '@/components/ui/use-toast';
+import CaseForm from '@/components/CaseForm';
+import CaseCard from '@/components/CaseCard';
+import { Checkbox } from '@/components/ui/checkbox';
+import supabase from '@/lib/customSupabaseClient';    const CaseManager = ({ currentUser }) => {
       const [cases, setCases] = useState([]);
       const [showForm, setShowForm] = useState(false);
       const [editingCase, setEditingCase] = useState(null);

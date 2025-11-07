@@ -19,7 +19,7 @@ import {
   UserCheck
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { supabase } from '@/lib/customSupabaseClient';
+// TODO: Replace with backend API calls
 import { toast } from '@/components/ui/use-toast';
 
 const TaskCard = ({ task, index, onEdit, onDelete, onStatusChange, currentUser }) => {

@@ -5,7 +5,7 @@ import { BarChart3, PieChart, TrendingUp, FileText, Download, Users, CheckSquare
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, Pie, Cell } from 'recharts';
 import { toast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
-import { supabase } from '@/lib/customSupabaseClient';
+// TODO: Replace with backend API calls
 import Papa from 'papaparse';
 import { startOfMonth, startOfQuarter, isWithinInterval, endOfMonth, endOfQuarter } from 'date-fns';
 import { fr } from 'date-fns/locale';

@@ -4,7 +4,7 @@ import { Plus, Search, Building, User, Printer, X, Pencil, Trash2, Mail, Phone }
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
 import ClientForm from '@/components/ClientForm';
-import { supabase } from '@/lib/customSupabaseClient';
+import supabase from '@/lib/customSupabaseClient';
 import { Checkbox } from '@/components/ui/checkbox';
 // Les importations DialogX ont été supprimées car non utilisées
 
